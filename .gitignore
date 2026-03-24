@@ -1,0 +1,9 @@
+# Secrets — cluster credentials and machine configs with embedded certs
+tower-bootstrap/controlplane.yaml
+tower-bootstrap/controlplane.patched.yaml
+tower-bootstrap/worker.yaml
+tower-bootstrap/talosconfig
+tower-bootstrap/kubeconfig
+
+# macOS
+**/.DS_Store
