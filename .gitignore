@@ -5,5 +5,20 @@ tower-bootstrap/worker.yaml
 tower-bootstrap/talosconfig
 tower-bootstrap/kubeconfig
 
+# SOPS / age — encryption keys and decrypted secret manifests
+age.key
+*.agekey
+secrets.yaml
+secrets.*.yaml
+**/secret-*.yaml
+**/decrypted/
+
+# Backups and local artifacts
+*.bak
+*.db
+*.sqlite
+*.tar.gz
+*.snap
+
 # macOS
 **/.DS_Store

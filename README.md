@@ -117,7 +117,7 @@ Deploy the AI workload stack on the RTX 3090:
 
 ### Phase 3 -- High Availability + Training
 
-- Introduce 3x NUC workers to form HA control plane (3-node etcd)
+- Introduce 3x NUCs as control-plane nodes to form HA etcd (3-node quorum)
 - Tower becomes a dedicated GPU worker with no control plane duties
 - Wake-on-LAN for tower power management
 - Model fine-tuning and distributed training experiments
