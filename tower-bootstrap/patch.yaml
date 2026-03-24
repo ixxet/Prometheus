@@ -1,0 +1,29 @@
+machine:
+  network:
+    interfaces:
+      - interface: enp5s0
+        dhcp: true
+        vip:
+          ip: 192.168.2.46
+  install:
+    diskSelector:
+      busPath: /pci0000:00/0000:00:01.2/0000:02:00.0/0000:03:09.0/0000:09:00.0/ata1/host1/target1:0:0/1:0:0:0
+    image: factory.talos.dev/installer/ba3532cab450d6c49c192f0971718775cc7a61ada905dd01faf1a551eb019c82:v1.12.6
+    wipe: true
+  kernel:
+    modules:
+      - name: nvidia
+      - name: nvidia_uvm
+      - name: nvidia_drm
+      - name: nvidia_modeset
+  features:
+    kubePrism:
+      enabled: true
+      port: 7445
+cluster:
+  allowSchedulingOnControlPlanes: true
+  proxy:
+    disabled: true
+  network:
+    cni:
+      name: none
