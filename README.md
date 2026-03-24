@@ -32,11 +32,11 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 │                        PROMETHEUS CLUSTER                        │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │                 5950X TOWER  (Primary Node)                │  │
+│  │                5950X TOWER (Primary Node)                  │  │
 │  │                                                            │  │
-│  │  CPU:   AMD Ryzen 9 5950X  (16C / 32T)                     │  │
-│  │  GPU:   NVIDIA GeForce RTX 3090  (24 GB VRAM)              │  │
-│  │  Role:  Control Plane + GPU Worker                         │  │
+│  │  CPU:  AMD Ryzen 9 5950X (16C/32T)                         │  │
+│  │  GPU:  NVIDIA GeForce RTX 3090 (24GB VRAM)                 │  │
+│  │  Role: Control Plane + GPU Worker                          │  │
 │  │                                                            │  │
 │  │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │  │
 │  │  │    Cilium    │    │    NVIDIA    │    │  Local Path  │  │  │
@@ -44,13 +44,13 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 │  │  └──────────────┘    └──────────────┘    └──────────────┘  │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  Network:       192.168.2.0/24                                   │
-│  API VIP:       192.168.2.46                                     │
-│  Service Pool:  192.168.2.200-220  (L2 announced)                │
+│  Network:      192.168.2.0/24                                    │
+│  API VIP:      192.168.2.46                                      │
+│  Service Pool: 192.168.2.200-220 (L2 announced)                  │
 │                                                                  │
 │  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┐  │
-│    FUTURE:  3x NUC Workers                                       │
-│  │ Control plane migrates to NUCs — tower becomes GPU-only    │  │
+│  │ FUTURE: 3x NUC Workers                                     │  │
+│  │ Control plane migrates to NUCs -- tower becomes GPU-only   │  │
 │  │ HA etcd across 3 nodes, Wake-on-LAN for tower              │  │
 │  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┘  │
 └──────────────────────────────────────────────────────────────────┘
@@ -145,18 +145,16 @@ Deploy the AI workload stack on the RTX 3090:
 
 ---
 
-## Skills Demonstrated
+## What this covers
 
-| Domain | What This Covers |
-|--------|-----------------|
-| **Bare-Metal Kubernetes** | Bootstrapping K8s from scratch on real hardware, no managed services |
-| **Immutable Infrastructure** | Talos OS -- no SSH, no mutation, API-driven node lifecycle |
-| **Advanced Networking** | Cilium as kube-proxy replacement, L2 announcements, LoadBalancer IPAM |
-| **GPU Scheduling** | NVIDIA device plugin, RuntimeClass, VRAM-aware workload planning |
-| **Infrastructure as Code** | Declarative machine configs, rendered manifests, version-pinned components |
-| **GitOps** | Flux scaffold, SOPS secrets strategy, cluster-state-as-code |
-| **AI/ML Infrastructure** | GPU sharing design, model serving pipelines, inference workload planning |
-| **Capacity Planning** | Multi-phase expansion with HA migration path and cost analysis |
+This isn't a tutorial or a template -- it's a working cluster, and building it meant solving real problems:
+
+- Bootstrapping Kubernetes on bare metal without a managed service handling the hard parts
+- Running Talos OS, where there's no SSH and no shell -- everything goes through the API or not at all
+- Replacing kube-proxy entirely with Cilium and getting L2 announcements working so services show up on the LAN
+- Getting NVIDIA drivers loaded inside an immutable OS using Talos extensions, then wiring up the device plugin and RuntimeClass
+- Planning GPU time-sharing on a single RTX 3090 that doesn't support MIG
+- Designing a migration path from single-node to HA without tearing everything down
 
 ---
 
