@@ -13,6 +13,7 @@ spec:
       labels:
         app.kubernetes.io/name: vllm
     spec:
+      enableServiceLinks: false
       runtimeClassName: nvidia
       containers:
         - name: vllm
@@ -25,6 +26,8 @@ spec:
             - 0.0.0.0
             - --port
             - "8000"
+            - --tokenizer-mode
+            - mistral
             - --dtype
             - bfloat16
             - --gpu-memory-utilization
