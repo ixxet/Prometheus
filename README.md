@@ -174,6 +174,22 @@ pulls; it is `vLLM` downloading and loading model weights over a slow WAN link.
 - [ ] First-wave persistent state is intentionally kept on the Talos SSD only
 - [ ] `vLLM` model storage stays small until a second SSD or NAS tier exists
 
+## Growing Pains
+
+This project is intentionally documenting the rough edges, not just the wins.
+The current log of mistakes, dead ends, and fixes lives in:
+
+- [`docs/growing-pains.md`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/growing-pains.md)
+
+Current notable examples:
+
+- Kubernetes service-link env injection collided with `vLLM_PORT`
+- single-GPU rollout strategy caused a replacement deadlock
+- `vLLM` model startup exposed the difference between container image pulls and
+  model weight downloads
+- Flux and live-state drift surfaced where repo truth and runtime truth can
+  briefly diverge during recovery
+
 ## Roadmap
 
 ### Phase 1 -- Foundation *(current)*
@@ -228,6 +244,8 @@ Explicit non-goals for this phase:
 |------|---------|-------|
 | `plan-addendum-ai-workloads-gpu-nuc.md` | Historical AI workload strategy and NUC expansion notes | Superseded by the v0.2.0 pivot docs |
 | `docs/agent-memory-architecture.md` | Current AI and memory architecture source of truth | Records the `vLLM + LangGraph + Postgres + Obsidian` pivot and compares `Mem0` vs `LangMem` |
+| `docs/growing-pains.md` | Troubleshooting log and lessons learned | Records the real failures and why the fixes were needed |
+| `docs/tailscale-remote-access.md` | Remote access runbook | Explains the safe Tailscale path, why Talos-side install is deferred, and how subnet routing should work |
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
 | `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |
