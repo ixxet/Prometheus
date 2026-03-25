@@ -1,5 +1,22 @@
 # Plan Addendum: AI Workloads, GPU Strategy & NUC Expansion
 
+> Historical planning document.
+> Keep for context, but do not treat this as the source of truth for the live
+> v0.2.0 architecture.
+>
+> Current source of truth:
+> - `docs/agent-memory-architecture.md`
+> - `README.md`
+> - `homelab-gitops/README.md`
+>
+> Status note (2026-03-25): the repo has now pivoted toward `vLLM + LangGraph +
+> Postgres + Obsidian`, with `Mem0` as the likely semantic memory layer.
+> `Ollama`, `LiteLLM`, `Graphiti/Zep`, and `Letta` are all out of the first
+> activation wave.
+
+---
+
+
 > Attach this to the main plan (talos-homelab-plan-v2-FINAL.md).
 > This replaces Phase 8 (vLLM only) with a broader AI workload strategy.
 >

@@ -1,0 +1,6 @@
+flowchart LR
+  ui["Open WebUI\nhuman chat interface"] --> vllm["vLLM\nOpenAI-compatible inference API"]
+  langgraph["LangGraph\norchestration runtime"] --> vllm
+  langgraph --> pg["Postgres\nthreads, runs, checkpoints"]
+  langgraph -. later semantic layer .-> mem0["Mem0\npreferences and durable facts"]
+  langgraph -. curated export .-> obs["Obsidian Vault\nsummaries, ADRs, logs"]

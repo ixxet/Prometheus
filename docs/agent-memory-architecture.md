@@ -6,10 +6,10 @@ Last updated: 2026-03-25 (America/Toronto)
 
 The repo originally leaned toward a broader local AI stack with `Ollama`,
 `Open WebUI`, `vLLM`, and later `ComfyUI`. That was useful for exploration,
-but it is not the cleanest first platform for agent orchestration on a single
-RTX 3090.
+but it was too wide for the first serious platform iteration on a single RTX
+3090.
 
-The current direction is narrower and more coherent:
+The current direction is narrower and easier to operate:
 
 - one orchestrator
 - one serving backend
@@ -31,7 +31,7 @@ The following are explicitly not part of the first activation wave:
 
 - `Ollama`
 - `LiteLLM`
-- `Graphiti` / `Zep`
+- `Graphiti / Zep`
 - `Letta`
 
 ## Where the project paused before this pivot
@@ -63,16 +63,36 @@ What remains true right now:
 - the cluster can proceed with small-footprint services before dedicated app
   storage is solved
 
-## Revised target architecture
+## AI stack
+
+Standalone Mermaid source:
+[`docs/diagrams/ai-stack.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/ai-stack.mmd)
 
 ```mermaid
 flowchart LR
-  user["User / LAN Clients"] --> webui["Open WebUI"]
-  webui --> vllm["vLLM"]
-  agents["LangGraph Agents"] --> vllm
-  agents --> pg["Postgres<br/>checkpoints + store"]
-  agents --> mem["Mem0<br/>semantic memory"]
-  agents --> obs["Obsidian Vault<br/>summaries / ADRs / logs"]
+  ui["Open WebUI\nhuman chat interface"] --> vllm["vLLM\nOpenAI-compatible inference API"]
+  langgraph["LangGraph\norchestration runtime"] --> vllm
+  langgraph --> pg["Postgres\nthreads, runs, checkpoints"]
+  langgraph -. later semantic layer .-> mem0["Mem0\npreferences and durable facts"]
+  langgraph -. curated export .-> obs["Obsidian Vault\nsummaries, ADRs, logs"]
+```
+
+## Request and data flow
+
+Standalone Mermaid source:
+[`docs/diagrams/request-data-flow.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/request-data-flow.mmd)
+
+```mermaid
+flowchart LR
+  user["User request"] --> ui["Open WebUI or future agent client"]
+  ui --> langgraph["LangGraph run"]
+  langgraph --> checkpoint["Execution memory\nPostgres checkpoints"]
+  langgraph --> vllm["vLLM inference call"]
+  langgraph -. optional later .-> semantic["Semantic memory\nMem0 or LangMem"]
+  langgraph -. summary export .-> archive["Obsidian markdown archive"]
+  vllm --> reply["Model output"]
+  checkpoint --> reply
+  reply --> user
 ```
 
 ## The three memory layers
@@ -123,7 +143,55 @@ This belongs to:
 - `Obsidian`
 
 Obsidian is for humans first. It should hold readable artifacts the agent can
-also reference later, but it should not be the primary machine memory store.
+reference later, but it should not be the primary machine memory store.
+
+## High-level memory ERD
+
+Standalone Mermaid source:
+[`docs/diagrams/high-level-memory-erd.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/high-level-memory-erd.mmd)
+
+This is intentionally high-level. It shows the bounded concepts without locking
+in a production schema too early.
+
+```mermaid
+erDiagram
+  THREAD ||--o{ RUN : contains
+  RUN ||--o{ CHECKPOINT : emits
+  THREAD ||--o{ SEMANTIC_MEMORY : informs
+  THREAD ||--o{ SUMMARY_RECORD : produces
+  RUN }o--o{ SEMANTIC_MEMORY : extracts_or_updates
+  SUMMARY_RECORD }o--|| THREAD : summarizes
+
+  THREAD {
+    string thread_id
+    string owner
+    string status
+  }
+  RUN {
+    string run_id
+    string thread_id
+    string orchestrator
+    datetime started_at
+  }
+  CHECKPOINT {
+    string checkpoint_id
+    string run_id
+    string state_hash
+    datetime persisted_at
+  }
+  SEMANTIC_MEMORY {
+    string memory_id
+    string subject
+    string memory_type
+    datetime updated_at
+  }
+  SUMMARY_RECORD {
+    string summary_id
+    string thread_id
+    string sink
+    datetime exported_at
+  }
+```
 
 ## Mem0 vs LangMem
 
@@ -139,12 +207,11 @@ Strengths:
 
 - purpose-built for extracting and updating durable memories
 - good fit for preferences, project rules, and stable user facts
-- cleaner if you want semantic memory to stay somewhat decoupled from the
-  LangGraph runtime itself
+- cleaner if semantic memory should stay somewhat decoupled from the LangGraph runtime
 
 Tradeoffs:
 
-- another service / integration surface
+- another service and integration surface
 - less native to the LangGraph ecosystem than LangMem
 
 Use Mem0 if:
@@ -157,14 +224,13 @@ Use Mem0 if:
 Strengths:
 
 - native fit with LangGraph / LangChain conventions
-- coherent if you want the whole stack to stay in one ecosystem
+- coherent if the whole stack stays in one ecosystem
 - lower conceptual impedance if LangGraph remains the long-term orchestrator
 
 Tradeoffs:
 
 - more coupled to the LangGraph/LangChain stack
-- less attractive if you want semantic memory to remain reusable outside that
-  ecosystem
+- less attractive if semantic memory should remain reusable outside that ecosystem
 
 Use LangMem if:
 
@@ -182,14 +248,14 @@ Do not run both first. Pick one semantic memory system.
 
 ## What temporal relationship memory means
 
-Temporal relationship memory is not just “remembering facts.” It is remembering
+Temporal relationship memory is not just "remembering facts." It is remembering
 how relationships change over time.
 
 Example:
 
-- January: “The NUC is an external Debian box.”
-- March: “The NUC is still external, but planned as a future app host.”
-- Later: “The NUC joined the cluster as a worker.”
+- January: "The NUC is an external Debian box."
+- March: "The NUC is still external, but planned as a future app host."
+- Later: "The NUC joined the cluster as a worker."
 
 A temporal graph memory system can answer questions like:
 
@@ -233,7 +299,7 @@ Reason:
 
 Add later if:
 
-- historical topology / policy queries become a real need
+- historical topology or policy queries become a real need
 - semantic memory alone stops being enough
 
 ### Letta
@@ -247,13 +313,12 @@ Reason:
 
 ## Revised rollout order
 
-1. Solve the immediate storage decision for safe early app state.
+1. Apply the temporary SSD-backed Talos directory volume for `local-path-provisioner`.
 2. Activate `AdGuard Home`.
-3. Keep `Open WebUI`, but point the architecture toward an OpenAI-compatible
-   backend rather than Ollama-first assumptions.
-4. Author and deploy `vLLM`.
-5. Author and deploy `Postgres`.
-6. Author and deploy `LangGraph`.
+3. Deploy `vLLM` as the first backend.
+4. Keep `Open WebUI`, but point it directly at `vLLM`.
+5. Deploy `Postgres`.
+6. Deploy `LangGraph`.
 7. Add Obsidian summary/export workflow.
 8. Add `Mem0` as the semantic memory layer.
 9. Revisit `LiteLLM`, `Graphiti`, or `Letta` only if the single-backend,

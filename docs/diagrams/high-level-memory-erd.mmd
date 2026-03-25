@@ -1,0 +1,37 @@
+erDiagram
+  THREAD ||--o{ RUN : contains
+  RUN ||--o{ CHECKPOINT : emits
+  THREAD ||--o{ SEMANTIC_MEMORY : informs
+  THREAD ||--o{ SUMMARY_RECORD : produces
+  RUN }o--o{ SEMANTIC_MEMORY : extracts_or_updates
+  SUMMARY_RECORD }o--|| THREAD : summarizes
+
+  THREAD {
+    string thread_id
+    string owner
+    string status
+  }
+  RUN {
+    string run_id
+    string thread_id
+    string orchestrator
+    datetime started_at
+  }
+  CHECKPOINT {
+    string checkpoint_id
+    string run_id
+    string state_hash
+    datetime persisted_at
+  }
+  SEMANTIC_MEMORY {
+    string memory_id
+    string subject
+    string memory_type
+    datetime updated_at
+  }
+  SUMMARY_RECORD {
+    string summary_id
+    string thread_id
+    string sink
+    datetime exported_at
+  }

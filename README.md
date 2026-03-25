@@ -12,48 +12,56 @@
 
 ## Origin
 
-This started as **MIMIR** -- a Debian box running k3s with the Arr media stack (Sonarr, Radarr, Prowlarr, qBittorrent, Jellyfin). It worked, but it was fragile. Mutable OS, manual SSH sessions, no GPU integration, config drift everywhere.
+This started as **MIMIR** -- a Debian box running k3s with the Arr media stack
+(Sonarr, Radarr, Prowlarr, qBittorrent, Jellyfin). It worked, but it was
+fragile. Mutable OS, manual SSH sessions, no GPU integration, config drift
+all over the place.
 
-I needed something better:
+The rebuild target is stricter:
 
-- An immutable OS with no SSH and no drift
-- GPU-native AI workloads -- local LLMs, image generation, model serving
-- Real infrastructure patterns -- GitOps, declarative networking, secrets management
-- Full ownership over compute and data
+- immutable OS, no SSH, no shell drift
+- GPU-native local inference and agent workloads
+- real GitOps and declarative networking patterns
+- owned hardware, owned data, owned interfaces
 
-So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes operating system. No shell, no package manager, just an API and a signed image.
+Talos became the operating model because it removes the normal server-admin
+escape hatches. If the platform is going to be reproducible, it has to be
+expressed as API-driven state.
 
 ---
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        PROMETHEUS CLUSTER                        │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │                5950X TOWER (Primary Node)                  │  │
-│  │                                                            │  │
-│  │  CPU:  AMD Ryzen 9 5950X (16C/32T)                         │  │
-│  │  GPU:  NVIDIA GeForce RTX 3090 (24GB VRAM)                 │  │
-│  │  Role: Control Plane + GPU Worker                          │  │
-│  │                                                            │  │
-│  │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │  │
-│  │  │    Cilium    │    │    NVIDIA    │    │     Flux     │  │  │
-│  │  │   CNI + L2   │    │  GPU Plugin  │    │    Staged    │  │  │
-│  │  └──────────────┘    └──────────────┘    └──────────────┘  │  │
-│  └────────────────────────────────────────────────────────────┘  │
-│                                                                  │
-│  Network:      192.168.2.0/24                                    │
-│  API VIP:      192.168.2.46                                      │
-│  Service Pool: 192.168.2.200-220 (L2 announced)                  │
-│                                                                  │
-│  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┐  │
-│  │ FUTURE: NUC expansion path                                 │  │
-│  │ App-tier first, then HA control-plane work when justified  │  │
-│  │ Tower stays primary until the platform proves itself       │  │
-│  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┘  │
-└──────────────────────────────────────────────────────────────────┘
+The live system and the future shape are both captured here. The standalone
+Mermaid source for this diagram lives at
+[`docs/diagrams/system-architecture.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/system-architecture.mmd).
+
+```mermaid
+flowchart LR
+  user["LAN Clients\nMacBook, phone, TV, browsers"]
+  repo["Prometheus GitOps Repo\nprivate GitHub source of truth"]
+  subgraph tower["5950X Tower\nTalos control plane + GPU worker"]
+    k8s["Kubernetes + Talos API\nVIP 192.168.2.46"]
+    cilium["Cilium\nL2 announcements + LB IPAM"]
+    gpu["RTX 3090\nvLLM first-wave backend"]
+    flux["Flux\nauthored in repo, not live yet"]
+  end
+  subgraph nuc["NUC\nnear-term Debian app tier"]
+    nucapps["CPU-side services later\nImmich, low-level apps, helpers"]
+  end
+  subgraph future["Future storage tiers"]
+    fast["Second SSD\nfast AI/model cache tier"]
+    bulk["HDD or Unraid NAS\nbulk and cold storage"]
+  end
+
+  user --> cilium
+  repo -. planned reconcile .-> flux
+  flux -. staged .-> k8s
+  cilium --> k8s
+  gpu --> k8s
+  nucapps -. later app split .-> k8s
+  fast -. later local storage .-> k8s
+  bulk -. later shared storage .-> k8s
 ```
 
 ---
@@ -68,25 +76,28 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 | **GPU Runtime** | NVIDIA Device Plugin | v0.17.0 -- RTX 3090, 24 GB VRAM | Live |
 | **GitOps** | Flux | Authored entrypoints and staged `Kustomization` graph | Authored, not live |
 | **Secrets** | SOPS + age | Encrypted secrets in git | Planned |
-| **Observability** | Prometheus + Grafana | Metrics, dashboards, alerting | Planned |
 | **DNS** | AdGuard Home | Local DNS + ad blocking | Authored, suspended |
-| **AI -- Serving Backend** | vLLM | OpenAI-compatible high-throughput model serving | Next |
-| **AI -- Web UI** | Open WebUI | Web frontend for local models | Authored, suspended |
-| **AI -- Agent Runtime** | LangGraph | Stateful orchestration, retries, HITL resume, checkpoints | Planned next |
-| **AI -- State Store** | Postgres | Checkpoints plus long-term application store | Planned next |
-| **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Optional next layer |
-| **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, and project logs | Planned |
-| **AI -- Local LLM Runtime** | Ollama | Easy local model management | Authored, parked |
-| **AI -- Image Gen** | ComfyUI | Node-based Stable Diffusion workflows | Planned |
-| **Media** | Arr Stack + Jellyfin | Sonarr, Radarr, Prowlarr, qBittorrent | Migration |
+| **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend | Next |
+| **AI -- Web UI** | Open WebUI | Human-facing chat UI pointed directly at vLLM | Authored, suspended |
+| **AI -- Orchestrator** | LangGraph | Tool loops, retries, HITL resume, thread execution | Scaffolded, suspended |
+| **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Scaffolded, suspended |
+| **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Planned next layer |
+| **AI -- Semantic Memory Alt** | LangMem | LangGraph-native alternative to Mem0 | Documented only |
+| **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, project logs | Planned |
+| **AI -- Parked Runtime** | Ollama | Kept in-repo as reference, not first-wave | Parked |
+| **AI -- Deferred Gateway** | LiteLLM | Useful later if multiple backends appear | Deferred |
+| **AI -- Deferred Memory** | Graphiti / Zep | Temporal graph memory for point-in-time queries | Deferred |
+| **AI -- Deferred Agent Platform** | Letta | Alternative agent platform, not chosen here | Deferred |
+| **Observability** | Prometheus + Grafana | Metrics, dashboards, alerting | Planned |
+| **Media** | Arr Stack + Jellyfin | Sonarr, Radarr, Prowlarr, qBittorrent | Migration later |
 | **Photos** | Immich | Self-hosted photo management with ML | Planned |
 
 ---
 
 ## Current State
 
-The base cluster is live. The next GitOps layer is authored in the repo, render-
-validated, and intentionally not active yet.
+The base cluster is live. The next GitOps layer is authored in the repo,
+render-validated, and intentionally not active yet.
 
 ### Already real in the live cluster
 
@@ -103,23 +114,23 @@ validated, and intentionally not active yet.
 ### Real in the repo, but not yet live
 
 - [x] Flux entrypoints under `homelab-gitops/clusters/talos-tower/`
-- [x] GitOps definitions for Cilium, network policy, and NVIDIA support
-- [x] Kubernetes-side local-path provisioner manifests
-- [x] Talos-side `UserVolumeConfig` documents for non-system disks
+- [x] GitOps definitions for Cilium, network, NVIDIA, Postgres, storage, and DNS
+- [x] Kubernetes-side local-path provisioner manifests retargeted to `/var/mnt/local-path-provisioner`
+- [x] Talos-side `UserVolumeConfig` docs updated for the SSD-backed temporary storage path
 - [x] AdGuard Home manifests with a fixed `LoadBalancer` IP plan
-- [x] Open WebUI manifests with staged Flux `Kustomization` objects
-- [x] Ollama manifests, now intentionally parked after the vLLM-first pivot
+- [x] vLLM manifests with a small first-wave cache footprint on the system SSD
+- [x] Open WebUI manifests retargeted from Ollama to the vLLM OpenAI-compatible endpoint
+- [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
+- [x] Ollama manifests kept as parked reference material, not the active path
+- [x] Mermaid diagram sources under `docs/diagrams/`
 - [x] All of the above render cleanly with `kubectl kustomize`
 - [ ] Flux is not bootstrapped against `homelab-gitops` yet
 
 ### Not yet authored or activated
 
 - [ ] `.sops.yaml` and the `age` key material
-- [ ] vLLM manifests
-- [ ] LangGraph manifests
-- [ ] Postgres manifests
+- [ ] Mem0 manifests or secret wiring
 - [ ] Obsidian summary/export workflow
-- [ ] Semantic memory integration (`Mem0` likely, `LangMem` alternative)
 - [ ] ComfyUI manifests
 - [ ] Media stack manifests
 - [ ] Immich manifests
@@ -130,14 +141,15 @@ validated, and intentionally not active yet.
 - [ ] Router DHCP reservation to move the node from `.49` back to `.45`
 - [ ] MIMIR integration, migration, or endpoint cutover
 - [ ] LiteLLM until there is more than one serving backend or a real cloud-fallback need
-- [ ] Graphiti/Zep temporal graph memory until point-in-time relationship queries are a real requirement
+- [ ] Graphiti/Zep until point-in-time relationship queries are actually needed
 - [ ] Letta because LangGraph is the chosen orchestrator
 
 ### Paused for safety
 
-- [ ] No Talos `UserVolumeConfig` has been applied yet
-- [ ] Live disk review showed the current non-system SSD and NVMe targets are in use elsewhere
-- [ ] The 256 GB Talos SSD has about `8.11 GB` used on `/var`, so the system can host early app/runtime state while storage remains unresolved
+- [ ] No non-system Talos storage volumes have been applied
+- [ ] All currently installed non-system tower disks remain off-limits
+- [ ] The Talos SSD has about `8.11 GB` used on `/var`, so early app/runtime state can live there temporarily
+- [ ] First-wave persistent state is intentionally sized small until a second SSD or NAS tier exists
 
 ---
 
@@ -145,19 +157,21 @@ validated, and intentionally not active yet.
 
 ### Phase 1 -- Foundation *(current)*
 
-Bare-metal Kubernetes on Talos OS with Cilium networking and verified GPU acceleration. Bootstrap infrastructure is documented and reproducible, and the first GitOps layer is now authored in-repo.
+Bare-metal Kubernetes on Talos OS with Cilium networking and verified GPU
+acceleration. Bootstrap infrastructure is documented and reproducible, and the
+first GitOps layer is now authored in-repo.
 
-### Phase 2 -- AI Agent Platform
+### Phase 2 -- First Agent Platform
 
 Deploy the smallest coherent local agent stack on the RTX 3090:
 
 - **AdGuard Home** first, so LAN DNS exists before app sprawl starts
-- **Open WebUI** as the human UI, pointed at an OpenAI-compatible backend
 - **vLLM** as the first and only model-serving backend
-- **LangGraph** as the orchestrator for tool loops, retries, and human-in-the-loop resume
-- **Postgres** as the production store for LangGraph checkpoints and long-term application state
-- **Obsidian** as a human-readable summary sink, not the primary machine memory system
-- **Mem0** as the likely semantic memory layer for durable facts and preferences
+- **Open WebUI** as the human UI, pointed straight at the vLLM OpenAI-compatible API
+- **Postgres** as the durable execution store for application state and checkpoints
+- **LangGraph** as the orchestrator for tool loops, retries, and HITL resume
+- **Obsidian** as a summary sink, not the primary machine memory store
+- **Mem0** as the likely semantic memory layer once the core path is stable
 
 Explicit non-goals for this phase:
 
@@ -166,24 +180,23 @@ Explicit non-goals for this phase:
 - No Graphiti/Zep temporal graph memory yet
 - No Letta; LangGraph is the orchestrator
 
-### Phase 3 -- High Availability + Training
+### Phase 3 -- Multi-Node Pressure Test
 
 - Keep the NUC on Debian in the near term and use it as a low-level app/CPU host if needed
-- HA control-plane work remains the long-term direction after the single-node platform proves stable under load
-- Later move the NUC into the cluster only when that buys real operational clarity
-- Decide later whether the tower should remain primary or move to GPU-only duties
+- Use that split to prove what really belongs off the GPU tower before cluster expansion
+- Treat HA control-plane work as a later, deliberate step after the single-node platform proves stable under load
+- Decide later whether the tower remains primary or shifts toward GPU-only duties
 - Wake-on-LAN remains a later optimization, not part of the base rollout
-- Model fine-tuning and distributed training experiments
 
 ### Phase 4 -- Full Platform
 
-- Flux GitOps with SOPS-encrypted secrets -- cluster state fully in git
+- Flux GitOps with SOPS-encrypted secrets
 - Prometheus + Grafana observability stack
 - AdGuard Home fully cut over as the LAN DNS authority
 - Arr media stack migration from MIMIR, if that still makes sense after the Talos platform settles
 - Immich photo management with GPU-accelerated ML
 - Second SSD for fast AI/model-cache storage
-- HDD or Unraid as bulk/cold storage
+- HDD or Unraid as bulk and cold storage
 - CI/CD pipelines for image builds and deployment automation
 
 ---
@@ -192,9 +205,10 @@ Explicit non-goals for this phase:
 
 | Path | Purpose | Notes |
 |------|---------|-------|
-| `plan-addendum-ai-workloads-gpu-nuc.md` | AI workload strategy and NUC expansion plan | Helm specs, GPU sharing strategy, migration procedures |
-| `docs/agent-memory-architecture.md` | Revised AI and memory architecture | Records the `vLLM + LangGraph + Postgres + Obsidian` pivot and compares `Mem0` vs `LangMem` |
-| `tower-bootstrap/` | Bootstrap artifacts for the Talos cluster | Rendered manifests, Cilium and NVIDIA setup |
+| `plan-addendum-ai-workloads-gpu-nuc.md` | Historical AI workload strategy and NUC expansion notes | Superseded by the v0.2.0 pivot docs |
+| `docs/agent-memory-architecture.md` | Current AI and memory architecture source of truth | Records the `vLLM + LangGraph + Postgres + Obsidian` pivot and compares `Mem0` vs `LangMem` |
+| `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
+| `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
 | `homelab-gitops/` | Authored GitOps tree for the next cluster state | Render-valid, but Flux is not bootstrapped and some layers are suspended |
 | `homelab-gitops/README.md` | GitOps stage inventory | Documents what is authored, what is suspended, and what remains missing |
@@ -203,21 +217,25 @@ Explicit non-goals for this phase:
 
 ## What this covers
 
-This isn't a tutorial or a template -- it's a working cluster, and building it meant solving real problems:
+This is not a template pretending to be a system. It is a working cluster, and
+building it meant solving real platform problems:
 
-- Bootstrapping Kubernetes on bare metal without a managed service handling the hard parts
-- Running Talos OS, where there's no SSH and no shell -- everything goes through the API or not at all
-- Replacing kube-proxy entirely with Cilium and getting L2 announcements working so services show up on the LAN
-- Getting NVIDIA drivers loaded inside an immutable OS using Talos extensions, then wiring up the device plugin and RuntimeClass
-- Choosing where agent state, semantic memory, and human-readable archives should actually live
-- Designing a migration path from bootstrap artifacts to GitOps-managed state without tearing everything down
+- bootstrapping Kubernetes on bare metal without a managed control plane
+- running Talos OS where everything goes through the API or not at all
+- replacing kube-proxy entirely with Cilium and making `LoadBalancer` IPs show up on the LAN
+- loading NVIDIA support into an immutable OS, then wiring the device plugin and `RuntimeClass`
+- deciding where execution state, semantic memory, and human-readable archives should actually live
+- designing a migration path from bootstrap artifacts to GitOps-managed state without tearing the platform down
 
 ---
 
 ## Why "Prometheus"
 
-In Greek mythology, Prometheus stole fire from the gods and gave it to humanity -- knowledge and power that was never meant to leave Olympus.
+In Greek mythology, Prometheus stole fire from the gods and gave it to
+humanity -- knowledge and power that was never meant to leave Olympus.
 
-Same idea here. Instead of renting compute from cloud providers and feeding data to corporate APIs, this runs the models locally, on owned hardware, with full control.
+Same idea here. Instead of renting compute from cloud providers and feeding data
+to corporate APIs, this runs the models locally, on owned hardware, with full
+control.
 
-<!-- repository metadata refresh: 2026-03-24 -->
+<!-- repository metadata refresh: 2026-03-25 -->
