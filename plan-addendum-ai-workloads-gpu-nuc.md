@@ -9,6 +9,12 @@
 > currently on DHCP `192.168.2.49` with `.45` still the intended reservation, and
 > MIMIR integration or endpoint cutover is intentionally deferred until the base
 > Talos platform, storage, DNS, and GitOps layers are finished.
+>
+> Status note (2026-03-25): this addendum is now a historical planning document,
+> not the current source of truth for the agent stack. The current preferred
+> direction is recorded in `docs/agent-memory-architecture.md` and pivots toward
+> `vLLM + LangGraph + Postgres + Obsidian`, with `Mem0` as the likely semantic
+> memory layer and `Ollama` no longer in the first activation wave.
 
 ---
 

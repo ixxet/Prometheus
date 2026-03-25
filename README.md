@@ -50,7 +50,7 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 │                                                                  │
 │  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┐  │
 │  │ FUTURE: NUC expansion path                                 │  │
-│  │ Worker-first growth, HA control plane only if justified    │  │
+│  │ App-tier first, then HA control-plane work when justified  │  │
 │  │ Tower stays primary until the platform proves itself       │  │
 │  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┘  │
 └──────────────────────────────────────────────────────────────────┘
@@ -70,9 +70,13 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 | **Secrets** | SOPS + age | Encrypted secrets in git | Planned |
 | **Observability** | Prometheus + Grafana | Metrics, dashboards, alerting | Planned |
 | **DNS** | AdGuard Home | Local DNS + ad blocking | Authored, suspended |
-| **AI -- LLM Serving** | Ollama | OpenAI-compatible local LLM API | Authored, suspended |
+| **AI -- Serving Backend** | vLLM | OpenAI-compatible high-throughput model serving | Next |
 | **AI -- Web UI** | Open WebUI | Web frontend for local models | Authored, suspended |
-| **AI -- High-Throughput** | vLLM | Continuous batching, production model serving | Planned |
+| **AI -- Agent Runtime** | LangGraph | Stateful orchestration, retries, HITL resume, checkpoints | Planned next |
+| **AI -- State Store** | Postgres | Checkpoints plus long-term application store | Planned next |
+| **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Optional next layer |
+| **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, and project logs | Planned |
+| **AI -- Local LLM Runtime** | Ollama | Easy local model management | Authored, parked |
 | **AI -- Image Gen** | ComfyUI | Node-based Stable Diffusion workflows | Planned |
 | **Media** | Arr Stack + Jellyfin | Sonarr, Radarr, Prowlarr, qBittorrent | Migration |
 | **Photos** | Immich | Self-hosted photo management with ML | Planned |
@@ -103,7 +107,8 @@ validated, and intentionally not active yet.
 - [x] Kubernetes-side local-path provisioner manifests
 - [x] Talos-side `UserVolumeConfig` documents for non-system disks
 - [x] AdGuard Home manifests with a fixed `LoadBalancer` IP plan
-- [x] Ollama and Open WebUI manifests with staged Flux `Kustomization` objects
+- [x] Open WebUI manifests with staged Flux `Kustomization` objects
+- [x] Ollama manifests, now intentionally parked after the vLLM-first pivot
 - [x] All of the above render cleanly with `kubectl kustomize`
 - [ ] Flux is not bootstrapped against `homelab-gitops` yet
 
@@ -111,6 +116,10 @@ validated, and intentionally not active yet.
 
 - [ ] `.sops.yaml` and the `age` key material
 - [ ] vLLM manifests
+- [ ] LangGraph manifests
+- [ ] Postgres manifests
+- [ ] Obsidian summary/export workflow
+- [ ] Semantic memory integration (`Mem0` likely, `LangMem` alternative)
 - [ ] ComfyUI manifests
 - [ ] Media stack manifests
 - [ ] Immich manifests
@@ -120,6 +129,15 @@ validated, and intentionally not active yet.
 
 - [ ] Router DHCP reservation to move the node from `.49` back to `.45`
 - [ ] MIMIR integration, migration, or endpoint cutover
+- [ ] LiteLLM until there is more than one serving backend or a real cloud-fallback need
+- [ ] Graphiti/Zep temporal graph memory until point-in-time relationship queries are a real requirement
+- [ ] Letta because LangGraph is the chosen orchestrator
+
+### Paused for safety
+
+- [ ] No Talos `UserVolumeConfig` has been applied yet
+- [ ] Live disk review showed the current non-system SSD and NVMe targets are in use elsewhere
+- [ ] The 256 GB Talos SSD has about `8.11 GB` used on `/var`, so the system can host early app/runtime state while storage remains unresolved
 
 ---
 
@@ -129,20 +147,30 @@ validated, and intentionally not active yet.
 
 Bare-metal Kubernetes on Talos OS with Cilium networking and verified GPU acceleration. Bootstrap infrastructure is documented and reproducible, and the first GitOps layer is now authored in-repo.
 
-### Phase 2 -- AI Inference Platform
+### Phase 2 -- AI Agent Platform
 
-Deploy the AI workload stack on the RTX 3090:
+Deploy the smallest coherent local agent stack on the RTX 3090:
 
-- **Ollama** as the daily-driver LLM (13B-22B parameter models)
-- **Open WebUI** as the local web frontend
-- **vLLM** for high-throughput API serving (scaled to zero when idle)
-- **ComfyUI** for image generation workflows (scaled to zero when idle)
-- GPU mode-switching via `kubectl scale` -- one GPU consumer at a time (no MIG on 3090)
+- **AdGuard Home** first, so LAN DNS exists before app sprawl starts
+- **Open WebUI** as the human UI, pointed at an OpenAI-compatible backend
+- **vLLM** as the first and only model-serving backend
+- **LangGraph** as the orchestrator for tool loops, retries, and human-in-the-loop resume
+- **Postgres** as the production store for LangGraph checkpoints and long-term application state
+- **Obsidian** as a human-readable summary sink, not the primary machine memory system
+- **Mem0** as the likely semantic memory layer for durable facts and preferences
+
+Explicit non-goals for this phase:
+
+- No Ollama in the first activation wave
+- No LiteLLM until there are multiple backends or cloud fallback
+- No Graphiti/Zep temporal graph memory yet
+- No Letta; LangGraph is the orchestrator
 
 ### Phase 3 -- High Availability + Training
 
-- Add the old NUC as a worker or storage-adjacent node first
-- Revisit HA control-plane migration only after the single-node platform proves stable under load
+- Keep the NUC on Debian in the near term and use it as a low-level app/CPU host if needed
+- HA control-plane work remains the long-term direction after the single-node platform proves stable under load
+- Later move the NUC into the cluster only when that buys real operational clarity
 - Decide later whether the tower should remain primary or move to GPU-only duties
 - Wake-on-LAN remains a later optimization, not part of the base rollout
 - Model fine-tuning and distributed training experiments
@@ -151,9 +179,11 @@ Deploy the AI workload stack on the RTX 3090:
 
 - Flux GitOps with SOPS-encrypted secrets -- cluster state fully in git
 - Prometheus + Grafana observability stack
-- AdGuard Home for DNS and ad blocking
+- AdGuard Home fully cut over as the LAN DNS authority
 - Arr media stack migration from MIMIR, if that still makes sense after the Talos platform settles
 - Immich photo management with GPU-accelerated ML
+- Second SSD for fast AI/model-cache storage
+- HDD or Unraid as bulk/cold storage
 - CI/CD pipelines for image builds and deployment automation
 
 ---
@@ -163,6 +193,7 @@ Deploy the AI workload stack on the RTX 3090:
 | Path | Purpose | Notes |
 |------|---------|-------|
 | `plan-addendum-ai-workloads-gpu-nuc.md` | AI workload strategy and NUC expansion plan | Helm specs, GPU sharing strategy, migration procedures |
+| `docs/agent-memory-architecture.md` | Revised AI and memory architecture | Records the `vLLM + LangGraph + Postgres + Obsidian` pivot and compares `Mem0` vs `LangMem` |
 | `tower-bootstrap/` | Bootstrap artifacts for the Talos cluster | Rendered manifests, Cilium and NVIDIA setup |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
 | `homelab-gitops/` | Authored GitOps tree for the next cluster state | Render-valid, but Flux is not bootstrapped and some layers are suspended |
@@ -178,7 +209,7 @@ This isn't a tutorial or a template -- it's a working cluster, and building it m
 - Running Talos OS, where there's no SSH and no shell -- everything goes through the API or not at all
 - Replacing kube-proxy entirely with Cilium and getting L2 announcements working so services show up on the LAN
 - Getting NVIDIA drivers loaded inside an immutable OS using Talos extensions, then wiring up the device plugin and RuntimeClass
-- Planning GPU time-sharing on a single RTX 3090 that doesn't support MIG
+- Choosing where agent state, semantic memory, and human-readable archives should actually live
 - Designing a migration path from bootstrap artifacts to GitOps-managed state without tearing everything down
 
 ---
