@@ -1,17 +1,20 @@
-# Suspended until storage, Postgres, and the first stateful AI workloads are
-# intentionally brought under Flux control.
+# Enabled once storage and Postgres are healthy. LangGraph remains scaffold-only
+# at replicas zero while vLLM and Open WebUI make up the first live AI wave.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: apps
   namespace: flux-system
 spec:
-  suspend: true
   interval: 10m
   retryInterval: 1m
   timeout: 10m
   prune: true
   wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: infra-network
     - name: infra-nvidia

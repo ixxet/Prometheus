@@ -70,20 +70,23 @@ spec:
     kind: GitRepository
     name: flux-system
 ---
-# Suspended because Postgres is stateful and depends on the small PVC path being
-# validated first.
+# Enabled once the local-path PVC flow is validated and Flux can decrypt the
+# Postgres credentials with SOPS.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: infra-postgres
   namespace: flux-system
 spec:
-  suspend: true
   interval: 10m
   retryInterval: 1m
   timeout: 5m
   prune: true
   wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: infra-storage
   path: ./homelab-gitops/infrastructure/postgres
@@ -91,14 +94,14 @@ spec:
     kind: GitRepository
     name: flux-system
 ---
-# Suspended until storage is live and the router DNS cutover window is chosen.
+# Enabled once storage is live. Router DNS cutover remains a separate manual
+# step after AdGuard is healthy.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: infra-dns
   namespace: flux-system
 spec:
-  suspend: true
   interval: 10m
   retryInterval: 1m
   timeout: 5m
