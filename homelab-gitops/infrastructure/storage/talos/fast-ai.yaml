@@ -1,0 +1,12 @@
+# DANGEROUS: Talos machine config, not a Kubernetes manifest.
+# Apply only after the 2 TB NVMe target has been confirmed safe to repartition.
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: fast-ai
+provisioning:
+  diskSelector:
+    match: disk.transport == 'nvme' && disk.serial == 'S6S2NS0TC17843N'
+  minSize: 500GiB
+  maxSize: 1500GiB
+filesystem:
+  type: xfs

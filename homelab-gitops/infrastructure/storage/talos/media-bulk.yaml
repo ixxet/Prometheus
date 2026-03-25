@@ -1,0 +1,12 @@
+# DANGEROUS: Talos machine config, not a Kubernetes manifest.
+# Apply only after the 1 TB HDD target has been confirmed safe to repartition.
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: media-bulk
+provisioning:
+  diskSelector:
+    match: disk.transport == 'sata' && disk.rotational && disk.wwid == 'naa.5000c5006630f225'
+  minSize: 700GiB
+  maxSize: 900GiB
+filesystem:
+  type: xfs

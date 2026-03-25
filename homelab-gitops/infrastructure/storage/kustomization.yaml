@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - local-path-storage-upstream.yaml
+patches:
+  - path: local-path-configmap-patch.yaml
+    target:
+      kind: ConfigMap
+      name: local-path-config
+      namespace: local-path-storage
+  - path: local-path-storageclass-patch.yaml
+    target:
+      kind: StorageClass
+      name: local-path

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui
+  namespace: ai
+  annotations:
+    lbipam.cilium.io/ips: 192.168.2.201
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: open-webui
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

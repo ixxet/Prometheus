@@ -2,6 +2,13 @@
 
 > Attach this to the main plan (talos-homelab-plan-v2-FINAL.md).
 > This replaces Phase 8 (vLLM only) with a broader AI workload strategy.
+>
+> Status note (2026-03-24): this document includes earlier planning values and a
+> future NUC expansion path. The live cluster state has since diverged in a few
+> important places: the active Kubernetes API VIP is `192.168.2.46`, the tower is
+> currently on DHCP `192.168.2.49` with `.45` still the intended reservation, and
+> MIMIR integration or endpoint cutover is intentionally deferred until the base
+> Talos platform, storage, DNS, and GitOps layers are finished.
 
 ---
 

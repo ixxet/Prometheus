@@ -17,6 +17,7 @@ to the current hardware.
 - API VIP `192.168.2.46` is active.
 - The node currently holds DHCP address `192.168.2.49`.
 - Cilium, `LoadBalancer` IPAM, L2 announcements, and NVIDIA GPU scheduling are all live.
+- The next GitOps layer is authored under `../homelab-gitops`, but Flux is not managing it yet.
 - Disposable bootstrap test workloads were removed after validation.
 
 ## File inventory
@@ -63,8 +64,8 @@ credentials, but they should still be reviewed before reuse.
 
 - Convert the current DHCP state into the intended `.45` reservation.
 - Add Talos `UserVolumeConfig` resources for the non-system disks.
-- Write and commit the GitOps manifests that replace these one-off bootstrap artifacts.
-- Deploy AdGuard Home and the rest of the infrastructure layer.
+- Bootstrap Flux against `homelab-gitops` only after storage and secrets are ready.
+- Deploy AdGuard Home and the rest of the staged infrastructure layer.
 
 ## Validation notes
 

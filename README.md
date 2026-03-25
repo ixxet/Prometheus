@@ -4,7 +4,7 @@
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.35.2-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
 ![Cilium](https://img.shields.io/badge/Cilium-1.18.0-E8C229?style=for-the-badge&logo=cilium&logoColor=black)
 ![NVIDIA](https://img.shields.io/badge/RTX_3090-24GB_VRAM-76B900?style=for-the-badge&logo=nvidia&logoColor=white)
-![Flux](https://img.shields.io/badge/Flux-planned-lightgrey?style=for-the-badge&logo=flux&logoColor=white)
+![Flux](https://img.shields.io/badge/Flux-authored_in_repo-lightgrey?style=for-the-badge&logo=flux&logoColor=white)
 
 > Bare-metal Kubernetes on owned hardware. Self-hosted AI inference, media automation, and full infrastructure sovereignty.
 
@@ -39,8 +39,8 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 │  │  Role: Control Plane + GPU Worker                          │  │
 │  │                                                            │  │
 │  │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │  │
-│  │  │    Cilium    │    │    NVIDIA    │    │  Local Path  │  │  │
-│  │  │   CNI + L2   │    │  GPU Plugin  │    │ Provisioner  │  │  │
+│  │  │    Cilium    │    │    NVIDIA    │    │     Flux     │  │  │
+│  │  │   CNI + L2   │    │  GPU Plugin  │    │    Staged    │  │  │
 │  │  └──────────────┘    └──────────────┘    └──────────────┘  │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
@@ -49,9 +49,9 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 │  Service Pool: 192.168.2.200-220 (L2 announced)                  │
 │                                                                  │
 │  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┐  │
-│  │ FUTURE: 3x NUC Workers                                     │  │
-│  │ Control plane migrates to NUCs -- tower becomes GPU-only   │  │
-│  │ HA etcd across 3 nodes, Wake-on-LAN for tower              │  │
+│  │ FUTURE: NUC expansion path                                 │  │
+│  │ Worker-first growth, HA control plane only if justified    │  │
+│  │ Tower stays primary until the platform proves itself       │  │
 │  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┘  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -66,12 +66,12 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 | **Orchestration** | Kubernetes | v1.35.2 | Live |
 | **CNI / Networking** | Cilium | 1.18.0 -- kube-proxy replacement, L2 LoadBalancer, IPAM | Live |
 | **GPU Runtime** | NVIDIA Device Plugin | v0.17.0 -- RTX 3090, 24 GB VRAM | Live |
-| **GitOps** | Flux | Declarative cluster reconciliation | Scaffolded |
+| **GitOps** | Flux | Authored entrypoints and staged `Kustomization` graph | Authored, not live |
 | **Secrets** | SOPS + age | Encrypted secrets in git | Planned |
 | **Observability** | Prometheus + Grafana | Metrics, dashboards, alerting | Planned |
-| **DNS** | AdGuard Home | Local DNS + ad blocking | Planned |
-| **AI -- LLM Serving** | Ollama | OpenAI-compatible local LLM API | Next |
-| **AI -- Web UI** | Open WebUI | Web frontend for local models | Next |
+| **DNS** | AdGuard Home | Local DNS + ad blocking | Authored, suspended |
+| **AI -- LLM Serving** | Ollama | OpenAI-compatible local LLM API | Authored, suspended |
+| **AI -- Web UI** | Open WebUI | Web frontend for local models | Authored, suspended |
 | **AI -- High-Throughput** | vLLM | Continuous batching, production model serving | Planned |
 | **AI -- Image Gen** | ComfyUI | Node-based Stable Diffusion workflows | Planned |
 | **Media** | Arr Stack + Jellyfin | Sonarr, Radarr, Prowlarr, qBittorrent | Migration |
@@ -81,21 +81,45 @@ So I rebuilt from scratch on **Talos OS** -- a minimal, immutable Kubernetes ope
 
 ## Current State
 
-The cluster is live. Single-node control plane, bootstrapped and healthy.
+The base cluster is live. The next GitOps layer is authored in the repo, render-
+validated, and intentionally not active yet.
 
-- [x] Talos OS installed on dedicated SSD
-- [x] Kubernetes API reachable via VIP (`192.168.2.46:6443`)
-- [x] Cilium CNI operational with L2 announcements and LoadBalancer IPAM
-- [x] LoadBalancer service tested and responding on allocated IP
-- [x] NVIDIA kernel modules loaded (`nvidia`, `nvidia_uvm`, `nvidia_drm`, `nvidia_modeset`)
-- [x] GPU test pod ran `nvidia-smi` -- RTX 3090 confirmed and allocatable
-- [x] NVIDIA RuntimeClass and device plugin running
-- [ ] Router DHCP reservation to pin tower IP
-- [ ] Talos UserVolumeConfig storage manifests
-- [ ] Flux bootstrap and SOPS/age setup
-- [ ] AdGuard Home deployment
-- [ ] AI workload deployment (Ollama, Open WebUI, vLLM, ComfyUI)
-- [ ] Media stack migration from MIMIR
+### Already real in the live cluster
+
+- [x] Talos OS installed on the dedicated `LITEONIT LCS-256L9S-11` SSD only
+- [x] Single-node Kubernetes control plane is healthy
+- [x] Tower is currently booted on DHCP `192.168.2.49`
+- [x] Kubernetes API is reachable via VIP `192.168.2.46:6443`
+- [x] Cilium is live with kube-proxy replacement, L2 announcements, and `LoadBalancer` IPAM
+- [x] A disposable `LoadBalancer` service was tested successfully on the LAN
+- [x] NVIDIA kernel modules are loaded on Talos
+- [x] `RuntimeClass` `nvidia` and the pinned device plugin are running
+- [x] A disposable GPU test pod ran `nvidia-smi` and confirmed an RTX 3090 is allocatable
+
+### Real in the repo, but not yet live
+
+- [x] Flux entrypoints under `homelab-gitops/clusters/talos-tower/`
+- [x] GitOps definitions for Cilium, network policy, and NVIDIA support
+- [x] Kubernetes-side local-path provisioner manifests
+- [x] Talos-side `UserVolumeConfig` documents for non-system disks
+- [x] AdGuard Home manifests with a fixed `LoadBalancer` IP plan
+- [x] Ollama and Open WebUI manifests with staged Flux `Kustomization` objects
+- [x] All of the above render cleanly with `kubectl kustomize`
+- [ ] Flux is not bootstrapped against `homelab-gitops` yet
+
+### Not yet authored or activated
+
+- [ ] `.sops.yaml` and the `age` key material
+- [ ] vLLM manifests
+- [ ] ComfyUI manifests
+- [ ] Media stack manifests
+- [ ] Immich manifests
+- [ ] Runbooks for disaster recovery, add-worker, DNS cutover, and GPU mode switching
+
+### Deferred on purpose
+
+- [ ] Router DHCP reservation to move the node from `.49` back to `.45`
+- [ ] MIMIR integration, migration, or endpoint cutover
 
 ---
 
@@ -103,7 +127,7 @@ The cluster is live. Single-node control plane, bootstrapped and healthy.
 
 ### Phase 1 -- Foundation *(current)*
 
-Bare-metal Kubernetes on Talos OS with Cilium networking and verified GPU acceleration. Bootstrap infrastructure is documented and reproducible.
+Bare-metal Kubernetes on Talos OS with Cilium networking and verified GPU acceleration. Bootstrap infrastructure is documented and reproducible, and the first GitOps layer is now authored in-repo.
 
 ### Phase 2 -- AI Inference Platform
 
@@ -117,9 +141,10 @@ Deploy the AI workload stack on the RTX 3090:
 
 ### Phase 3 -- High Availability + Training
 
-- Introduce 3x NUCs as control-plane nodes to form HA etcd (3-node quorum)
-- Tower becomes a dedicated GPU worker with no control plane duties
-- Wake-on-LAN for tower power management
+- Add the old NUC as a worker or storage-adjacent node first
+- Revisit HA control-plane migration only after the single-node platform proves stable under load
+- Decide later whether the tower should remain primary or move to GPU-only duties
+- Wake-on-LAN remains a later optimization, not part of the base rollout
 - Model fine-tuning and distributed training experiments
 
 ### Phase 4 -- Full Platform
@@ -127,7 +152,7 @@ Deploy the AI workload stack on the RTX 3090:
 - Flux GitOps with SOPS-encrypted secrets -- cluster state fully in git
 - Prometheus + Grafana observability stack
 - AdGuard Home for DNS and ad blocking
-- Arr media stack migration from MIMIR
+- Arr media stack migration from MIMIR, if that still makes sense after the Talos platform settles
 - Immich photo management with GPU-accelerated ML
 - CI/CD pipelines for image builds and deployment automation
 
@@ -140,8 +165,8 @@ Deploy the AI workload stack on the RTX 3090:
 | `plan-addendum-ai-workloads-gpu-nuc.md` | AI workload strategy and NUC expansion plan | Helm specs, GPU sharing strategy, migration procedures |
 | `tower-bootstrap/` | Bootstrap artifacts for the Talos cluster | Rendered manifests, Cilium and NVIDIA setup |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
-| `homelab-gitops/` | Future Flux GitOps repository scaffold | Directory structure ready, manifests not yet authored |
-| `homelab-gitops/README.md` | GitOps scaffold plan | Intended directory layout for Flux reconciliation |
+| `homelab-gitops/` | Authored GitOps tree for the next cluster state | Render-valid, but Flux is not bootstrapped and some layers are suspended |
+| `homelab-gitops/README.md` | GitOps stage inventory | Documents what is authored, what is suspended, and what remains missing |
 
 ---
 
@@ -154,7 +179,7 @@ This isn't a tutorial or a template -- it's a working cluster, and building it m
 - Replacing kube-proxy entirely with Cilium and getting L2 announcements working so services show up on the LAN
 - Getting NVIDIA drivers loaded inside an immutable OS using Talos extensions, then wiring up the device plugin and RuntimeClass
 - Planning GPU time-sharing on a single RTX 3090 that doesn't support MIG
-- Designing a migration path from single-node to HA without tearing everything down
+- Designing a migration path from bootstrap artifacts to GitOps-managed state without tearing everything down
 
 ---
 
