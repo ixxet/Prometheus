@@ -61,16 +61,42 @@ It **does** add:
 
 On the Debian NUC:
 
-1. Install Tailscale using the official Linux install path.
-2. Enable IP forwarding.
-3. Bring Tailscale up and advertise the LAN route:
+Current observed state on `MIMIR`:
+
+- Tailscale is already installed and connected
+- no subnet routes are currently advertised
+- changing advertised routes requires `sudo`
+
+To finish the subnet-router setup:
+
+1. Enable IP forwarding.
+2. Persist the forwarding settings.
+3. Advertise the LAN route.
+4. Set an operator so future route changes do not require full root access.
 
 ```bash
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+echo 'net.ipv4.ip_forward=1' | sudo tee /etc/sysctl.d/99-tailscale.conf
+echo 'net.ipv6.conf.all.forwarding=1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
 sudo tailscale up --advertise-routes=192.168.2.0/24
+sudo tailscale set --operator=boi
 ```
 
-4. In the Tailscale admin console, approve the advertised route.
-5. From the remote Mac, confirm the route is available.
+This does two useful things:
+
+- enables the subnet router immediately
+- lets later `tailscale set ...` changes be made by `boi` without another root-only
+  Tailscale preference write
+
+If the Tailscale admin console asks for approval:
+
+5. Approve the advertised route.
+6. From the remote Mac, confirm the route is available.
+
+The daemon also warned that UDP GRO forwarding on `eno1` is not optimal. That is
+not a blocker for admin access. It is a performance tuning item, not a setup
+stopper.
 
 On macOS, subnet routes are accepted by default, so the Mac should pick up the
 advertised route automatically once it is approved.
