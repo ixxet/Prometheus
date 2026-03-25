@@ -3,6 +3,10 @@ kind: Kustomization
 resources:
   - local-path-storage-upstream.yaml
 patches:
+  - path: local-path-namespace-patch.yaml
+    target:
+      kind: Namespace
+      name: local-path-storage
   - path: local-path-configmap-patch.yaml
     target:
       kind: ConfigMap
