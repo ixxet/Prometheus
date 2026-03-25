@@ -77,7 +77,7 @@ flowchart LR
 | **GitOps** | Flux | Bootstrapped and reconciling this repo | Live |
 | **Secrets** | SOPS + age | Encrypted secrets in git, cluster decryption wired | Live |
 | **DNS** | AdGuard Home | Local DNS + ad blocking | Live, router cutover deferred |
-| **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend | Live pod, model still loading |
+| **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend | Live pod, model downloaded, startup tuning still in progress |
 | **AI -- Web UI** | Open WebUI | Human-facing chat UI pointed directly at vLLM | Live |
 | **AI -- Orchestrator** | LangGraph | Tool loops, retries, HITL resume, thread execution | Scaffolded, inactive |
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
@@ -98,7 +98,8 @@ flowchart LR
 
 The base cluster is live, Flux is live, and the first stateful services are now
 running on the Talos system SSD. The current bottleneck is no longer image
-pulls; it is `vLLM` downloading and loading model weights over a slow WAN link.
+pulls or model download; it is `vLLM` starting with a context window that is too
+large for the current 3090 KV-cache budget.
 
 ## Live Status Block
 
@@ -112,7 +113,7 @@ pulls; it is `vLLM` downloading and loading model weights over a slow WAN link.
 | Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
 | AdGuard Home | Stable | Running on `192.168.2.200`, but router DNS cutover is not done |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201` |
-| vLLM | Provisional | Pod is live, but model weights are still downloading/loading |
+| vLLM | Provisional | Model cache is populated; pod is restarting on a KV-cache/context-length mismatch fix |
 | LangGraph | Scaffold only | Manifests exist, runtime is not active |
 | Mem0 / Obsidian | Planned | Not deployed yet |
 
@@ -132,10 +133,11 @@ pulls; it is `vLLM` downloading and loading model weights over a slow WAN link.
 - [x] AdGuard Home is running in-cluster
 - [x] Open WebUI is running and reachable on `192.168.2.201`
 - [x] `vLLM` image is present and the pod is live
+- [x] `vLLM` model cache on the PVC is populated
 
 ### Live but still provisional
 
-- [ ] `vLLM` is not serving yet because model weights are still downloading/loading
+- [ ] `vLLM` is not serving yet because its default `32768` token context window exceeds the current KV-cache limit on the RTX 3090
 - [ ] `apps` `Kustomization` remains unhealthy until `vLLM` passes readiness
 - [ ] Router DNS is not yet cut over to AdGuard Home
 - [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
@@ -149,6 +151,7 @@ pulls; it is `vLLM` downloading and loading model weights over a slow WAN link.
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
 - [x] Ollama manifests kept as parked reference material, not the active path
 - [x] Mermaid diagram sources under `docs/diagrams/`
+- [x] Tailscale subnet-router runbook is documented and validated through MIMIR
 
 ### Not yet authored or activated
 
@@ -157,7 +160,7 @@ pulls; it is `vLLM` downloading and loading model weights over a slow WAN link.
 - [ ] ComfyUI manifests
 - [ ] Media stack manifests
 - [ ] Immich manifests
-- [ ] Tailscale manifests or subnet-router strategy
+- [ ] Tailscale manifests, if the subnet-router path is ever replaced with an in-cluster approach
 - [ ] Runbooks for disaster recovery, add-worker, and DNS cutover
 
 ### Deferred on purpose
@@ -187,6 +190,8 @@ Current notable examples:
 - single-GPU rollout strategy caused a replacement deadlock
 - `vLLM` model startup exposed the difference between container image pulls and
   model weight downloads
+- `vLLM` also exposed a second startup boundary: model weights can be present
+  while KV-cache sizing is still wrong for the selected context window
 - Flux and live-state drift surfaced where repo truth and runtime truth can
   briefly diverge during recovery
 

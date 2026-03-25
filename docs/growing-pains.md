@@ -99,7 +99,34 @@ Lesson:
 - image-pull success does not mean AI stack success
 - model distribution strategy matters as much as container delivery
 
-### 5. Flux health and live-state recovery can drift briefly
+### 5. `vLLM` fit on the 3090, but the default context window did not
+
+What happened:
+
+- the Mistral 7B weights finished downloading into the cache PVC
+- `vLLM` then loaded the model successfully on the RTX 3090
+- startup still crashed because the default model max sequence length was
+  `32768`, while the available KV cache on the current `gpu_memory_utilization`
+  setting could only hold about `25248` tokens
+
+Effect:
+
+- the pod restart loop looked like a download problem at first glance
+- the real failure was engine initialization after the model was already on disk
+
+Fix:
+
+- capped `vLLM` with `--max-model-len 24576`
+- kept the more conservative GPU memory setting instead of pushing the card
+  harder immediately
+
+Lesson:
+
+- model download completion and model startup are separate checkpoints
+- VRAM budgeting has to account for both weights and KV cache, not just one or
+  the other
+
+### 6. Flux health and live-state recovery can drift briefly
 
 What happened:
 
@@ -122,7 +149,7 @@ Lesson:
 - GitOps is the source of truth, but operational recovery still requires reading
   the live object state carefully
 
-### 6. Talos storage discipline forced the right decision
+### 7. Talos storage discipline forced the right decision
 
 What happened:
 
@@ -144,9 +171,11 @@ Lesson:
 
 ## Current open pain points
 
-- `vLLM` is still blocked on model-weight download/load completion
+- `vLLM` still needs one more clean restart after the KV-cache sizing fix before
+  it can be considered stable
 - router DNS is not yet cut over to AdGuard
-- remote access is not yet solved through Tailscale subnet routing
+- remote access works now through MIMIR advertising `192.168.2.0/24` into
+  Tailscale, but it is still a dependency outside the cluster itself
 - the node is still on DHCP `.49`, not the planned reserved `.45`
 
 ## Why keep this visible

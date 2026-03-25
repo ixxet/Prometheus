@@ -15,7 +15,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | Kubernetes API | cluster | VIP | `192.168.2.46:6443` | reachable |
 | AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200` | running, router cutover deferred |
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
-| vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | should answer `/v1/models` once model load finishes |
+| vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | should answer `/v1/models` once startup sizing is correct |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
 
 ## Control station commands
@@ -41,7 +41,8 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | Pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai get pods -o wide` | `open-webui` running; `vllm` eventually `1/1` |
 | Open WebUI logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/open-webui --tail=100` | no crash loop |
-| vLLM logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --tail=200` | model load progresses without fatal error |
+| vLLM logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --tail=200` | model load completes and no fatal KV-cache error appears |
+| vLLM previous crash | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --previous --tail=200` | old crash reason is understood before changing manifests |
 | vLLM service via port-forward | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai port-forward svc/vllm 18000:8000` then `curl http://127.0.0.1:18000/v1/models` | JSON response once ready |
 
 ## DNS checks
@@ -69,14 +70,19 @@ Recommended remote pattern:
 - make that node a subnet router for `192.168.2.0/24`
 - then use the same `talosctl`, `kubectl`, and `curl` commands remotely
 
-Until a home subnet router exists, Git pushes still work remotely, but live
-validation of Talos, Kubernetes, and `LoadBalancer` services stays LAN-bound.
+Current validated path:
+
+- MIMIR advertises `192.168.2.0/24` into Tailscale
+- the control Mac can reach Talos, Kubernetes, and the service IPs remotely
+- this keeps Talos itself untouched while remote ops stay available
 
 ## Interpreting the current AI hangup
 
 If `open-webui` is healthy and `vllm` is not, check the `vllm` logs first.
 Current known failure mode:
 
-- model weights downloading too slowly from Hugging Face over an `~8 Mbps` link
-- pod remains `0/1` because readiness waits for `/v1/models`
-- this is a data-plane delay, not a container image pull problem
+- model weights are already cached on the PVC
+- the pod is restarting because the default `32768` token context window is
+  larger than the current KV-cache budget on the RTX 3090
+- the practical fix is to lower `--max-model-len` or increase GPU memory
+  reservation, not to keep waiting on image pulls

@@ -6,7 +6,8 @@ Last updated: 2026-03-25 (America/Toronto)
 
 This directory is no longer a skeleton. It now drives the live cluster via Flux.
 The first stateful services are running, but the app wave is not fully healthy yet
-because `vLLM` is still loading model weights over a slow WAN link.
+because `vLLM` is still restarting on a model context/KV-cache mismatch after
+the model weights finished downloading.
 
 Authored and render-valid now:
 
@@ -97,7 +98,8 @@ As of 2026-03-25:
 - `Postgres` is running
 - `AdGuard Home` is running
 - `Open WebUI` is serving successfully on `192.168.2.201`
-- `vLLM` is deployed but still downloading/loading model weights
+- `vLLM` is deployed, the cache PVC is populated, and the remaining blocker is
+  startup sizing on the RTX 3090
 - the `apps` `Kustomization` stays unhealthy until `vLLM` becomes ready
 
 ## Storage stance for the first wave
@@ -145,8 +147,8 @@ Future direction remains unchanged:
 
 ## Next activation steps
 
-1. Wait for `vLLM` to finish model download and pass `/v1/models` readiness.
+1. Let the `vLLM` context-window fix roll out and pass `/v1/models` readiness.
 2. Configure AdGuard rewrites and choose the router DNS cutover window.
-3. Decide the Tailscale remote-access path, likely via a subnet router on an always-on home node.
+3. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
 4. Bring up LangGraph only after `vLLM` and Postgres are fully stable.
 5. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.
