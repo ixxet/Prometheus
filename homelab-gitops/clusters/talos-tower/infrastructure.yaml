@@ -9,7 +9,7 @@ spec:
   timeout: 5m
   prune: true
   wait: true
-  path: ./infrastructure/cilium
+  path: ./homelab-gitops/infrastructure/cilium
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -27,7 +27,7 @@ spec:
   wait: true
   dependsOn:
     - name: infra-cilium
-  path: ./infrastructure/network
+  path: ./homelab-gitops/infrastructure/network
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -45,7 +45,7 @@ spec:
   wait: true
   dependsOn:
     - name: infra-cilium
-  path: ./infrastructure/nvidia
+  path: ./homelab-gitops/infrastructure/nvidia
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -66,7 +66,7 @@ spec:
   wait: true
   dependsOn:
     - name: infra-cilium
-  path: ./infrastructure/storage
+  path: ./homelab-gitops/infrastructure/storage
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -87,7 +87,7 @@ spec:
   wait: true
   dependsOn:
     - name: infra-storage
-  path: ./infrastructure/postgres
+  path: ./homelab-gitops/infrastructure/postgres
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -108,7 +108,7 @@ spec:
   dependsOn:
     - name: infra-network
     - name: infra-storage
-  path: ./infrastructure/dns
+  path: ./homelab-gitops/infrastructure/dns
   sourceRef:
     kind: GitRepository
     name: flux-system

@@ -17,7 +17,7 @@ spec:
     - name: infra-nvidia
     - name: infra-storage
     - name: infra-postgres
-  path: ./apps
+  path: ./homelab-gitops/apps
   sourceRef:
     kind: GitRepository
     name: flux-system
