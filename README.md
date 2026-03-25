@@ -188,3 +188,5 @@ This isn't a tutorial or a template -- it's a working cluster, and building it m
 In Greek mythology, Prometheus stole fire from the gods and gave it to humanity -- knowledge and power that was never meant to leave Olympus.
 
 Same idea here. Instead of renting compute from cloud providers and feeding data to corporate APIs, this runs the models locally, on owned hardware, with full control.
+
+<!-- repository metadata refresh: 2026-03-24 -->
