@@ -35,6 +35,8 @@ spec:
             - bfloat16
             - --gpu-memory-utilization
             - "0.85"
+            - --max-model-len
+            - "24576"
             - --download-dir
             - /var/cache/huggingface
           env:
