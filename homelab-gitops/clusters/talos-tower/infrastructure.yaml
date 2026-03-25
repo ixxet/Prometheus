@@ -50,8 +50,8 @@ spec:
     kind: GitRepository
     name: flux-system
 ---
-# Suspended by default because the authored UserVolumeConfig selectors target
-# non-system data disks and must be explicitly confirmed before first apply.
+# Suspended by default because storage is still a deliberate safety gate. The
+# first-wave path uses a Talos directory-backed user volume on the system SSD.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -67,6 +67,27 @@ spec:
   dependsOn:
     - name: infra-cilium
   path: ./infrastructure/storage
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+---
+# Suspended because Postgres is stateful and depends on the small PVC path being
+# validated first.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-postgres
+  namespace: flux-system
+spec:
+  suspend: true
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  prune: true
+  wait: true
+  dependsOn:
+    - name: infra-storage
+  path: ./infrastructure/postgres
   sourceRef:
     kind: GitRepository
     name: flux-system

@@ -5,4 +5,5 @@ resources:
   - network
   - nvidia
   - storage
+  - postgres
   - dns

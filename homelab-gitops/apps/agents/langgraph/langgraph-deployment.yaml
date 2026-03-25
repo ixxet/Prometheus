@@ -1,0 +1,34 @@
+# Scaffold only. Keep replicas at zero until a real LangGraph image, Redis
+# choice, and encrypted runtime secrets exist.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langgraph
+  namespace: agents
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: langgraph
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: langgraph
+    spec:
+      containers:
+        - name: langgraph
+          image: ghcr.io/ixxet/prometheus-langgraph:0.0.0-placeholder
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: langgraph-config
+            - secretRef:
+                name: langgraph-runtime
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 2Gi

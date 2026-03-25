@@ -1,12 +1,7 @@
-# DANGEROUS: Talos machine config, not a Kubernetes manifest.
-# Apply only after the 500 GB SATA SSD has been confirmed safe to repartition.
+# Talos machine config, not a Kubernetes manifest.
+# This is the first-wave temporary storage path: a directory-backed user volume
+# on the system SSD EPHEMERAL partition. It avoids repartitioning any other disk.
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: local-path-provisioner
-provisioning:
-  diskSelector:
-    match: disk.transport == 'sata' && disk.wwid == 'naa.5001b448b1e0d6af'
-  minSize: 300GiB
-  maxSize: 450GiB
-filesystem:
-  type: xfs
+volumeType: directory

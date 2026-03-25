@@ -1,5 +1,5 @@
 # DANGEROUS: Talos machine config, not a Kubernetes manifest.
-# Apply only after the 2 TB NVMe target has been confirmed safe to repartition.
+# Parked until a dedicated second SSD or NVMe exists for a fast AI tier.
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: fast-ai

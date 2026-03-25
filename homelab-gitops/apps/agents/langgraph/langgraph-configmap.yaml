@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: langgraph-config
+  namespace: agents
+data:
+  PORT: "8000"
+  OPENAI_API_BASE_URL: http://vllm.ai.svc.cluster.local:8000/v1
+  SEMANTIC_MEMORY_PROVIDER: mem0-planned
+  SUMMARY_EXPORT_SINK: obsidian-planned

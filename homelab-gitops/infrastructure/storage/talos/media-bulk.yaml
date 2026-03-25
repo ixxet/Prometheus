@@ -1,5 +1,5 @@
 # DANGEROUS: Talos machine config, not a Kubernetes manifest.
-# Apply only after the 1 TB HDD target has been confirmed safe to repartition.
+# Parked until a disposable bulk disk or NAS-backed bulk tier exists.
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: media-bulk
