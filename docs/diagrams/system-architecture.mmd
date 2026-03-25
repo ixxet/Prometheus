@@ -5,7 +5,7 @@ flowchart LR
     k8s["Kubernetes + Talos API\nVIP 192.168.2.46"]
     cilium["Cilium\nL2 announcements + LB IPAM"]
     gpu["RTX 3090\nvLLM first-wave backend"]
-    flux["Flux\nauthored in repo, not live yet"]
+    flux["Flux\nlive in cluster"]
   end
   subgraph nuc["NUC\nnear-term Debian app tier"]
     nucapps["CPU-side services later\nImmich, low-level apps, helpers"]
@@ -16,8 +16,8 @@ flowchart LR
   end
 
   user --> cilium
-  repo -. planned reconcile .-> flux
-  flux -. staged .-> k8s
+  repo -. reconcile .-> flux
+  flux -. applies desired state .-> k8s
   cilium --> k8s
   gpu --> k8s
   nucapps -. later app split .-> k8s

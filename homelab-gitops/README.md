@@ -4,9 +4,9 @@ Last updated: 2026-03-25 (America/Toronto)
 
 ## Status
 
-This directory is no longer a skeleton. It now contains the first real GitOps
-shape for the Prometheus cluster, but the stateful layers remain intentionally
-staged behind `suspend: true` and the repo is still not bootstrapped into Flux.
+This directory is no longer a skeleton. It now drives the live cluster via Flux.
+The first stateful services are running, but the app wave is not fully healthy yet
+because `vLLM` is still loading model weights over a slow WAN link.
 
 Authored and render-valid now:
 
@@ -23,12 +23,16 @@ Authored and render-valid now:
 - `apps/agents/langgraph/`
 - `apps/ai/ollama/` as parked reference material, not the active path
 
-Staged but intentionally not active yet:
+Live now:
 
 - `infra-storage`
 - `infra-postgres`
 - `infra-dns`
 - `apps`
+
+Current hangup:
+
+- `apps` remains red until `vLLM` becomes truly ready and serves `/v1/models`
 
 ## What this repo is intended to become
 
@@ -42,8 +46,8 @@ Staged but intentionally not active yet:
 
 ## What it is not yet
 
-- It is not ready for immediate Flux bootstrap without review.
-- It does not contain `.sops.yaml`, encrypted secrets, or an `age` key yet.
+- Flux is already bootstrapped against this repo.
+- `.sops.yaml` exists and encrypted secrets are wired into the cluster.
 - It does not yet include Mem0, Obsidian export automation, ComfyUI, media,
   Immich, or Tailscale manifests.
 - Talos `UserVolumeConfig` documents exist, but they are intentionally outside
@@ -55,10 +59,10 @@ Staged but intentionally not active yet:
 
 The first coherent activation path is now:
 
-1. `AdGuard Home`
-2. `vLLM`
-3. `Open WebUI` pointed directly at the `vLLM` OpenAI-compatible API
-4. `Postgres`
+1. `Postgres`
+2. `AdGuard Home`
+3. `Open WebUI`
+4. `vLLM`
 5. `LangGraph`
 
 Explicitly out of this first wave:
@@ -77,14 +81,24 @@ Explicitly out of this first wave:
 | `infrastructure/network/` | Cilium `LoadBalancer` IP pool and L2 announcement policy for the LAN. | Must stay aligned with the real LAN range and NIC naming. | It does not install Cilium itself. |
 | `infrastructure/nvidia/` | Runtime class and pinned NVIDIA device plugin daemonset. | GPU assumptions are tower-specific unless more GPU nodes appear later. | It does not install drivers; Talos handles that at the OS layer. |
 | `infrastructure/storage/` | Kubernetes-side local-path provisioner plus Talos-side storage docs under `storage/talos/`. | Temporary SSD-only mode inherits the Talos `EPHEMERAL` partition limits. | Flux does not apply the Talos `UserVolumeConfig` files. |
-| `infrastructure/postgres/` | Internal Postgres service for checkpoint and application state. | Suspended until small PVC-backed storage is deliberately enabled. | It does not solve semantic memory or archive export by itself. |
-| `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Suspended until storage and the DNS cutover window are approved. | It does not update router-side DNS settings for you. |
+| `infrastructure/postgres/` | Internal Postgres service for checkpoint and application state. | Running on small SSD-backed PVC storage for now. | It does not solve semantic memory or archive export by itself. |
+| `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Running, but router cutover is still intentionally deferred. | It does not update router-side DNS settings for you. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
-| `apps/agents/langgraph/` | Scaffold for the LangGraph runtime layer and its runtime assumptions. | Suspended, requires a built image and runtime secrets before activation. | It does not yet include Redis or LangSmith/LangGraph licensing setup. |
+| `apps/agents/langgraph/` | Scaffold for the LangGraph runtime layer and its runtime assumptions. | Still inactive, requires a built image and runtime secrets before activation. | It does not yet include Redis or LangSmith/LangGraph licensing setup. |
 | `apps/media/` | Future Arr stack, Jellyfin, qBittorrent, and Seerr manifests. | Storage paths and service exposure must be designed before deployment. | No manifests exist yet. |
 | `apps/immich/` | Future Immich deployment. | Needs storage, DNS, and likely split CPU/GPU concerns later. | No manifests exist yet. |
+
+## Live runtime note
+
+As of 2026-03-25:
+
+- `Postgres` is running
+- `AdGuard Home` is running
+- `Open WebUI` is serving successfully on `192.168.2.201`
+- `vLLM` is deployed but still downloading/loading model weights
+- the `apps` `Kustomization` stays unhealthy until `vLLM` becomes ready
 
 ## Storage stance for the first wave
 
@@ -119,8 +133,8 @@ Future direction remains unchanged:
 
 | Planned file | What it should accomplish | Restrictions | What it should not do |
 | --- | --- | --- | --- |
-| `clusters/talos-tower/infrastructure.yaml` | Reconcile Cilium, network, NVIDIA, staged storage, staged Postgres, and staged DNS in the right order. | Storage, Postgres, and DNS stay intentionally suspended. | It must not imply that everything is safe to unsuspend together. |
-| `clusters/talos-tower/apps.yaml` | Reconcile application workloads only after infrastructure and storage are ready. | Suspended on purpose. | It must not bypass future SOPS secret handling. |
+| `clusters/talos-tower/infrastructure.yaml` | Reconcile Cilium, network, NVIDIA, storage, Postgres, and DNS in the right order. | Must remain aligned with the live dependency graph. | It must not imply that later app layers are already healthy. |
+| `clusters/talos-tower/apps.yaml` | Reconcile application workloads after infrastructure is ready. | App health still depends on `vLLM` readiness. | It must not bypass future SOPS secret handling. |
 | `.sops.yaml` | Define how YAML secrets are encrypted for the repo. | Needs the real `age` public key first. | It does not store the private key. |
 | `infrastructure/network/ip-pool.yaml` | Declare the `192.168.2.200-220` service pool. | LAN range must remain conflict-free. | It does not expose services by itself. |
 | `infrastructure/network/l2-policy.yaml` | Announce service IPs on the real LAN NIC. | Interface name must match the live node. | It does not allocate IPs by itself. |
@@ -129,13 +143,10 @@ Future direction remains unchanged:
 | `apps/agents/langgraph/*` | Define the future orchestrator shape, runtime configuration, and internal service. | Requires a built image plus runtime secrets before it can run. | It should not grow into a second serving backend. |
 | `docs/diagrams/*.mmd` | Preserve diagram sources next to the authored platform docs. | Keep them high-level until the live schema and runtime harden. | They should not lock production schema details prematurely. |
 
-## Before Flux bootstrap
+## Next activation steps
 
-1. Apply the Talos `UserVolumeConfig` directory volume intentionally.
-2. Unsuspend `infra-storage`, then validate PVC provisioning.
-3. Generate `age.key`, record the public key, and create `.sops.yaml`.
-4. Add encrypted secret handling before vLLM, LangGraph, or anything token-bearing is activated.
-5. Unsuspend `infra-postgres` only after the storage class is proven.
-6. Choose the DNS cutover window, then unsuspend `infra-dns`.
-7. Unsuspend `apps` only after the first-wave internal services are ready.
-8. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.
+1. Wait for `vLLM` to finish model download and pass `/v1/models` readiness.
+2. Configure AdGuard rewrites and choose the router DNS cutover window.
+3. Decide the Tailscale remote-access path, likely via a subnet router on an always-on home node.
+4. Bring up LangGraph only after `vLLM` and Postgres are fully stable.
+5. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.

@@ -4,7 +4,7 @@
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.35.2-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
 ![Cilium](https://img.shields.io/badge/Cilium-1.18.0-E8C229?style=for-the-badge&logo=cilium&logoColor=black)
 ![NVIDIA](https://img.shields.io/badge/RTX_3090-24GB_VRAM-76B900?style=for-the-badge&logo=nvidia&logoColor=white)
-![Flux](https://img.shields.io/badge/Flux-authored_in_repo-lightgrey?style=for-the-badge&logo=flux&logoColor=white)
+![Flux](https://img.shields.io/badge/Flux-live_in_cluster-green?style=for-the-badge&logo=flux&logoColor=white)
 
 > Bare-metal Kubernetes on owned hardware. Self-hosted AI inference, media automation, and full infrastructure sovereignty.
 
@@ -44,7 +44,7 @@ flowchart LR
     k8s["Kubernetes + Talos API\nVIP 192.168.2.46"]
     cilium["Cilium\nL2 announcements + LB IPAM"]
     gpu["RTX 3090\nvLLM first-wave backend"]
-    flux["Flux\nauthored in repo, not live yet"]
+    flux["Flux\nlive in cluster"]
   end
   subgraph nuc["NUC\nnear-term Debian app tier"]
     nucapps["CPU-side services later\nImmich, low-level apps, helpers"]
@@ -55,8 +55,8 @@ flowchart LR
   end
 
   user --> cilium
-  repo -. planned reconcile .-> flux
-  flux -. staged .-> k8s
+  repo -. reconcile .-> flux
+  flux -. applies desired state .-> k8s
   cilium --> k8s
   gpu --> k8s
   nucapps -. later app split .-> k8s
@@ -74,13 +74,13 @@ flowchart LR
 | **Orchestration** | Kubernetes | v1.35.2 | Live |
 | **CNI / Networking** | Cilium | 1.18.0 -- kube-proxy replacement, L2 LoadBalancer, IPAM | Live |
 | **GPU Runtime** | NVIDIA Device Plugin | v0.17.0 -- RTX 3090, 24 GB VRAM | Live |
-| **GitOps** | Flux | Authored entrypoints and staged `Kustomization` graph | Authored, not live |
-| **Secrets** | SOPS + age | Encrypted secrets in git | Planned |
-| **DNS** | AdGuard Home | Local DNS + ad blocking | Authored, suspended |
-| **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend | Next |
-| **AI -- Web UI** | Open WebUI | Human-facing chat UI pointed directly at vLLM | Authored, suspended |
-| **AI -- Orchestrator** | LangGraph | Tool loops, retries, HITL resume, thread execution | Scaffolded, suspended |
-| **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Scaffolded, suspended |
+| **GitOps** | Flux | Bootstrapped and reconciling this repo | Live |
+| **Secrets** | SOPS + age | Encrypted secrets in git, cluster decryption wired | Live |
+| **DNS** | AdGuard Home | Local DNS + ad blocking | Live, router cutover deferred |
+| **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend | Live pod, model still loading |
+| **AI -- Web UI** | Open WebUI | Human-facing chat UI pointed directly at vLLM | Live |
+| **AI -- Orchestrator** | LangGraph | Tool loops, retries, HITL resume, thread execution | Scaffolded, inactive |
+| **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
 | **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Planned next layer |
 | **AI -- Semantic Memory Alt** | LangMem | LangGraph-native alternative to Mem0 | Documented only |
 | **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, project logs | Planned |
@@ -96,8 +96,25 @@ flowchart LR
 
 ## Current State
 
-The base cluster is live. The next GitOps layer is authored in the repo,
-render-validated, and intentionally not active yet.
+The base cluster is live, Flux is live, and the first stateful services are now
+running on the Talos system SSD. The current bottleneck is no longer image
+pulls; it is `vLLM` downloading and loading model weights over a slow WAN link.
+
+## Live Status Block
+
+| Area | Status | Notes |
+| ---- | ------ | ----- |
+| Talos + Kubernetes | Stable | Single-node control plane healthy on the dedicated 256 GB SSD |
+| Cilium + LB IPs | Stable | L2 announcements and `LoadBalancer` IPs are working on the LAN |
+| NVIDIA runtime | Stable | RTX 3090 allocatable and validated with a GPU test pod |
+| Flux + SOPS | Stable | Repo is bootstrapped and decrypting secrets in-cluster |
+| Storage | Stable | `local-path-provisioner` uses `/var/mnt/local-path-provisioner` on the OS SSD |
+| Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
+| AdGuard Home | Stable | Running on `192.168.2.200`, but router DNS cutover is not done |
+| Open WebUI | Stable | Serving successfully on `http://192.168.2.201` |
+| vLLM | Provisional | Pod is live, but model weights are still downloading/loading |
+| LangGraph | Scaffold only | Manifests exist, runtime is not active |
+| Mem0 / Obsidian | Planned | Not deployed yet |
 
 ### Already real in the live cluster
 
@@ -106,52 +123,56 @@ render-validated, and intentionally not active yet.
 - [x] Tower is currently booted on DHCP `192.168.2.49`
 - [x] Kubernetes API is reachable via VIP `192.168.2.46:6443`
 - [x] Cilium is live with kube-proxy replacement, L2 announcements, and `LoadBalancer` IPAM
-- [x] A disposable `LoadBalancer` service was tested successfully on the LAN
 - [x] NVIDIA kernel modules are loaded on Talos
 - [x] `RuntimeClass` `nvidia` and the pinned device plugin are running
-- [x] A disposable GPU test pod ran `nvidia-smi` and confirmed an RTX 3090 is allocatable
+- [x] Flux is bootstrapped against this repo and reconciling the cluster
+- [x] SOPS + age decryption is wired in-cluster via `flux-system/sops-age`
+- [x] SSD-backed `local-path-provisioner` is live on `/var/mnt/local-path-provisioner`
+- [x] Postgres is running in-cluster
+- [x] AdGuard Home is running in-cluster
+- [x] Open WebUI is running and reachable on `192.168.2.201`
+- [x] `vLLM` image is present and the pod is live
 
-### Real in the repo, but not yet live
+### Live but still provisional
+
+- [ ] `vLLM` is not serving yet because model weights are still downloading/loading
+- [ ] `apps` `Kustomization` remains unhealthy until `vLLM` passes readiness
+- [ ] Router DNS is not yet cut over to AdGuard Home
+- [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
+
+### Real in the repo and aligned with the cluster
 
 - [x] Flux entrypoints under `homelab-gitops/clusters/talos-tower/`
 - [x] GitOps definitions for Cilium, network, NVIDIA, Postgres, storage, and DNS
-- [x] Kubernetes-side local-path provisioner manifests retargeted to `/var/mnt/local-path-provisioner`
-- [x] Talos-side `UserVolumeConfig` docs updated for the SSD-backed temporary storage path
-- [x] AdGuard Home manifests with a fixed `LoadBalancer` IP plan
-- [x] vLLM manifests with a small first-wave cache footprint on the system SSD
-- [x] Open WebUI manifests retargeted from Ollama to the vLLM OpenAI-compatible endpoint
+- [x] vLLM manifests corrected for single-GPU rollout and slow-link model downloads
+- [x] Open WebUI manifests pointed directly at vLLM
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
 - [x] Ollama manifests kept as parked reference material, not the active path
 - [x] Mermaid diagram sources under `docs/diagrams/`
-- [x] All of the above render cleanly with `kubectl kustomize`
-- [ ] Flux is not bootstrapped against `homelab-gitops` yet
 
 ### Not yet authored or activated
 
-- [ ] `.sops.yaml` and the `age` key material
 - [ ] Mem0 manifests or secret wiring
 - [ ] Obsidian summary/export workflow
 - [ ] ComfyUI manifests
 - [ ] Media stack manifests
 - [ ] Immich manifests
-- [ ] Runbooks for disaster recovery, add-worker, DNS cutover, and GPU mode switching
+- [ ] Tailscale manifests or subnet-router strategy
+- [ ] Runbooks for disaster recovery, add-worker, and DNS cutover
 
 ### Deferred on purpose
 
-- [ ] Router DHCP reservation to move the node from `.49` back to `.45`
 - [ ] MIMIR integration, migration, or endpoint cutover
 - [ ] LiteLLM until there is more than one serving backend or a real cloud-fallback need
 - [ ] Graphiti/Zep until point-in-time relationship queries are actually needed
 - [ ] Letta because LangGraph is the chosen orchestrator
+- [ ] Non-system Talos storage volumes until a dedicated SSD or NAS tier exists
 
 ### Paused for safety
 
-- [ ] No non-system Talos storage volumes have been applied
 - [ ] All currently installed non-system tower disks remain off-limits
-- [ ] The Talos SSD has about `8.11 GB` used on `/var`, so early app/runtime state can live there temporarily
-- [ ] First-wave persistent state is intentionally sized small until a second SSD or NAS tier exists
-
----
+- [ ] First-wave persistent state is intentionally kept on the Talos SSD only
+- [ ] `vLLM` model storage stays small until a second SSD or NAS tier exists
 
 ## Roadmap
 
@@ -208,10 +229,11 @@ Explicit non-goals for this phase:
 | `plan-addendum-ai-workloads-gpu-nuc.md` | Historical AI workload strategy and NUC expansion notes | Superseded by the v0.2.0 pivot docs |
 | `docs/agent-memory-architecture.md` | Current AI and memory architecture source of truth | Records the `vLLM + LangGraph + Postgres + Obsidian` pivot and compares `Mem0` vs `LangMem` |
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
+| `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
-| `homelab-gitops/` | Authored GitOps tree for the next cluster state | Render-valid, but Flux is not bootstrapped and some layers are suspended |
-| `homelab-gitops/README.md` | GitOps stage inventory | Documents what is authored, what is suspended, and what remains missing |
+| `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux now reconciles this repo; app health still depends on `vLLM` becoming ready |
+| `homelab-gitops/README.md` | GitOps stage inventory | Documents what is live, what is provisional, and what remains missing |
 
 ---
 

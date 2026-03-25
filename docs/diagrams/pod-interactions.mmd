@@ -1,0 +1,17 @@
+flowchart LR
+  browser["Browser or LAN client"] --> owui_svc["Service: open-webui
+192.168.2.201"]
+  owui_svc --> owui_pod["Pod: open-webui"]
+  owui_pod --> vllm_svc["Service: vllm
+192.168.2.205:8000"]
+  vllm_svc --> vllm_pod["Pod: vllm"]
+  vllm_pod --> gpu["RTX 3090"]
+  vllm_pod --> hf["Hugging Face
+model weight download"]
+  lg_pod["Pod: langgraph
+later"] --> pg_svc["Service: postgres"]
+  lg_pod --> vllm_svc
+  lg_pod -. semantic memory later .-> mem0["Mem0
+later"]
+  lg_pod -. archive export later .-> obs["Obsidian
+later"]

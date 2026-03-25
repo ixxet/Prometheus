@@ -95,6 +95,33 @@ flowchart LR
   reply --> user
 ```
 
+## Live pod and service interaction
+
+Standalone Mermaid source:
+[`docs/diagrams/pod-interactions.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/pod-interactions.mmd)
+
+```mermaid
+flowchart LR
+  client["LAN client or browser"] --> owui_svc["Open WebUI Service
+192.168.2.201"]
+  owui_svc --> owui_pod["open-webui pod"]
+  owui_pod --> vllm_svc["vLLM Service
+192.168.2.205"]
+  vllm_svc --> vllm_pod["vLLM pod"]
+  vllm_pod --> hf["Hugging Face model download"]
+  vllm_pod --> gpu["RTX 3090"]
+  langgraph["LangGraph pod
+later"] --> pg["Postgres service"]
+  langgraph --> vllm_svc
+  langgraph -. later semantic layer .-> mem0["Mem0
+later"]
+  langgraph -. later archive export .-> obs["Obsidian
+later"]
+```
+
+Right now, `Open WebUI` is serving and `vLLM` is the only blocked part of the AI
+stack. The blocker is model download/load time, not container image pulls.
+
 ## The three memory layers
 
 ### 1. Execution memory
