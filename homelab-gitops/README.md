@@ -83,7 +83,7 @@ Explicitly out of this first wave:
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
-| `apps/agents/langgraph/` | Scaffold for the LangGraph runtime layer and its runtime assumptions. | Still inactive, but the target is now a Postgres-only OSS runtime. | It does not yet include the real service image or a live workflow. |
+| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime. | Still inactive until the real service image is built and secrets are trimmed down. | The cluster does not yet run the authored service code from `services/langgraph/`. |
 | `apps/media/` | Future Arr stack, Jellyfin, qBittorrent, and Seerr manifests. | Storage paths and service exposure must be designed before deployment. | No manifests exist yet. |
 | `apps/immich/` | Future Immich deployment. | Needs storage, DNS, and likely split CPU/GPU concerns later. | No manifests exist yet. |
 

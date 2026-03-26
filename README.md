@@ -82,7 +82,7 @@ flowchart LR
 | **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
-| **AI -- Orchestrator** | LangGraph | Self-hosted OSS runtime for tool loops, retries, HITL resume, and thread execution | Next milestone |
+| **AI -- Orchestrator** | LangGraph | Self-hosted OSS runtime for tool loops, retries, HITL resume, and thread execution | Code authored, deployment inactive |
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
 | **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Planned next layer |
 | **AI -- Semantic Memory Alt** | LangMem | LangGraph-native alternative to Mem0 | Documented only |
@@ -131,7 +131,7 @@ to integration polish, DNS cutover, and the next application layers.
 | AdGuard Home | Stable | Serving on `http://192.168.2.200`; router DNS cutover is still intentionally deferred |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
-| LangGraph | Scaffold only | Manifests exist, runtime is not active |
+| LangGraph | In repo, inactive | Service code now exists under `services/langgraph/`; cluster deployment is still intentionally inactive |
 | Mem0 / Obsidian | Planned | Not deployed yet |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
@@ -166,6 +166,7 @@ to integration polish, DNS cutover, and the next application layers.
 - [x] vLLM manifests corrected for single-GPU rollout and slow-link model downloads
 - [x] Open WebUI manifests pointed directly at vLLM
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
+- [x] Self-hosted LangGraph service source under `services/langgraph/`
 - [x] Ollama manifests kept as parked reference material, not the active path
 - [x] Mermaid diagram sources under `docs/diagrams/`
 - [x] Tailscale subnet-router runbook is documented and validated through MIMIR
@@ -306,6 +307,7 @@ Explicit non-goals for this phase:
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
 | `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
 | `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, and worker expansion | First authored pass; still needs rehearsal against future milestones |
+| `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state; deployment still needs image build and live activation |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
 | `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux reconciles this repo; the next major runtime layer is LangGraph |
