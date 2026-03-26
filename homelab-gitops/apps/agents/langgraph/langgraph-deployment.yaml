@@ -1,4 +1,5 @@
 # First OSS LangGraph runtime. Postgres is the only durable store for v0.3.0.
+# Pin to an immutable image tag until image automation exists for this service.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,7 +18,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: langgraph
-          image: ghcr.io/ixxet/prometheus-langgraph:v0.3.0-dev
+          image: ghcr.io/ixxet/prometheus-langgraph:sha-e97edbfc189b5c0b2424be39b1e53abe678890c0
           imagePullPolicy: Always
           ports:
             - name: http
