@@ -19,13 +19,13 @@ The current direction is narrower and easier to operate:
 
 ## Current pivot
 
-The current preferred stack is:
+The current live stack is:
 
 - `vLLM` as the only model-serving backend
 - `LangGraph` as the self-hosted OSS orchestrator
 - `Postgres` as the durable execution store
 - `Obsidian` as the external human-readable archive sink
-- `Mem0` as the likely semantic memory layer
+- `Mem0` as the semantic memory layer
 
 The following are explicitly not part of the first activation wave:
 
@@ -79,8 +79,8 @@ flowchart LR
   ui["Open WebUI\nhuman chat interface"] --> vllm["vLLM\nOpenAI-compatible inference API"]
   langgraph["LangGraph\norchestration runtime"] --> vllm
   langgraph --> pg["Postgres\nthreads, runs, checkpoints"]
-  langgraph -. later semantic layer .-> mem0["Mem0\npreferences and durable facts"]
-  langgraph -. curated export .-> obs["Obsidian Vault\nsummaries, ADRs, logs"]
+  langgraph -. semantic layer .-> mem0["Mem0\npreferences and durable facts"]
+  langgraph -. curated export .-> obs["MIMIR Obsidian Vault\nsummaries, ADRs, logs"]
 ```
 
 ## Request and data flow
@@ -94,8 +94,8 @@ flowchart LR
   ui --> langgraph["LangGraph run"]
   langgraph --> checkpoint["Execution memory\nPostgres checkpoints"]
   langgraph --> vllm["vLLM inference call"]
-  langgraph -. optional later .-> semantic["Semantic memory\nMem0 or LangMem"]
-  langgraph -. summary export .-> archive["Obsidian markdown archive"]
+  langgraph -. semantic memory .-> semantic["Semantic memory\nMem0"]
+  langgraph -. summary export .-> archive["Obsidian markdown archive\non MIMIR"]
   vllm --> reply["Model output"]
   checkpoint --> reply
   reply --> user
@@ -116,19 +116,17 @@ flowchart LR
   vllm_svc --> vllm_pod["vLLM pod"]
   vllm_pod --> hf["Hugging Face model download"]
   vllm_pod --> gpu["RTX 3090"]
-  langgraph["LangGraph pod
-later"] --> pg["Postgres service"]
+  langgraph["LangGraph pod"] --> pg["Postgres service"]
   langgraph --> vllm_svc
-  langgraph -. later semantic layer .-> mem0["Mem0
-later"]
-  langgraph -. later archive export .-> obs["Obsidian
-later"]
+  langgraph -. semantic memory .-> mem0["Mem0
+Qdrant + TEI"]
+  langgraph -. archive export .-> obs["Obsidian
+MIMIR vault"]
 ```
 
-Right now, `Open WebUI`, `vLLM`, and Postgres are all live. The next AI milestone
-is not another model server. It is a real self-hosted `LangGraph` runtime that
-uses Postgres for durable execution state without dragging in Redis, LangSmith,
-or hosted LangGraph licensing for the first usable version.
+Right now, `Open WebUI`, `vLLM`, Postgres, LangGraph, Mem0, and the off-tower
+archive sink are all live. The next AI milestone is not another model server.
+It is a more useful agent-facing workflow on top of the current runtime.
 
 ## The three memory layers
 
@@ -233,8 +231,8 @@ erDiagram
 ### Recommendation
 
 If the project stays centered on `LangGraph`, either choice is defensible.
-Right now, `Mem0` is the more likely pick for this repo because it is a clearer
-standalone semantic-memory layer.
+This repo already chose `Mem0` because it is a clearer standalone
+semantic-memory layer.
 
 ### Mem0
 
@@ -276,8 +274,8 @@ Use LangMem if:
 
 For this repo:
 
-- `Mem0` is the likely first choice
-- `LangMem` remains the main alternative, not a second layer to run alongside it
+- `Mem0` is the active semantic-memory system
+- `LangMem` remains the documented alternative, not a second layer to run alongside it
 
 Do not run both first. Pick one semantic memory system.
 
@@ -348,14 +346,13 @@ Reason:
 
 ## Revised rollout order
 
-1. Apply the temporary SSD-backed Talos directory volume for `local-path-provisioner`.
-2. Activate `AdGuard Home`.
-3. Deploy `vLLM` as the first backend.
-4. Keep `Open WebUI`, but point it directly at `vLLM`.
-5. Deploy `Postgres`.
-6. Deploy `LangGraph`.
-7. Add explicit LangGraph seams for semantic memory and archive export.
-8. Add Obsidian summary/export workflow.
-9. Add `Mem0` as the semantic memory layer.
-10. Revisit `LiteLLM`, `Graphiti`, or `Letta` only if the single-backend,
+1. Keep the temporary SSD-backed Talos directory volume for `local-path-provisioner`.
+2. Keep `AdGuard Home` in test-only mode until router cutover is justified.
+3. Keep `vLLM` as the only backend.
+4. Keep `Open WebUI` pointed directly at `vLLM`.
+5. Keep `Postgres` as the only required execution store.
+6. Keep `LangGraph` as the orchestrator.
+7. Keep `Mem0` as the only semantic-memory system.
+8. Keep the filesystem archive sink exporting into MIMIR's Obsidian vault path.
+9. Revisit `LiteLLM`, `Graphiti`, or `Letta` only if the single-backend,
    single-memory approach stops being sufficient.

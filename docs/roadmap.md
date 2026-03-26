@@ -115,10 +115,10 @@ Status: complete on 2026-03-26.
 Goal: add long-term memory and human-readable outputs without turning the stack
 into overlapping memory products.
 
-Status: in progress on 2026-03-26. Mem0 is now live in-cluster through
-LangGraph with `Qdrant + TEI` backing, and cross-thread write/recall has been
-validated. The remaining `v0.4.0` gap is the external Obsidian summary/export
-path.
+Status: complete on 2026-03-26. Mem0 is live in-cluster through LangGraph with
+`Qdrant + TEI` backing, cross-thread write/recall has been validated, and the
+external Markdown archive sink is now writing into the off-tower MIMIR vault
+path used by Obsidian.
 
 ### Implementation
 
@@ -126,7 +126,7 @@ path.
 - keep LangMem documented only as an alternative; do not deploy both
 - keep Obsidian outside the cluster
 - define the Obsidian path as an external vault sink for Markdown summaries and
-  ADR exports
+  ADR exports on MIMIR
 - extend LangGraph with:
   - semantic memory read/write through Mem0
   - summary export to the external vault sink
@@ -138,9 +138,9 @@ path.
 ### Acceptance
 
 - [x] a run can write at least one durable semantic-memory record into Mem0
-- a run can export a Markdown summary or ADR artifact to the chosen external sink
+- [x] a run can export a Markdown summary or ADR artifact to the chosen external sink
 - [x] the same user preference can be retrieved in a later thread
-- no duplicate semantic-memory system is live
+- [x] no duplicate semantic-memory system is live
 
 ## `v0.5.0` DNS Cutover And First Real Workflow
 

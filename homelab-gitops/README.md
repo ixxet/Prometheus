@@ -7,8 +7,8 @@ Last updated: 2026-03-26 (America/Toronto)
 This directory is no longer a skeleton. It now drives the live cluster via Flux.
 The first stateful services are healthy, `vLLM` is serving successfully, and the
 LangGraph runtime is now live. The next meaningful steps are naming cleanup,
-router cutover preparation, and activating the staged semantic-memory and
-archive layers.
+router cutover preparation, and building the first real agent workflow on top
+of the now-live memory and archive layers.
 
 Authored and render-valid now:
 
@@ -47,8 +47,7 @@ Live now:
 
 - Flux is already bootstrapped against this repo.
 - `.sops.yaml` exists and encrypted secrets are wired into the cluster.
-- It does not yet include live Obsidian export automation, ComfyUI, media,
-  Immich, or Tailscale manifests.
+- It does not yet include ComfyUI, media, Immich, or Tailscale manifests.
 - Talos `UserVolumeConfig` documents exist, but they are intentionally outside
   Flux because they are Talos machine config, not Kubernetes resources.
 - The first-wave storage model is temporary and SSD-backed; it is designed to
@@ -86,7 +85,7 @@ Explicitly out of this first wave:
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
-| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime. | Uses the existing Postgres secret, explicit no-op seam providers for `v0.4.0`, and an immutable image tag. | It is live now; the next work is memory/archive integration, not a second runtime. |
+| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime plus the off-tower archive PVC. | Uses the existing Postgres secret, the live Mem0 path, the MIMIR-backed archive export, and an immutable image tag. | It is live now; the next work is workflow polish, not a second runtime. |
 | `apps/media/` | Future Arr stack, Jellyfin, qBittorrent, and Seerr manifests. | Storage paths and service exposure must be designed before deployment. | No manifests exist yet. |
 | `apps/immich/` | Future Immich deployment. | Needs storage, DNS, and likely split CPU/GPU concerns later. | No manifests exist yet. |
 
@@ -101,10 +100,11 @@ As of 2026-03-26:
 - the `vLLM` cache PVC is populated on the system SSD
 - `LangGraph` is running internally in the `agents` namespace
 - LangGraph thread, approval/resume, and restart persistence checks have passed
-- LangGraph now exposes `semantic_memory_provider: mem0` and `archive_sink: none` in `/healthz`
+- LangGraph now exposes `semantic_memory_provider: mem0` and `archive_sink: filesystem_markdown` in `/healthz`
 - the live LangGraph image contains the real Mem0-backed provider path and is
   actively using `Qdrant + TEI`
 - a live cross-thread semantic-memory write and recall check has passed
+- a live Markdown archive export now lands on MIMIR under `/srv/obsidian/prometheus-vault/Agents`
 - the `apps` `Kustomization` is healthy again
 - AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
 - AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.2.200`
@@ -158,5 +158,5 @@ Future direction remains unchanged:
 2. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
 3. Preserve the `v0.3.0` LangGraph validation path in docs and runbooks as the baseline smoke test.
 4. Preserve the Mem0 smoke test as the new baseline after LangGraph health and restart checks.
-5. Move next into external Obsidian summary/export work without expanding the serving layer.
+5. Preserve the off-tower archive export as the baseline before changing the first real agent workflow.
 6. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.

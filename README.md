@@ -86,7 +86,7 @@ flowchart LR
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
 | **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Live with Qdrant + TEI support; cross-thread write and recall validated |
 | **AI -- Semantic Memory Alt** | LangMem | LangGraph-native alternative to Mem0 | Documented only |
-| **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, project logs | Planned external sink |
+| **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, and project logs exported off-tower | Live through a filesystem-markdown sink on MIMIR |
 | **AI -- Parked Runtime** | Ollama | Kept in-repo as reference, not first-wave | Parked |
 | **AI -- Deferred Gateway** | LiteLLM | Useful later if multiple backends appear | Deferred |
 | **AI -- Deferred Memory** | Graphiti / Zep | Temporal graph memory for point-in-time queries | Deferred |
@@ -101,9 +101,10 @@ flowchart LR
 
 The base cluster is live, Flux is live, and the first stateful services are now
 running on the Talos system SSD. `vLLM` is serving successfully, Open WebUI is
-reachable remotely through Tailscale, and LangGraph is now live internally with
-Postgres-backed execution state. The next work has shifted from bring-up to
-integration polish, DNS cutover, and the memory/archive layers.
+reachable remotely through Tailscale, LangGraph is live internally with
+Postgres-backed execution state, and completed runs now export Markdown
+artifacts to the off-tower MIMIR vault path. The next work has shifted from
+bring-up to naming cleanup, DNS cutover, and the first real agent workflow.
 
 ## Release Milestones
 
@@ -115,7 +116,7 @@ integration polish, DNS cutover, and the memory/archive layers.
   checkpoint on the live cluster.
 - [x] ~~`v0.3.0`~~ LangGraph live with Postgres-backed execution state, approval/resume flow,
   and restart-tested persistence.
-- [ ] `v0.4.0` Mem0 plus Obsidian summary/export workflow live.
+- [x] ~~`v0.4.0`~~ Mem0 plus the external Obsidian summary/export workflow are live.
 - [ ] `v0.5.0` AdGuard cutover, stable LAN naming, and first real agent workflow.
 - [ ] `v0.6.0+` Observability, media, Immich, better storage tiers, and NUC role split.
 - [ ] `v1.0.0` The system reads as a complete, reproducible, serious single-environment platform.
@@ -134,7 +135,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Stable | Internal-only runtime is live on the Mem0-enabled image; create, run, resume, restart-persistence, and semantic-memory smoke checks have passed |
-| Mem0 / Obsidian | In progress | Mem0 is live with Qdrant + TEI backing; external Obsidian sink is still pending |
+| Mem0 / Obsidian | Stable | Mem0 is live with Qdrant + TEI backing; LangGraph now exports Markdown run artifacts to the off-tower MIMIR vault path |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
 ### Already real in the live cluster
@@ -157,20 +158,19 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] `vLLM` model cache on the PVC is populated
 - [x] LangGraph is running internally in the `agents` namespace
 - [x] LangGraph thread, run, approval, and restart persistence checks have passed
-- [x] LangGraph health now reports `semantic_memory_provider: mem0` and `archive_sink: none`
+- [x] LangGraph health now reports `semantic_memory_provider: mem0` and `archive_sink: filesystem_markdown`
 - [x] Tailscale remote access works through MIMIR advertising `192.168.2.0/24`
 - [x] A real Mem0-backed semantic-memory path now exists in the LangGraph source
 - [x] The live LangGraph deployment is pinned to the Mem0-capable immutable image tag
 - [x] Qdrant plus TEI support services are live under `infra-semantic-memory`
 - [x] Cross-thread semantic-memory write and recall have been validated against the live cluster
+- [x] LangGraph exports Markdown run artifacts to `/srv/obsidian/prometheus-vault/Agents` on MIMIR
 
 ### Live but still provisional
 
 - [ ] Router DNS is not yet cut over to AdGuard Home
 - [ ] Clients are not yet pointed at AdGuard by default, so `home.arpa` naming is still in test-only mode
 - [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
-- [ ] External Obsidian summary/export flow is still not live
-- [ ] Router DNS is still test-only and not cut over by default
 
 ### Real in the repo and aligned with the cluster
 
@@ -180,7 +180,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] Open WebUI manifests pointed directly at vLLM
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
 - [x] Self-hosted LangGraph service source under `services/langgraph/`
-- [x] `v0.4.0` semantic-memory seam is live with Mem0, while archive export remains on the no-op sink
+- [x] `v0.4.0` memory and archive layer is live with Mem0 plus the off-tower filesystem archive sink on MIMIR
 - [x] GitHub Actions builds and publishes the LangGraph runtime image to GHCR
 - [x] LangGraph rollout is validated end to end against the live cluster
 - [x] Ollama manifests kept as parked reference material, not the active path
@@ -190,14 +190,10 @@ integration polish, DNS cutover, and the memory/archive layers.
 
 ### Not yet authored or activated
 
-- [x] Mem0 provider path in LangGraph and staged semantic-memory support manifests
-- [ ] Obsidian summary/export workflow
 - [ ] ComfyUI manifests
 - [ ] Media stack manifests
 - [ ] Immich manifests
 - [ ] Tailscale manifests, if the subnet-router path is ever replaced with an in-cluster approach
-- [x] Runbooks for disaster recovery, add-worker, DNS cutover, releases, and model changes
-- [x] LangGraph validation runbook
 
 ### Deferred on purpose
 
@@ -243,6 +239,9 @@ Current notable examples:
   the environment even though the embedder was pointing at local TEI
 - Flux and live-state drift surfaced where repo truth and runtime truth can
   briefly diverge during recovery
+- the first NFS export attempt for the off-tower archive sink failed because
+  MIMIR's UFW blocked NFS traffic and the initial NFSv4 export layout did not
+  match the client mount path
 
 ## Why This Project Matters
 
@@ -276,8 +275,8 @@ Deploy the smallest coherent local agent stack on the RTX 3090:
 - **Open WebUI** as the human UI, pointed straight at the vLLM OpenAI-compatible API
 - **Postgres** as the durable execution store for application state and checkpoints
 - **LangGraph** as the orchestrator for tool loops, retries, and HITL resume
-- **Obsidian** as a summary sink, not the primary machine memory store
-- **Mem0** as the likely semantic memory layer once the core path is stable
+- **Obsidian** as a summary sink, now exported off-tower onto MIMIR
+- **Mem0** as the semantic memory layer already running beside LangGraph
 
 Explicit non-goals for this phase:
 
@@ -294,14 +293,16 @@ Explicit non-goals for this phase:
 - [x] Bring up a self-hosted OSS `LangGraph` runtime
 - [x] Keep `LangGraph` backed by Postgres only for `v0.3.0`
 - [x] Make the first agent runtime actually usable
+- [x] Add Mem0 as semantic memory
+- [x] Add Obsidian summary/export workflow
 - [ ] Validate `home.arpa` access from a client pointed directly at AdGuard
 - [ ] Choose the safe window for router DNS cutover
 
 ### After LangGraph
 
-- [ ] Add Obsidian summary/export workflow
-- [ ] Add Mem0 as semantic memory
 - [ ] Keep LangMem only as the documented alternative
+- [ ] Route a real agent-facing client through LangGraph instead of using only direct API smoke tests
+- [ ] Define the first durable archive curation path inside the Obsidian vault
 
 ### Phase 3 -- Multi-Node Pressure Test
 
@@ -338,12 +339,12 @@ Explicit non-goals for this phase:
 | `docs/tailscale-remote-access.md` | Remote access runbook | Explains the safe Tailscale path, why Talos-side install is deferred, and how subnet routing should work |
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
 | `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
-| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, worker expansion, and LangGraph validation | First authored pass; now includes the live `v0.3.0` validation path |
+| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, worker expansion, LangGraph validation, and archive export checks | First authored pass; now includes the live `v0.3.0` and `v0.4.0` validation paths |
 | `.github/workflows/` | CI automation for building the LangGraph runtime image | Keeps container publication out of fragile local-token workflows |
 | `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state with approval/resume flow; live rollout and restart persistence are validated |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
-| `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux reconciles this repo; the next major runtime layers are naming cleanup and memory/archive work |
+| `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux reconciles this repo; the next major runtime layers are naming cleanup and workflow polish |
 | `homelab-gitops/README.md` | GitOps stage inventory | Documents what is live, what is still provisional, and what comes next |
 
 ---

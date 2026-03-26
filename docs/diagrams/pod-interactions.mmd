@@ -8,10 +8,9 @@ flowchart LR
   vllm_pod --> gpu["RTX 3090"]
   vllm_pod --> hf["Hugging Face
 model weight download"]
-  lg_pod["Pod: langgraph
-later"] --> pg_svc["Service: postgres"]
+  lg_pod["Pod: langgraph"] --> pg_svc["Service: postgres"]
   lg_pod --> vllm_svc
-  lg_pod -. semantic memory later .-> mem0["Mem0
-later"]
-  lg_pod -. archive export later .-> obs["Obsidian
-later"]
+  lg_pod -. semantic memory .-> mem0["Mem0
+Qdrant + TEI"]
+  lg_pod -. archive export .-> obs["Obsidian
+MIMIR vault"]

@@ -517,19 +517,49 @@ Lesson:
 - explicit environment is safer than relying on code-level defaults when nested
   dependencies create their own clients
 
+### 21. The off-tower archive sink stalled twice before it actually mounted
+
+What happened:
+
+- MIMIR had NFS installed and exported, but UFW still denied the traffic
+- the first direct NFS mount attempt from the cluster hung without a useful pod
+  event because the client could not reach the server ports cleanly
+- after opening the network path, the first NFSv4 export layout was still wrong
+  for the client path and the mount failed with `No such file or directory`
+
+Effect:
+
+- LangGraph could be configured for a filesystem archive sink before the actual
+  off-tower path was trustworthy
+- that would have turned `v0.4.0` into a paper milestone instead of a real one
+
+Fix:
+
+- kept the vault content off-repo and used MIMIR as the external sink host
+- enabled `nfs-kernel-server` on MIMIR
+- allowed LAN access to TCP `2049` through UFW instead of opening the whole box
+- switched the export layout to an NFSv4 pseudo-root at `/srv/obsidian`
+- mounted the cluster PV against `/prometheus-vault` with `nfsvers=4.1`
+- proved the path with a write test before flipping LangGraph itself
+
+Lesson:
+
+- off-cluster state needs the same rigor as in-cluster state
+- prove the storage path first, then change the runtime
+- if the cluster only says `ContainerCreating`, go verify the network and mount
+  semantics directly instead of guessing at the app layer
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
 - `home.arpa` names are proven only when querying AdGuard directly; clients are
   not using it by default yet
-- Mem0 and Obsidian are still planned layers, not live ones
-- Mem0 support infra is authored, but still intentionally staged instead of live
 - remote access works now through MIMIR advertising `192.168.2.0/24` into
   Tailscale, but it remains an external dependency rather than an in-cluster feature
 - the node is still on DHCP `.49`, not the planned reserved `.45`
 - the runbooks are authored now, but they still need live rehearsal as new
   milestones land
-- Obsidian export is still the missing piece before `v0.4.0` is complete
+- router DNS cutover is still the bigger operational boundary than the memory stack now
 
 ## Why keep this visible
 
@@ -579,6 +609,9 @@ already do on modest, real-world home hardware.
   changing LangGraph behavior.
 - Turned live semantic memory on and validated a real cross-thread write and
   recall against the running cluster.
+- Wired the first off-tower archive sink onto MIMIR, validated the NFSv4.1
+  mount from Talos, and proved that a completed LangGraph run writes Markdown
+  artifacts outside the cluster and outside the repo.
 
 ## Success Stories
 
@@ -603,3 +636,6 @@ already do on modest, real-world home hardware.
 - The semantic-memory stage now has a credible shape: LangGraph owns the seam,
   Mem0 owns durable facts, and `Qdrant + TEI` are staged as support services
   instead of being improvised later.
+- The archive layer is now real instead of theoretical. Completed runs can
+  leave the cluster as Markdown artifacts on MIMIR without turning Git into the
+  vault itself.

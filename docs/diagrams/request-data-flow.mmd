@@ -3,8 +3,8 @@ flowchart LR
   ui --> langgraph["LangGraph run"]
   langgraph --> checkpoint["Execution memory\nPostgres checkpoints"]
   langgraph --> vllm["vLLM inference call"]
-  langgraph -. optional later .-> semantic["Semantic memory\nMem0 or LangMem"]
-  langgraph -. summary export .-> archive["Obsidian markdown archive"]
+  langgraph -. semantic memory .-> semantic["Semantic memory\nMem0"]
+  langgraph -. summary export .-> archive["Obsidian markdown archive\non MIMIR"]
   vllm --> reply["Model output"]
   checkpoint --> reply
   reply --> user

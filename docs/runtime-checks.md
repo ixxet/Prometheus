@@ -17,9 +17,10 @@ full project docs. Commands are grouped by what you are trying to verify.
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
-| LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz`, thread APIs, and Mem0-backed semantic-memory status |
+| LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz`, thread APIs, Mem0-backed semantic memory, and filesystem archive exports |
 | Qdrant | `semantic-memory` | `ClusterIP` | in-cluster only | `readyz` returns healthy |
 | TEI embeddings | `semantic-memory` | `ClusterIP` | in-cluster only | `/health` returns healthy |
+| Obsidian archive sink | external on MIMIR | NFS-backed filesystem | `/srv/obsidian/prometheus-vault/Agents` | receives Markdown exports from completed LangGraph runs |
 
 ## Control station commands
 
@@ -54,9 +55,10 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | LangGraph pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents get pods -o wide` | `langgraph` and `postgres` are `1/1` |
 | LangGraph logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents logs deploy/langgraph --tail=200` | startup completes without DB or model-backend errors |
-| LangGraph health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then `curl http://127.0.0.1:18081/healthz` | JSON shows `ok: true`, the expected `vLLM` backend, `semantic_memory_provider: mem0`, and `archive_sink: none` |
+| LangGraph health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then `curl http://127.0.0.1:18081/healthz` | JSON shows `ok: true`, the expected `vLLM` backend, `semantic_memory_provider: mem0`, and `archive_sink: filesystem_markdown` |
 | LangGraph thread smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use the commands in `docs/runbooks/langgraph-validation.md` | thread create, run, resume, and fetch all succeed |
 | Semantic-memory smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` and `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n semantic-memory port-forward svc/qdrant 16333:6333` then use `docs/runbooks/semantic-memory-activation.md` | a preference written in one thread is recalled in a fresh thread |
+| Archive export smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use `docs/runbooks/archive-export-validation.md` | a completed run writes a Markdown file into MIMIR's `Agents/` vault path |
 
 ## Semantic-memory namespace checks
 
@@ -127,3 +129,6 @@ The practical workflow is:
 6. if semantic memory is the concern, verify `OPENAI_API_KEY` exists in the
    ConfigMap, check `kubectl -n semantic-memory get pods`, and rerun the
    semantic-memory smoke test
+7. if archive export is the concern, verify `langgraph-archive` is `Bound`,
+   confirm the deployment still mounts `/exports/obsidian`, and rerun the
+   archive-export smoke test

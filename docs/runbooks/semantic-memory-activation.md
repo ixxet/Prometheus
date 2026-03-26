@@ -4,7 +4,7 @@ Last updated: 2026-03-26 (America/Toronto)
 
 ## Purpose
 
-This runbook turns the staged `v0.4.0` semantic-memory layer into a live one.
+This runbook records how the semantic-memory half of `v0.4.0` was activated.
 It assumes:
 
 - LangGraph already runs with the Mem0-backed provider code present
@@ -16,7 +16,8 @@ Current live state on 2026-03-26:
 - `Qdrant` and `TEI` are both `1/1 Running`
 - LangGraph already reports `semantic_memory_provider: mem0`
 - cross-thread write and recall have already been validated once
-- the remaining `v0.4.0` gap is external Obsidian summary/export
+- the archive half of `v0.4.0` is now documented separately in
+  `docs/runbooks/archive-export-validation.md`
 
 ## What will be enabled
 
@@ -58,11 +59,8 @@ Change:
 - `SEMANTIC_MEMORY_PROVIDER: none` -> `SEMANTIC_MEMORY_PROVIDER: mem0`
 - ensure `OPENAI_API_KEY: local-not-required` is present for the local TEI-compatible embedder path
 
-Keep:
-
-- `ARCHIVE_SINK: none`
-
-until the external Obsidian export path exists.
+Archive export is now its own validated path. Do not change the archive sink
+here without updating the dedicated archive runbook.
 
 ## 4. Reconcile and verify health
 
@@ -82,7 +80,7 @@ curl http://127.0.0.1:18081/healthz
 Expected:
 
 - `semantic_memory_provider: "mem0"`
-- `archive_sink: "none"`
+- `archive_sink: "filesystem_markdown"` is acceptable once the archive path is live
 - `OPENAI_API_KEY` must be present in the runtime environment, even though TEI is local
 
 ## 5. Smoke-test semantic write and recall
