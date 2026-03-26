@@ -1,0 +1,13 @@
+flowchart LR
+  operator["Operator request"] --> langgraph["LangGraph"]
+  langgraph --> gate["Approval gate"]
+  gate -->|approved| vllm["vLLM"]
+  langgraph --> pg["Postgres\nthreads, runs, checkpoints"]
+  vllm --> response["Checklist response"]
+  response --> archive["Markdown export on MIMIR"]
+  response --> mem0["Mem0"]
+  mem0 --> qdrant["Qdrant + TEI"]
+  operator --> recall["Later recall question"]
+  recall --> langgraph
+  langgraph --> mem0
+  mem0 --> recall_answer["Durable preference recalled"]

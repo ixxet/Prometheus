@@ -128,6 +128,42 @@ Right now, `Open WebUI`, `vLLM`, Postgres, LangGraph, Mem0, and the off-tower
 archive sink are all live. The next AI milestone is not another model server.
 It is a more useful agent-facing workflow on top of the current runtime.
 
+## WebUI versus the agent runtime
+
+The current stack deliberately keeps `Open WebUI` and `LangGraph` separate.
+
+- `Open WebUI` is a human chat frontend that talks directly to `vLLM`
+- `LangGraph` is the agent runtime that owns:
+  - execution state in Postgres
+  - approval and resume behavior
+  - semantic-memory recall and write through Mem0
+  - Markdown archive export to the off-tower vault sink
+
+That means a plain WebUI chat is not the same thing as an agent run. WebUI
+history is useful for manual testing, but it is not the durable execution path
+or the semantic-memory path.
+
+## First real agent workflow
+
+The first real workflow for `v0.5.0` is intentionally narrow:
+
+- approval-gated operator brief
+- read-only guidance, not cluster mutation
+- durable preference capture
+- cross-thread recall
+- off-tower Markdown export
+
+The operator asks for a short, human-reviewed change brief while also revealing
+a stable preference. LangGraph pauses for approval, calls `vLLM`, stores the
+run in Postgres, records durable facts in Mem0, and exports the finished
+artifact to the MIMIR vault path.
+
+Runbook:
+[`docs/runbooks/first-agent-workflow.md`](runbooks/first-agent-workflow.md)
+
+Standalone Mermaid source:
+[`docs/diagrams/first-agent-workflow.mmd`](diagrams/first-agent-workflow.mmd)
+
 ## The three memory layers
 
 ### 1. Execution memory
