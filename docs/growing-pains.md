@@ -549,6 +549,34 @@ Lesson:
 - if the cluster only says `ContainerCreating`, go verify the network and mount
   semantics directly instead of guessing at the app layer
 
+### 22. Tailscale DNS management masked the first "real client" AdGuard test
+
+What happened:
+
+- MIMIR was the right real client for validating `home.arpa`
+- but its resolver was still managed by Tailscale with `CorpDNS=true`
+- the first attempt to point MIMIR at AdGuard looked wrong because Tailscale
+  immediately reasserted the stub resolver in `/etc/resolv.conf`
+
+Effect:
+
+- name resolution worked, but the resolver path was ambiguous
+- that was not good enough for a clean `v0.5.0` acceptance claim
+
+Fix:
+
+- temporarily disabled Tailscale DNS acceptance on MIMIR
+- pointed `/etc/resolv.conf` directly at `192.168.2.200`
+- ran the `home.arpa` resolution and HTTP checks
+- restored both the original resolver file and Tailscale DNS management after
+  the test
+
+Lesson:
+
+- "real client validation" needs to be explicit about who owns the resolver
+- Tailscale's DNS stub is useful operationally, but it can blur direct DNS
+  tests if you do not account for it
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -612,6 +640,9 @@ already do on modest, real-world home hardware.
 - Wired the first off-tower archive sink onto MIMIR, validated the NFSv4.1
   mount from Talos, and proved that a completed LangGraph run writes Markdown
   artifacts outside the cluster and outside the repo.
+- Proved that a real client on MIMIR can resolve and reach the first-wave
+  `home.arpa` names when pointed directly at AdGuard, without doing the full
+  router DNS cutover yet.
 
 ## Success Stories
 

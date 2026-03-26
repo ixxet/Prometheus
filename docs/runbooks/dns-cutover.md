@@ -12,6 +12,7 @@ the primary resolver.
 - authored
 - first-wave rewrites are configured in the live AdGuard runtime
 - direct queries against `192.168.2.200` already resolve the first-wave names
+- a real client on MIMIR has already resolved and reached the first-wave names when pointed directly at AdGuard
 - not yet rehearsed end to end for router cutover
 - router cutover is still deferred
 

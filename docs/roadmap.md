@@ -55,12 +55,13 @@ before the agent runtime lands.
 
 ### Acceptance
 
-- [ ] `http://openwebui.home.arpa` works from a LAN client after rewrites are active
-- [ ] `http://vllm.home.arpa:8000/v1/models` resolves and answers
+- [x] `http://openwebui.home.arpa` works from a real LAN client after rewrites are active
+- [x] `http://vllm.home.arpa:8000/v1/models` resolves and answers from a real LAN client
 - [x] `talosctl` and `kubectl` still work remotely over Tailscale after any IP cleanup path
 - [x] Open WebUI is reachable from the actual UI path, not only via raw API checks
 - [x] AdGuard remains on `192.168.2.200`
 - [x] the first-wave AdGuard rewrites are configured and answer direct queries to `192.168.2.200`
+- [x] MIMIR can be pointed directly at AdGuard and resolve the first-wave `home.arpa` names as a real client
 - [x] router DNS cutover is still deferred until `v0.5.0`
 
 ## `v0.3.0` First Agent Runtime

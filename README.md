@@ -131,7 +131,7 @@ bring-up to naming cleanup, DNS cutover, and the first real agent workflow.
 | Flux + SOPS | Stable | Repo is bootstrapped and decrypting secrets in-cluster |
 | Storage | Stable | `local-path-provisioner` uses `/var/mnt/local-path-provisioner` on the OS SSD |
 | Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
-| AdGuard Home | Stable | Serving on `http://192.168.2.200`; test-only rewrites are configured and router DNS cutover is still intentionally deferred |
+| AdGuard Home | Stable | Serving on `http://192.168.2.200`; rewrites are configured, a real MIMIR client resolves `home.arpa` correctly when pointed at AdGuard, and router DNS cutover is still intentionally deferred |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Stable | Internal-only runtime is live on the Mem0-enabled image; create, run, resume, restart-persistence, and semantic-memory smoke checks have passed |
@@ -153,6 +153,7 @@ bring-up to naming cleanup, DNS cutover, and the first real agent workflow.
 - [x] Postgres is running in-cluster
 - [x] AdGuard Home is running in-cluster
 - [x] AdGuard rewrites exist for `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa`
+- [x] A real client on MIMIR resolves `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa` correctly when pointed directly at AdGuard
 - [x] Open WebUI is running and reachable on `192.168.2.201`
 - [x] `vLLM` is serving on `192.168.2.205:8000`
 - [x] `vLLM` model cache on the PVC is populated
@@ -187,6 +188,7 @@ bring-up to naming cleanup, DNS cutover, and the first real agent workflow.
 - [x] Mermaid diagram sources under `docs/diagrams/`
 - [x] Tailscale subnet-router runbook is documented and validated through MIMIR
 - [x] AdGuard test-only rewrites and direct-query validation are documented
+- [x] AdGuard real-client validation from MIMIR is documented
 
 ### Not yet authored or activated
 
@@ -295,7 +297,7 @@ Explicit non-goals for this phase:
 - [x] Make the first agent runtime actually usable
 - [x] Add Mem0 as semantic memory
 - [x] Add Obsidian summary/export workflow
-- [ ] Validate `home.arpa` access from a client pointed directly at AdGuard
+- [x] Validate `home.arpa` access from a client pointed directly at AdGuard
 - [ ] Choose the safe window for router DNS cutover
 
 ### After LangGraph

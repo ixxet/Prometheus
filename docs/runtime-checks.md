@@ -75,6 +75,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | AdGuard pod | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n dns get pods,svc,pvc` | pod running, PVC bound, `192.168.2.200` assigned |
 | AdGuard admin UI | `curl -I http://192.168.2.200` | `302` to `/login.html` or `200` on `/login.html` |
 | AdGuard rewrite checks | `for name in k8s.home.arpa adguard.home.arpa openwebui.home.arpa vllm.home.arpa; do dig +short @192.168.2.200 $name; done` | returns the expected `192.168.2.x` addresses |
+| AdGuard real-client check | temporarily point a real client at `192.168.2.200` and use `getent ahostsv4 openwebui.home.arpa`, `curl -I http://openwebui.home.arpa/`, and `curl http://vllm.home.arpa:8000/v1/models` | name resolution and HTTP checks pass without using `@192.168.2.200` direct-query shortcuts |
 | AdGuard public DNS check | `dig +short @192.168.2.200 github.com` | returns a public IP |
 | Router cutover reminder | manual | only do this after AdGuard rewrites are configured |
 
