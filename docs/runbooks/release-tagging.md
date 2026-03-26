@@ -21,7 +21,7 @@ That means:
 ## Release cadence
 
 - `v0.2.1` captured stable AI serving plus remote ops
-- `v0.3.0` should capture LangGraph live with Postgres-backed execution state
+- `v0.3.0` captures LangGraph live with Postgres-backed execution state
 - `v0.4.0` should capture Mem0 plus Obsidian summary/export flow
 - `v0.5.0` should capture AdGuard cutover and the first real workflow
 

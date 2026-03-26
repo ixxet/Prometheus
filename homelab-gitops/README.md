@@ -6,8 +6,8 @@ Last updated: 2026-03-26 (America/Toronto)
 
 This directory is no longer a skeleton. It now drives the live cluster via Flux.
 The first stateful services are healthy, `vLLM` is serving successfully, and the
-next meaningful step is replacing the LangGraph placeholder with a real
-self-hosted OSS runtime.
+LangGraph runtime is now live. The next meaningful steps are naming cleanup,
+router cutover preparation, and the memory/archive layers.
 
 Authored and render-valid now:
 
@@ -36,8 +36,8 @@ Live now:
 - The source of truth for infrastructure and app state on the Talos tower.
 - The place where Flux reconciles Cilium, network policy, DNS, NVIDIA support,
   storage, and the first agent stack.
-- The place where `vLLM + Postgres + LangGraph` becomes the stable first-wave AI
-  platform.
+- The place where `vLLM + Postgres + LangGraph` is already the stable first-wave
+  AI platform.
 - The place where future storage tiers and NUC split-out work can be expressed
   cleanly once the base platform proves itself.
 
@@ -83,7 +83,7 @@ Explicitly out of this first wave:
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
-| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime. | Uses the existing Postgres secret and a Postgres-only OSS runtime shape. | The cluster still needs live rollout and validation of the authored service code from `services/langgraph/`. |
+| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime. | Uses the existing Postgres secret and a Postgres-only OSS runtime shape. | It is live now; the next work is memory/archive integration, not a second runtime. |
 | `apps/media/` | Future Arr stack, Jellyfin, qBittorrent, and Seerr manifests. | Storage paths and service exposure must be designed before deployment. | No manifests exist yet. |
 | `apps/immich/` | Future Immich deployment. | Needs storage, DNS, and likely split CPU/GPU concerns later. | No manifests exist yet. |
 
@@ -96,6 +96,8 @@ As of 2026-03-26:
 - `Open WebUI` is serving successfully on `192.168.2.201`
 - `vLLM` is serving successfully on `192.168.2.205:8000`
 - the `vLLM` cache PVC is populated on the system SSD
+- `LangGraph` is running internally in the `agents` namespace
+- LangGraph thread, approval/resume, and restart persistence checks have passed
 - the `apps` `Kustomization` is healthy again
 - AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
 
@@ -139,7 +141,7 @@ Future direction remains unchanged:
 | `infrastructure/network/l2-policy.yaml` | Announce service IPs on the real LAN NIC. | Interface name must match the live node. | It does not allocate IPs by itself. |
 | `infrastructure/postgres/postgres-statefulset.yaml` | Preserve the first-wave execution store in Git. | Needs a small but real PVC before activation. | It does not replace semantic memory or human-readable archives. |
 | `apps/ai/vllm/*` | Deploy the first GPU serving backend and small on-node cache. | Keep model size conservative while storage stays on the system SSD. | Must not pretend larger storage tiers already exist. |
-| `apps/agents/langgraph/*` | Define the future orchestrator shape, runtime configuration, and internal service. | Requires a built image plus runtime secrets before it can run. | It should not grow into a second serving backend. |
+| `apps/agents/langgraph/*` | Define and operate the current internal orchestrator service. | Must stay Postgres-backed and OSS-only for the `v0.3.x` line. | It should not grow into a second serving backend. |
 | `docs/diagrams/*.mmd` | Preserve diagram sources next to the authored platform docs. | Keep them high-level until the live schema and runtime harden. | They should not lock production schema details prematurely. |
 
 ## Next activation steps
@@ -147,5 +149,6 @@ Future direction remains unchanged:
 1. Configure AdGuard rewrites for `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa`.
 2. Verify Open WebUI uses the recovered `vLLM` backend cleanly from the actual UI path.
 3. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
-4. Roll out and validate the real self-hosted OSS LangGraph runtime backed only by Postgres.
-5. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.
+4. Preserve the `v0.3.0` LangGraph validation path in docs and runbooks as the baseline smoke test.
+5. Move next into Mem0 and external Obsidian summary/export work without expanding the serving layer.
+6. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.

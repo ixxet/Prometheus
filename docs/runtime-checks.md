@@ -17,6 +17,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
+| LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz` and thread APIs |
 
 ## Control station commands
 
@@ -24,7 +25,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | Talos health | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 health` | health checks pass |
 | Kubernetes nodes | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get nodes -o wide` | node is `Ready` |
-| Flux state | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n flux-system get kustomizations` | infra entries `True`; `apps` `True` while LangGraph remains intentionally inactive |
+| Flux state | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n flux-system get kustomizations` | infra entries `True`; `apps` `True` on the current revision |
 | GPU allocatable | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig describe node talos-p0d-y77 | rg nvidia.com/gpu` | `nvidia.com/gpu: 1` |
 
 ## Storage checks
@@ -44,6 +45,15 @@ full project docs. Commands are grouped by what you are trying to verify.
 | vLLM logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --tail=200` | API server reaches steady state and no fatal KV-cache error appears |
 | vLLM previous crash | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --previous --tail=200` | old crash reason is understood before changing manifests |
 | vLLM service via port-forward | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai port-forward svc/vllm 18000:8000` then `curl http://127.0.0.1:18000/v1/models` | JSON response once ready |
+
+## Agents namespace checks
+
+| Goal | Command | Success signal |
+| --- | --- | --- |
+| LangGraph pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents get pods -o wide` | `langgraph` and `postgres` are `1/1` |
+| LangGraph logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents logs deploy/langgraph --tail=200` | startup completes without DB or model-backend errors |
+| LangGraph health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then `curl http://127.0.0.1:18081/healthz` | JSON shows `ok: true` and the expected `vLLM` backend |
+| LangGraph thread smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use the commands in `docs/runbooks/langgraph-validation.md` | thread create, run, resume, and fetch all succeed |
 
 ## DNS checks
 
@@ -92,3 +102,12 @@ The practical workflow is:
 2. check `kubectl -n ai logs deploy/vllm --tail=200`
 3. verify `curl http://192.168.2.205:8000/v1/models`
 4. only then change manifests
+
+## If the agent layer regresses
+
+1. check `kubectl -n agents get pods`
+2. check `kubectl -n agents logs deploy/langgraph --tail=200`
+3. verify `curl http://127.0.0.1:18081/healthz` through a port-forward
+4. run the smoke test from `docs/runbooks/langgraph-validation.md`
+5. if persistence is the concern, delete the LangGraph pod and repeat the final
+   `GET /threads/{thread_id}` check after the replacement pod is ready

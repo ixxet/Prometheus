@@ -267,12 +267,37 @@ Lesson:
 - git write access and container registry write access are separate permissions
 - delivery automation belongs in CI once the image matters to the cluster
 
+### 12. A healthy LangGraph pod was not enough; persistence had to survive a restart
+
+What happened:
+
+- LangGraph reached `1/1 Running`
+- `/healthz` returned cleanly
+- thread creation and approval/resume flow worked through the live service
+- that still did not prove the checkpoint store was wired correctly
+
+Effect:
+
+- without a restart test, the milestone would have looked finished before the
+  durability claim was actually earned
+
+Fix:
+
+- created a live smoke thread against the cluster service
+- deleted the LangGraph pod
+- waited for the replacement pod to come up
+- fetched the same thread again and confirmed the run history and all four
+  checkpoints were still present
+
+Lesson:
+
+- for orchestration systems, "works once" and "persists across restart" are two
+  different milestones
+- restart testing is part of the feature definition, not a nice-to-have
+
 ## Current open pain points
 
 - AdGuard is up, but router DNS cutover and service rewrites are still pending
-- Open WebUI still needs final UI-path verification against the recovered `vLLM`
-  backend
-- LangGraph is scaffolded in-repo but not yet active
 - Mem0 and Obsidian are still planned layers, not live ones
 - remote access works now through MIMIR advertising `192.168.2.0/24` into
   Tailscale, but it remains an external dependency rather than an in-cluster feature
@@ -313,6 +338,8 @@ already do on modest, real-world home hardware.
   all working at the same time.
 - Established remote operations safely through Tailscale by using MIMIR as a
   subnet router instead of modifying the Talos node itself.
+- Reached a stable `v0.3.0` checkpoint with LangGraph running live, backed only
+  by Postgres, and validated through approval/resume plus pod-restart persistence.
 
 ## Success Stories
 
@@ -326,3 +353,6 @@ already do on modest, real-world home hardware.
 - The repo shows the learning curve instead of airbrushing it away. The failures
   around GPU rollout, model sizing, and service networking are now part of the
   platform knowledge, not repeated future mistakes.
+- The first agent runtime now exists as a real in-cluster service, not a design
+  document. LangGraph can create a thread, pause for approval, resume, and keep
+  its execution history after the pod is replaced.

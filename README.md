@@ -82,7 +82,7 @@ flowchart LR
 | **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
-| **AI -- Orchestrator** | LangGraph | Self-hosted OSS runtime for tool loops, retries, HITL resume, and thread execution | Code authored, deployment inactive |
+| **AI -- Orchestrator** | LangGraph | Self-hosted OSS runtime for tool loops, retries, HITL resume, and thread execution | Live |
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
 | **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Planned next layer |
 | **AI -- Semantic Memory Alt** | LangMem | LangGraph-native alternative to Mem0 | Documented only |
@@ -101,8 +101,9 @@ flowchart LR
 
 The base cluster is live, Flux is live, and the first stateful services are now
 running on the Talos system SSD. `vLLM` is serving successfully, Open WebUI is
-reachable remotely through Tailscale, and the next work has shifted from bring-up
-to integration polish, DNS cutover, and the next application layers.
+reachable remotely through Tailscale, and LangGraph is now live internally with
+Postgres-backed execution state. The next work has shifted from bring-up to
+integration polish, DNS cutover, and the memory/archive layers.
 
 ## Release Milestones
 
@@ -112,7 +113,8 @@ to integration polish, DNS cutover, and the next application layers.
   replaced the broader Ollama-first direction.
 - [x] ~~`v0.2.1`~~ Stable `vLLM`, `Open WebUI`, and Tailscale remote-access
   checkpoint on the live cluster.
-- [ ] `v0.3.0` LangGraph live with Postgres-backed execution state.
+- [x] ~~`v0.3.0`~~ LangGraph live with Postgres-backed execution state, approval/resume flow,
+  and restart-tested persistence.
 - [ ] `v0.4.0` Mem0 plus Obsidian summary/export workflow live.
 - [ ] `v0.5.0` AdGuard cutover, stable LAN naming, and first real agent workflow.
 - [ ] `v0.6.0+` Observability, media, Immich, better storage tiers, and NUC role split.
@@ -131,7 +133,7 @@ to integration polish, DNS cutover, and the next application layers.
 | AdGuard Home | Stable | Serving on `http://192.168.2.200`; router DNS cutover is still intentionally deferred |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
-| LangGraph | Authoring complete | Service code and GitOps wiring now exist; image publication and cluster validation are the remaining delivery steps |
+| LangGraph | Stable | Internal-only runtime is live; create, run, resume, and restart-persistence checks have passed |
 | Mem0 / Obsidian | Planned | Not deployed yet |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
@@ -152,6 +154,8 @@ to integration polish, DNS cutover, and the next application layers.
 - [x] Open WebUI is running and reachable on `192.168.2.201`
 - [x] `vLLM` is serving on `192.168.2.205:8000`
 - [x] `vLLM` model cache on the PVC is populated
+- [x] LangGraph is running internally in the `agents` namespace
+- [x] LangGraph thread, run, approval, and restart persistence checks have passed
 - [x] Tailscale remote access works through MIMIR advertising `192.168.2.0/24`
 
 ### Live but still provisional
@@ -167,6 +171,8 @@ to integration polish, DNS cutover, and the next application layers.
 - [x] Open WebUI manifests pointed directly at vLLM
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
 - [x] Self-hosted LangGraph service source under `services/langgraph/`
+- [x] GitHub Actions builds and publishes the LangGraph runtime image to GHCR
+- [x] LangGraph rollout is validated end to end against the live cluster
 - [x] Ollama manifests kept as parked reference material, not the active path
 - [x] Mermaid diagram sources under `docs/diagrams/`
 - [x] Tailscale subnet-router runbook is documented and validated through MIMIR
@@ -180,6 +186,7 @@ to integration polish, DNS cutover, and the next application layers.
 - [ ] Immich manifests
 - [ ] Tailscale manifests, if the subnet-router path is ever replaced with an in-cluster approach
 - [x] Runbooks for disaster recovery, add-worker, DNS cutover, releases, and model changes
+- [x] LangGraph validation runbook
 
 ### Deferred on purpose
 
@@ -211,6 +218,8 @@ Current notable examples:
   model weight downloads
 - `vLLM` also exposed a second startup boundary: model weights can be present
   while KV-cache sizing is still wrong for the selected context window
+- LangGraph rollout exposed the difference between a healthy pod and durable
+  checkpoint persistence
 - Flux and live-state drift surfaced where repo truth and runtime truth can
   briefly diverge during recovery
 
@@ -260,10 +269,10 @@ Explicit non-goals for this phase:
 
 - [x] Finish AdGuard configuration cleanly
 - [ ] Add AdGuard rewrites for the first service names
-- [ ] Verify `Open WebUI` from the UI path, not just raw API calls
-- [ ] Bring up a self-hosted OSS `LangGraph` runtime
+- [x] Verify `Open WebUI` from the UI path, not just raw API calls
+- [x] Bring up a self-hosted OSS `LangGraph` runtime
 - [x] Keep `LangGraph` backed by Postgres only for `v0.3.0`
-- [ ] Make the first agent runtime actually usable
+- [x] Make the first agent runtime actually usable
 - [ ] Choose the safe window for router DNS cutover
 
 ### After LangGraph
@@ -306,12 +315,12 @@ Explicit non-goals for this phase:
 | `docs/tailscale-remote-access.md` | Remote access runbook | Explains the safe Tailscale path, why Talos-side install is deferred, and how subnet routing should work |
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
 | `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
-| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, and worker expansion | First authored pass; still needs rehearsal against future milestones |
+| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, worker expansion, and LangGraph validation | First authored pass; now includes the live `v0.3.0` validation path |
 | `.github/workflows/` | CI automation for building the LangGraph runtime image | Keeps container publication out of fragile local-token workflows |
-| `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state with approval/resume flow; live rollout still needs cluster validation |
+| `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state with approval/resume flow; live rollout and restart persistence are validated |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
-| `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux reconciles this repo; the next major runtime layer is LangGraph |
+| `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux reconciles this repo; the next major runtime layers are naming cleanup and memory/archive work |
 | `homelab-gitops/README.md` | GitOps stage inventory | Documents what is live, what is still provisional, and what comes next |
 
 ---

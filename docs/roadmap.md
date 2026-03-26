@@ -1,4 +1,4 @@
-# Prometheus Roadmap From `v0.2.1` To `v1.0.0`
+# Prometheus Roadmap From `v0.3.0` To `v1.0.0`
 
 Last updated: 2026-03-26 (America/Toronto)
 
@@ -26,7 +26,7 @@ what "done" means for each milestone.
 | Version | Theme | What must be true |
 | --- | --- | --- |
 | `v0.2.1` | Stable AI serving checkpoint | `vLLM`, Open WebUI, Postgres, AdGuard, Flux, and Tailscale remote ops are working together |
-| `v0.3.0` | First agent runtime | LangGraph is live with Postgres-backed execution state |
+| `v0.3.0` | First agent runtime | LangGraph is live with Postgres-backed execution state, approval/resume, and restart-tested persistence |
 | `v0.4.0` | Memory and archive layer | Mem0 plus Obsidian summary/export workflow are live |
 | `v0.5.0` | Naming and first real workflow | AdGuard cutover, stable LAN naming, and a real end-to-end agent workflow exist |
 | `v0.6.0+` | Platform expansion | Observability, storage maturity, media/photos, and NUC split happen deliberately |
@@ -55,15 +55,18 @@ before the agent runtime lands.
 
 ### Acceptance
 
-- `http://openwebui.home.arpa` works from a LAN client after rewrites are active
-- `http://vllm.home.arpa:8000/v1/models` resolves and answers
-- `talosctl` and `kubectl` still work remotely over Tailscale after any IP cleanup
-- AdGuard remains on `192.168.2.200`
-- router DNS cutover is still deferred until `v0.5.0`
+- [ ] `http://openwebui.home.arpa` works from a LAN client after rewrites are active
+- [ ] `http://vllm.home.arpa:8000/v1/models` resolves and answers
+- [x] `talosctl` and `kubectl` still work remotely over Tailscale after any IP cleanup path
+- [x] Open WebUI is reachable from the actual UI path, not only via raw API checks
+- [x] AdGuard remains on `192.168.2.200`
+- [x] router DNS cutover is still deferred until `v0.5.0`
 
 ## `v0.3.0` First Agent Runtime
 
 Goal: move from "local model serving" to "actual orchestrated execution state."
+
+Status: complete on 2026-03-26.
 
 ### Implementation
 
@@ -101,10 +104,10 @@ Goal: move from "local model serving" to "actual orchestrated execution state."
 
 ### Acceptance
 
-- LangGraph pod is `1/1 Running`
-- Postgres-backed thread/run/checkpoint state survives pod restart
-- one thread can start, pause, resume, and complete successfully
-- no additional durable state store beyond Postgres is required
+- [x] LangGraph pod is `1/1 Running`
+- [x] Postgres-backed thread/run/checkpoint state survives pod restart
+- [x] one thread can start, pause, resume, and complete successfully
+- [x] no additional durable state store beyond Postgres is required
 
 ## `v0.4.0` Memory And Archive Layer
 
