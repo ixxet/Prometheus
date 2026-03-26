@@ -16,4 +16,13 @@ data:
   # v0.4.0 seams are authored in the service, but live rollout stays on no-op
   # providers until Mem0 and the external archive sink are actually deployed.
   SEMANTIC_MEMORY_PROVIDER: none
+  SEMANTIC_MEMORY_USER_ID: prometheus-operator
+  SEMANTIC_MEMORY_AGENT_ID: langgraph
+  SEMANTIC_MEMORY_TOP_K: "3"
+  MEM0_QDRANT_HOST: qdrant.semantic-memory.svc.cluster.local
+  MEM0_QDRANT_PORT: "6333"
+  MEM0_QDRANT_COLLECTION: prometheus-memory
+  MEM0_EMBEDDING_DIMS: "384"
+  MEM0_EMBEDDER_MODEL: tei
+  MEM0_EMBEDDER_BASE_URL: http://tei-embeddings.semantic-memory.svc.cluster.local/v1
   ARCHIVE_SINK: none

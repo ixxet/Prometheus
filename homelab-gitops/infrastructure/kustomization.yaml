@@ -6,4 +6,5 @@ resources:
   - nvidia
   - storage
   - postgres
+  - semantic-memory
   - dns

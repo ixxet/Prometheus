@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - qdrant-pvc.yaml
+  - qdrant-deployment.yaml
+  - qdrant-service.yaml
+  - tei-cache-pvc.yaml
+  - tei-deployment.yaml
+  - tei-service.yaml

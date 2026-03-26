@@ -94,6 +94,28 @@ spec:
     kind: GitRepository
     name: flux-system
 ---
+# Staged for the v0.4.0 memory layer. Keep this suspended until the LangGraph
+# runtime has the real Mem0 provider path and the supporting services are ready
+# to pull on the current WAN link.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-semantic-memory
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  prune: true
+  wait: true
+  suspend: true
+  dependsOn:
+    - name: infra-storage
+  path: ./homelab-gitops/infrastructure/semantic-memory
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+---
 # Enabled once storage is live. Router DNS cutover remains a separate manual
 # step after AdGuard is healthy.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
