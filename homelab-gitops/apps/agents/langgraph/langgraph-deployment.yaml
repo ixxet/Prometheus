@@ -18,7 +18,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: langgraph
-          image: ghcr.io/ixxet/prometheus-langgraph:sha-e97edbfc189b5c0b2424be39b1e53abe678890c0
+          image: ghcr.io/ixxet/prometheus-langgraph:sha-d0e3c136cded4ebf5fcf6b397ae6f6dbc8cd5efa
           imagePullPolicy: Always
           ports:
             - name: http
