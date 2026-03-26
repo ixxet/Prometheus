@@ -132,6 +132,21 @@ Later options:
 
 Until then, use the fixed LAN service IPs.
 
+## Break-glass note
+
+If a router-side DNS handoff goes badly, remote recovery should still use raw
+IP access through MIMIR, not `home.arpa`:
+
+- MIMIR Tailscale: `100.109.171.72`
+- Talos API: `192.168.2.49:50000`
+- Kubernetes VIP: `192.168.2.46:6443`
+- AdGuard: `192.168.2.200`
+- Open WebUI: `192.168.2.201`
+- vLLM: `192.168.2.205:8000`
+
+That is why DNS cutover does not remove the remote backdoor as long as MIMIR
+and the Tailscale subnet route stay healthy.
+
 ## Direct Talos path later
 
 If we later want the Talos node itself to be a Tailscale node, the shape is:

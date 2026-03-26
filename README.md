@@ -78,7 +78,7 @@ flowchart LR
 | **GPU Runtime** | NVIDIA Device Plugin | v0.17.0 -- RTX 3090, 24 GB VRAM | Live |
 | **GitOps** | Flux | Bootstrapped and reconciling this repo | Live |
 | **Secrets** | SOPS + age | Encrypted secrets in git, cluster decryption wired | Live |
-| **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live, test-only on the tower and not the router DNS authority |
+| **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live on `192.168.2.200`, separate from the router, and still not the default DHCP resolver |
 | **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
@@ -134,7 +134,7 @@ the default instead of a test-only path.
 | Flux + SOPS | Stable | Repo is bootstrapped and decrypting secrets in-cluster |
 | Storage | Stable | `local-path-provisioner` uses `/var/mnt/local-path-provisioner` on the OS SSD |
 | Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
-| AdGuard Home | Stable | Serving on `http://192.168.2.200`; rewrites are configured, a real MIMIR client resolves `home.arpa` correctly when pointed at AdGuard, and router DNS cutover is still intentionally deferred |
+| AdGuard Home | Stable | Serving on `http://192.168.2.200`; rewrites are configured, a real MIMIR client resolves `home.arpa` correctly when pointed at AdGuard, and any future router-side handoff only means DHCP advertises `192.168.2.200` as DNS |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Stable | Internal-only runtime is live on the Mem0-enabled image; create, run, resume, restart-persistence, and semantic-memory smoke checks have passed |
@@ -192,6 +192,7 @@ the default instead of a test-only path.
 - [x] Tailscale subnet-router runbook is documented and validated through MIMIR
 - [x] AdGuard test-only rewrites and direct-query validation are documented
 - [x] AdGuard real-client validation from MIMIR is documented
+- [x] DNS break-glass and raw-IP fallback path are documented
 
 ### Not yet authored or activated
 
@@ -302,8 +303,9 @@ Explicit non-goals for this phase:
 - [x] Add Obsidian summary/export workflow
 - [x] Validate `home.arpa` access from a client pointed directly at AdGuard
 - [x] Define and validate the first real agent workflow
-- [ ] Choose the safe window for router DNS cutover
-- [ ] Perform router DNS cutover and validate client behavior by default
+- [ ] Choose the safe window for router-side DHCP/DNS handoff
+- [ ] Decide whether the first default-DNS rollout happens on a single client, a secondary router segment, or the main router
+- [ ] Perform the router-side DHCP/DNS handoff and validate client behavior by default
 
 ### After LangGraph
 

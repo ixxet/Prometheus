@@ -154,7 +154,11 @@ are still pending.
 
 ### Implementation
 
-- perform router DNS cutover to AdGuard after rewrites are validated
+- perform a router-side DHCP/DNS handoff to AdGuard after rewrites are validated
+- prefer a staged rollout:
+  - one manually pointed client first
+  - then a secondary router or isolated segment if available
+  - main router handoff last
 - standardize the first stable service names:
   - `k8s.home.arpa`
   - `adguard.home.arpa`
@@ -170,6 +174,7 @@ are still pending.
 - keep the workflow read-mostly and human-supervised
 - rehearse and harden the operator runbooks so they become credible in practice:
   - DNS cutover
+  - DNS break-glass fallback
   - disaster recovery
   - add-worker / future NUC conversion
   - release/tagging process
