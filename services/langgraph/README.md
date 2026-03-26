@@ -10,6 +10,13 @@ Design goals for `v0.3.0`:
 - no hosted LangGraph license requirement
 - small, explicit HTTP surface instead of a generic framework dump
 
+Early `v0.4.0` work is also starting here:
+
+- semantic-memory provider seam
+- archive-sink seam
+- default no-op implementations so the live `v0.3.0` path stays stable while
+  memory and archive integrations are authored
+
 ## Endpoints
 
 - `GET /healthz`

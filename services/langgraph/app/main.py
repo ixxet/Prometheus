@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import logging
 from typing import Any
 from uuid import uuid4
 
@@ -14,7 +15,10 @@ from sqlalchemy import select, text
 from .config import Settings, load_settings
 from .db import Database, RunRecord, ThreadRecord
 from .graph_runtime import LangGraphRuntime
+from .post_run import RunArtifact, build_archive_sink, build_semantic_memory_provider
 from .schemas import ResumeRequest, RunCreateRequest, RunResponse, ThreadCreateRequest, ThreadResponse
+
+logger = logging.getLogger(__name__)
 
 
 def message_to_dict(message: BaseMessage) -> dict[str, Any]:
@@ -71,6 +75,39 @@ def run_to_response(record: RunRecord, latest_state: dict[str, Any] | None = Non
     )
 
 
+def build_run_artifact(
+    thread: ThreadRecord,
+    record: RunRecord,
+    latest_state: dict[str, Any] | None,
+) -> RunArtifact:
+    return RunArtifact(
+        thread_id=thread.thread_id,
+        run_id=record.run_id,
+        title=thread.title,
+        input_text=record.input_text,
+        response_text=record.response_text,
+        require_approval=record.require_approval,
+        approval_decision=(latest_state or {}).get("approval_decision"),
+        created_at=record.created_at,
+        updated_at=record.updated_at,
+    )
+
+
+def run_post_run_hooks(request: Request, artifact: RunArtifact) -> None:
+    semantic_memory = request.app.state.semantic_memory
+    archive_sink = request.app.state.archive_sink
+
+    try:
+        semantic_memory.record_run(artifact)
+    except Exception as exc:  # pragma: no cover
+        logger.warning("semantic memory hook failed: %s", exc)
+
+    try:
+        archive_sink.export_run(artifact)
+    except Exception as exc:  # pragma: no cover
+        logger.warning("archive sink hook failed: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = load_settings()
@@ -83,11 +120,15 @@ async def lifespan(app: FastAPI):
 
     runtime = LangGraphRuntime(settings)
     graph = runtime.build_graph(checkpointer)
+    semantic_memory = build_semantic_memory_provider(settings.semantic_memory_provider)
+    archive_sink = build_archive_sink(settings.archive_sink, settings.archive_export_dir)
 
     app.state.settings = settings
     app.state.database = database
     app.state.graph = graph
     app.state.checkpointer_cm = checkpointer_cm
+    app.state.semantic_memory = semantic_memory
+    app.state.archive_sink = archive_sink
 
     try:
         yield
@@ -142,6 +183,8 @@ def healthz(request: Request):
         "database": "ok",
         "model_backend": settings.openai_api_base_url,
         "model": settings.openai_model,
+        "semantic_memory_provider": request.app.state.semantic_memory.name,
+        "archive_sink": request.app.state.archive_sink.name,
     }
 
 
@@ -201,6 +244,7 @@ def create_run(thread_id: str, payload: RunCreateRequest, request: Request):
     graph = request.app.state.graph
     _ = get_thread_or_404(database, thread_id)
     run_id = str(uuid4())
+    artifact: RunArtifact | None = None
 
     with database.session() as session:
         thread = session.get(ThreadRecord, thread_id)
@@ -266,10 +310,14 @@ def create_run(thread_id: str, payload: RunCreateRequest, request: Request):
             record.status = "completed"
             record.interrupt_payload = None
             record.response_text = latest_ai_text(messages)
+            artifact = build_run_artifact(thread, record, latest_state)
 
         session.flush()
         session.refresh(record)
         session.expunge(record)
+
+    if artifact is not None:
+        run_post_run_hooks(request, artifact)
 
     return run_to_response(record, latest_state=latest_state)
 
@@ -279,6 +327,7 @@ def resume_run(thread_id: str, payload: ResumeRequest, request: Request):
     database: Database = request.app.state.database
     graph = request.app.state.graph
     _ = get_thread_or_404(database, thread_id)
+    artifact: RunArtifact | None = None
 
     with database.session() as session:
         record = session.scalar(
@@ -334,10 +383,14 @@ def resume_run(thread_id: str, payload: ResumeRequest, request: Request):
             record.status = "completed"
             record.interrupt_payload = None
             record.response_text = latest_ai_text(messages)
+            artifact = build_run_artifact(thread, record, latest_state)
 
         session.flush()
         session.refresh(record)
         session.expunge(record)
+
+    if artifact is not None:
+        run_post_run_hooks(request, artifact)
 
     return run_to_response(record, latest_state=latest_state)
 

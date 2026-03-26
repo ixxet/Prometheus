@@ -13,6 +13,9 @@ class Settings:
     openai_model: str
     openai_api_key: str
     system_prompt: str
+    semantic_memory_provider: str
+    archive_sink: str
+    archive_export_dir: str | None
 
     @property
     def sqlalchemy_database_uri(self) -> str:
@@ -53,4 +56,7 @@ def load_settings() -> Settings:
                 "to have performed external actions you did not actually perform."
             ),
         ),
+        semantic_memory_provider=os.environ.get("SEMANTIC_MEMORY_PROVIDER", "none"),
+        archive_sink=os.environ.get("ARCHIVE_SINK", "none"),
+        archive_export_dir=os.environ.get("ARCHIVE_EXPORT_DIR"),
     )

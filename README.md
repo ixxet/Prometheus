@@ -173,6 +173,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] Open WebUI manifests pointed directly at vLLM
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
 - [x] Self-hosted LangGraph service source under `services/langgraph/`
+- [x] `v0.4.0` semantic-memory and archive seams authored in the LangGraph service
 - [x] GitHub Actions builds and publishes the LangGraph runtime image to GHCR
 - [x] LangGraph rollout is validated end to end against the live cluster
 - [x] Ollama manifests kept as parked reference material, not the active path
