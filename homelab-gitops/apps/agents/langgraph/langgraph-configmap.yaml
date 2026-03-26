@@ -26,4 +26,6 @@ data:
   MEM0_EMBEDDING_DIMS: "384"
   MEM0_EMBEDDER_MODEL: tei
   MEM0_EMBEDDER_BASE_URL: http://tei-embeddings.semantic-memory.svc.cluster.local/v1
-  ARCHIVE_SINK: none
+  # Archive exports stay off-tower on MIMIR via an NFS-backed PVC.
+  ARCHIVE_SINK: filesystem
+  ARCHIVE_EXPORT_DIR: /exports/obsidian/Agents
