@@ -37,6 +37,9 @@ The following are explicitly not part of the first activation wave:
 The first `v0.4.0` decision record is now captured in:
 [`docs/adr/0001-v0.4.0-memory-and-archive-boundaries.md`](adr/0001-v0.4.0-memory-and-archive-boundaries.md)
 
+The follow-up runtime-shape decision for the semantic-memory layer is now in:
+[`docs/adr/0002-v0.4.0-semantic-memory-runtime-shape.md`](adr/0002-v0.4.0-semantic-memory-runtime-shape.md)
+
 ## Where the project paused before this pivot
 
 Before the architecture pivot, the project stopped at the storage safety gate.

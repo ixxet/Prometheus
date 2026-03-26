@@ -7,7 +7,8 @@ Last updated: 2026-03-26 (America/Toronto)
 This directory is no longer a skeleton. It now drives the live cluster via Flux.
 The first stateful services are healthy, `vLLM` is serving successfully, and the
 LangGraph runtime is now live. The next meaningful steps are naming cleanup,
-router cutover preparation, and the memory/archive layers.
+router cutover preparation, and activating the staged semantic-memory and
+archive layers.
 
 Authored and render-valid now:
 
@@ -18,6 +19,7 @@ Authored and render-valid now:
 - `infrastructure/nvidia/`
 - `infrastructure/storage/` for Kubernetes-side local-path provisioning
 - `infrastructure/postgres/` for the first execution store
+- `infrastructure/semantic-memory/` for staged `Qdrant + TEI` support services
 - `infrastructure/dns/` for AdGuard Home
 - `apps/ai/vllm/`
 - `apps/ai/open-webui/`
@@ -45,8 +47,8 @@ Live now:
 
 - Flux is already bootstrapped against this repo.
 - `.sops.yaml` exists and encrypted secrets are wired into the cluster.
-- It does not yet include Mem0, Obsidian export automation, ComfyUI, media,
-  Immich, or Tailscale manifests.
+- It does not yet include live Mem0 activation, Obsidian export automation,
+  ComfyUI, media, Immich, or Tailscale manifests.
 - Talos `UserVolumeConfig` documents exist, but they are intentionally outside
   Flux because they are Talos machine config, not Kubernetes resources.
 - The first-wave storage model is temporary and SSD-backed; it is designed to
@@ -79,6 +81,7 @@ Explicitly out of this first wave:
 | `infrastructure/nvidia/` | Runtime class and pinned NVIDIA device plugin daemonset. | GPU assumptions are tower-specific unless more GPU nodes appear later. | It does not install drivers; Talos handles that at the OS layer. |
 | `infrastructure/storage/` | Kubernetes-side local-path provisioner plus Talos-side storage docs under `storage/talos/`. | Temporary SSD-only mode inherits the Talos `EPHEMERAL` partition limits. | Flux does not apply the Talos `UserVolumeConfig` files. |
 | `infrastructure/postgres/` | Internal Postgres service for checkpoint and application state. | Running on small SSD-backed PVC storage for now. | It does not solve semantic memory or archive export by itself. |
+| `infrastructure/semantic-memory/` | Staged `Qdrant + TEI` support services for the `v0.4.0` Mem0 layer. | Suspended until the new LangGraph image and support services are intentionally enabled. | It does not activate semantic memory by itself; LangGraph still defaults to `none`. |
 | `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Running, but router cutover is still intentionally deferred. | It does not update router-side DNS settings for you. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
@@ -99,6 +102,8 @@ As of 2026-03-26:
 - `LangGraph` is running internally in the `agents` namespace
 - LangGraph thread, approval/resume, and restart persistence checks have passed
 - LangGraph now exposes no-op semantic-memory and archive seams in `/healthz`
+- the next LangGraph revision contains a real Mem0-backed provider path, but the
+  provider remains disabled in live config until `infra-semantic-memory` is unsuspended
 - the `apps` `Kustomization` is healthy again
 - AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
 - AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.2.200`
@@ -151,5 +156,7 @@ Future direction remains unchanged:
 1. Point a test client directly at AdGuard and prove `openwebui.home.arpa` and `vllm.home.arpa` resolve by name.
 2. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
 3. Preserve the `v0.3.0` LangGraph validation path in docs and runbooks as the baseline smoke test.
-4. Move next into Mem0 and external Obsidian summary/export work without expanding the serving layer.
-5. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.
+4. Unsuspend and validate `infra-semantic-memory` when the WAN link and storage budget are acceptable.
+5. Flip LangGraph from `semantic_memory_provider: none` to `mem0`.
+6. Move next into external Obsidian summary/export work without expanding the serving layer.
+7. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.

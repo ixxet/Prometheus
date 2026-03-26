@@ -377,12 +377,43 @@ Lesson:
 - planned values are not the same thing as disabled values
 - feature staging needs explicit no-op configuration until the backing system is real
 
+### 16. The obvious semantic-memory service split was not the cleanest fit
+
+What happened:
+
+- the first instinct for `v0.4.0` was to hang LangGraph off a separate Mem0 API
+  service immediately
+- the upstream Mem0 options split into two awkward shapes for this stack:
+  - the plain REST server assumes a different default backend shape
+  - the OpenMemory API is a larger app surface than Prometheus needs for first
+    semantic-memory integration
+
+Effect:
+
+- a seemingly clean "just call another service" plan would have added more app
+  surface area than value
+- the real boundary needed to stay around LangGraph as the orchestrator, not
+  around a second agent-adjacent API
+
+Fix:
+
+- kept the semantic-memory seam inside LangGraph
+- implemented the real Mem0-backed provider in-process
+- staged `Qdrant + TEI` as support services behind a suspended GitOps layer
+
+Lesson:
+
+- a cleaner architecture is not always the one with the most services
+- when one service already owns execution state, adding the memory boundary
+  inside that service can be the more honest design
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
 - `home.arpa` names are proven only when querying AdGuard directly; clients are
   not using it by default yet
 - Mem0 and Obsidian are still planned layers, not live ones
+- Mem0 support infra is authored, but still intentionally staged instead of live
 - remote access works now through MIMIR advertising `192.168.2.0/24` into
   Tailscale, but it remains an external dependency rather than an in-cluster feature
 - the node is still on DHCP `.49`, not the planned reserved `.45`
@@ -428,6 +459,8 @@ already do on modest, real-world home hardware.
   plain upstream resolvers and validating the first four `home.arpa` rewrites.
 - Brought the first `v0.4.0` seam work live without changing runtime behavior by
   keeping semantic memory and archive export on explicit no-op providers.
+- Turned the semantic-memory seam into a real Mem0-backed code path without
+  flipping the live runtime over prematurely.
 
 ## Success Stories
 
@@ -449,3 +482,6 @@ already do on modest, real-world home hardware.
 - The LangGraph runtime now exposes the next integration seam cleanly: semantic
   memory and archive hooks are live, visible in health checks, and still safe
   because they default to no-op providers.
+- The semantic-memory stage now has a credible shape: LangGraph owns the seam,
+  Mem0 owns durable facts, and `Qdrant + TEI` are staged as support services
+  instead of being improvised later.

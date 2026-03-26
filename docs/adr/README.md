@@ -6,3 +6,4 @@ the implementation details change.
 Current ADRs:
 
 - `0001-v0.4.0-memory-and-archive-boundaries.md`
+- `0002-v0.4.0-semantic-memory-runtime-shape.md`

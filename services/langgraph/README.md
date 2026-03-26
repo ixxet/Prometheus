@@ -16,6 +16,8 @@ Early `v0.4.0` work is also starting here:
 - archive-sink seam
 - default no-op implementations so the live `v0.3.0` path stays stable while
   memory and archive integrations are authored
+- real Mem0-backed provider path authored in-source, but still disabled in the
+  live ConfigMap until the staged `Qdrant + TEI` layer is activated
 
 ## Endpoints
 

@@ -78,15 +78,15 @@ flowchart LR
 | **GPU Runtime** | NVIDIA Device Plugin | v0.17.0 -- RTX 3090, 24 GB VRAM | Live |
 | **GitOps** | Flux | Bootstrapped and reconciling this repo | Live |
 | **Secrets** | SOPS + age | Encrypted secrets in git, cluster decryption wired | Live |
-| **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live, router cutover deferred |
+| **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live, test-only on the tower and not the router DNS authority |
 | **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
 | **AI -- Orchestrator** | LangGraph | Self-hosted OSS runtime for tool loops, retries, HITL resume, and thread execution | Live |
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
-| **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Planned next layer |
+| **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Authored in LangGraph, staged support infra not yet activated |
 | **AI -- Semantic Memory Alt** | LangMem | LangGraph-native alternative to Mem0 | Documented only |
-| **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, project logs | Planned |
+| **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, project logs | Planned external sink |
 | **AI -- Parked Runtime** | Ollama | Kept in-repo as reference, not first-wave | Parked |
 | **AI -- Deferred Gateway** | LiteLLM | Useful later if multiple backends appear | Deferred |
 | **AI -- Deferred Memory** | Graphiti / Zep | Temporal graph memory for point-in-time queries | Deferred |
@@ -134,7 +134,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Stable | Internal-only runtime is live; create, run, resume, restart-persistence, and no-op `v0.4.0` seam checks have passed |
-| Mem0 / Obsidian | Planned | Not deployed yet |
+| Mem0 / Obsidian | In progress | Mem0 provider path and staged Qdrant/TEI infra are authored; external Obsidian sink still pending |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
 ### Already real in the live cluster
@@ -159,12 +159,16 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] LangGraph thread, run, approval, and restart persistence checks have passed
 - [x] LangGraph health now reports `semantic_memory_provider: none` and `archive_sink: none`
 - [x] Tailscale remote access works through MIMIR advertising `192.168.2.0/24`
+- [x] A real Mem0-backed semantic-memory path now exists in the LangGraph source
+- [x] Qdrant plus TEI support manifests are authored under suspended `infra-semantic-memory`
 
 ### Live but still provisional
 
 - [ ] Router DNS is not yet cut over to AdGuard Home
 - [ ] Clients are not yet pointed at AdGuard by default, so `home.arpa` naming is still in test-only mode
 - [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
+- [ ] `infra-semantic-memory` is intentionally still suspended
+- [ ] LangGraph still runs with `semantic_memory_provider: none` until the staged memory layer is enabled
 
 ### Real in the repo and aligned with the cluster
 
@@ -184,7 +188,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 
 ### Not yet authored or activated
 
-- [ ] Mem0 manifests or secret wiring
+- [x] Mem0 provider path in LangGraph and staged semantic-memory support manifests
 - [ ] Obsidian summary/export workflow
 - [ ] ComfyUI manifests
 - [ ] Media stack manifests

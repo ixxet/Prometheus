@@ -115,6 +115,11 @@ Status: complete on 2026-03-26.
 Goal: add long-term memory and human-readable outputs without turning the stack
 into overlapping memory products.
 
+Status: in progress on 2026-03-26. The LangGraph service now contains a real
+Mem0-backed provider path, and the supporting `Qdrant + TEI` stack is authored
+under suspended GitOps. The provider is still intentionally disabled in the live
+config until that support stack is activated and validated.
+
 ### Implementation
 
 - add self-hosted Mem0 as the only semantic-memory system
@@ -132,7 +137,7 @@ into overlapping memory products.
 
 ### Acceptance
 
-- a run can write at least one durable semantic-memory record into Mem0
+- [ ] a run can write at least one durable semantic-memory record into Mem0
 - a run can export a Markdown summary or ADR artifact to the chosen external sink
 - the same user preference can be retrieved in a later thread
 - no duplicate semantic-memory system is live
