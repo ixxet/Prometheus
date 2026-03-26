@@ -407,6 +407,36 @@ Lesson:
 - when one service already owns execution state, adding the memory boundary
   inside that service can be the more honest design
 
+### 17. Immutable pinning was right, but the first rollout still had a real image-pull cost
+
+What happened:
+
+- the new Mem0-capable LangGraph image was built and published correctly
+- the deployment was pinned to the immutable SHA tag and Flux applied the new spec
+- the old LangGraph pod kept serving while the replacement pod sat in
+  `ContainerCreating`
+- the Talos node still had to pull about `2.98 GB` from `ghcr.io`, which took
+  about `15m37s`
+
+Effect:
+
+- the pin looked "done" in Git before the runtime actually moved
+- rollout verification had to wait on node-side image delivery, not just GitOps
+  convergence
+
+Fix:
+
+- kept the immutable image pin
+- waited for the new pod to finish pulling and become ready before declaring the
+  rollout complete
+- rechecked `/healthz` after the replacement was live
+
+Lesson:
+
+- immutable pinning fixes traceability, not download time
+- on this link, first-pull cost is part of rollout planning even when the
+  control-plane change itself is trivial
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -461,6 +491,9 @@ already do on modest, real-world home hardware.
   keeping semantic memory and archive export on explicit no-op providers.
 - Turned the semantic-memory seam into a real Mem0-backed code path without
   flipping the live runtime over prematurely.
+- Rolled the live LangGraph deployment forward to the Mem0-capable immutable
+  image without changing runtime behavior, then verified that the service still
+  reported `semantic_memory_provider: none`.
 
 ## Success Stories
 

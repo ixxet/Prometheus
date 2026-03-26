@@ -81,7 +81,7 @@ Explicitly out of this first wave:
 | `infrastructure/nvidia/` | Runtime class and pinned NVIDIA device plugin daemonset. | GPU assumptions are tower-specific unless more GPU nodes appear later. | It does not install drivers; Talos handles that at the OS layer. |
 | `infrastructure/storage/` | Kubernetes-side local-path provisioner plus Talos-side storage docs under `storage/talos/`. | Temporary SSD-only mode inherits the Talos `EPHEMERAL` partition limits. | Flux does not apply the Talos `UserVolumeConfig` files. |
 | `infrastructure/postgres/` | Internal Postgres service for checkpoint and application state. | Running on small SSD-backed PVC storage for now. | It does not solve semantic memory or archive export by itself. |
-| `infrastructure/semantic-memory/` | Staged `Qdrant + TEI` support services for the `v0.4.0` Mem0 layer. | Suspended until the new LangGraph image and support services are intentionally enabled. | It does not activate semantic memory by itself; LangGraph still defaults to `none`. |
+| `infrastructure/semantic-memory/` | Staged `Qdrant + TEI` support services for the `v0.4.0` Mem0 layer. | Suspended until the live Mem0-capable LangGraph image and support services are intentionally enabled together. | It does not activate semantic memory by itself; LangGraph still defaults to `none`. |
 | `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Running, but router cutover is still intentionally deferred. | It does not update router-side DNS settings for you. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
@@ -102,8 +102,8 @@ As of 2026-03-26:
 - `LangGraph` is running internally in the `agents` namespace
 - LangGraph thread, approval/resume, and restart persistence checks have passed
 - LangGraph now exposes no-op semantic-memory and archive seams in `/healthz`
-- the next LangGraph revision contains a real Mem0-backed provider path, but the
-  provider remains disabled in live config until `infra-semantic-memory` is unsuspended
+- the live LangGraph image now contains a real Mem0-backed provider path, but
+  the provider remains disabled in live config until `infra-semantic-memory` is unsuspended
 - the `apps` `Kustomization` is healthy again
 - AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
 - AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.2.200`

@@ -115,10 +115,11 @@ Status: complete on 2026-03-26.
 Goal: add long-term memory and human-readable outputs without turning the stack
 into overlapping memory products.
 
-Status: in progress on 2026-03-26. The LangGraph service now contains a real
-Mem0-backed provider path, and the supporting `Qdrant + TEI` stack is authored
-under suspended GitOps. The provider is still intentionally disabled in the live
-config until that support stack is activated and validated.
+Status: in progress on 2026-03-26. The LangGraph service now runs the
+Mem0-capable immutable image in-cluster, and the supporting `Qdrant + TEI`
+stack is authored under suspended GitOps. The provider is still intentionally
+disabled in the live config until that support stack is activated and
+validated.
 
 ### Implementation
 
