@@ -15,7 +15,7 @@ data:
     performed external actions you did not actually perform.
   # v0.4.0 seams are authored in the service, but live rollout stays on no-op
   # providers until Mem0 and the external archive sink are actually deployed.
-  SEMANTIC_MEMORY_PROVIDER: none
+  SEMANTIC_MEMORY_PROVIDER: mem0
   SEMANTIC_MEMORY_USER_ID: prometheus-operator
   SEMANTIC_MEMORY_AGENT_ID: langgraph
   SEMANTIC_MEMORY_TOP_K: "3"
