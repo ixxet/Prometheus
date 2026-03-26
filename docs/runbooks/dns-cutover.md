@@ -25,6 +25,7 @@ Important boundary:
 
 ## First-wave topology
 
+- current discovered main gateway/admin path: `192.168.2.1`
 - Talos node: `192.168.2.49`
 - Kubernetes API VIP: `192.168.2.46`
 - AdGuard Home: `192.168.2.200`
@@ -83,7 +84,8 @@ This keeps the blast radius smaller than a house-wide switch on the first try.
 
 ## Cutover steps
 
-1. Export or screenshot the current router DNS settings.
+1. Export or screenshot the current router DNS settings from the current main
+   gateway at `192.168.2.1`.
 2. Confirm AdGuard upstream resolvers are healthy.
 3. Confirm the four first-wave rewrites resolve correctly from a test client.
 4. Change the router or DHCP DNS server to `192.168.2.200`.

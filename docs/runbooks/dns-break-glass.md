@@ -17,6 +17,7 @@ The break-glass path is IP-based, not DNS-based.
 
 If `home.arpa` resolution fails, the following should still be usable:
 
+- current discovered main gateway/admin path: `http://192.168.2.1`
 - Tailscale to MIMIR: `100.109.171.72`
 - MIMIR LAN IP: `192.168.2.40`
 - Talos API: `192.168.2.49:50000`
@@ -75,7 +76,7 @@ kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstr
 Record these before changing anything:
 
 - main router model
-- main router admin IP
+- main router admin IP, currently observed as `192.168.2.1`
 - current DHCP DNS settings
 - secondary router model, if it will be used as the first test segment
 - whether the secondary router is running as a router or as a plain AP/bridge
