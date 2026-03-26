@@ -17,7 +17,9 @@ full project docs. Commands are grouped by what you are trying to verify.
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
-| LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz`, thread APIs, and no-op seam status |
+| LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz`, thread APIs, and Mem0-backed semantic-memory status |
+| Qdrant | `semantic-memory` | `ClusterIP` | in-cluster only | `readyz` returns healthy |
+| TEI embeddings | `semantic-memory` | `ClusterIP` | in-cluster only | `/health` returns healthy |
 
 ## Control station commands
 
@@ -52,8 +54,17 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | LangGraph pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents get pods -o wide` | `langgraph` and `postgres` are `1/1` |
 | LangGraph logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents logs deploy/langgraph --tail=200` | startup completes without DB or model-backend errors |
-| LangGraph health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then `curl http://127.0.0.1:18081/healthz` | JSON shows `ok: true`, the expected `vLLM` backend, `semantic_memory_provider: none`, and `archive_sink: none` |
+| LangGraph health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then `curl http://127.0.0.1:18081/healthz` | JSON shows `ok: true`, the expected `vLLM` backend, `semantic_memory_provider: mem0`, and `archive_sink: none` |
 | LangGraph thread smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use the commands in `docs/runbooks/langgraph-validation.md` | thread create, run, resume, and fetch all succeed |
+| Semantic-memory smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` and `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n semantic-memory port-forward svc/qdrant 16333:6333` then use `docs/runbooks/semantic-memory-activation.md` | a preference written in one thread is recalled in a fresh thread |
+
+## Semantic-memory namespace checks
+
+| Goal | Command | Success signal |
+| --- | --- | --- |
+| Support stack status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n semantic-memory get pods,svc,pvc -o wide` | `qdrant` and `tei-embeddings` are `1/1`; both PVCs are `Bound` |
+| Qdrant health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n semantic-memory port-forward svc/qdrant 16333:6333` then `curl http://127.0.0.1:16333/readyz` | `all shards are ready` |
+| TEI health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n semantic-memory port-forward svc/tei-embeddings 18082:80` then `curl http://127.0.0.1:18082/health` | HTTP `200` |
 
 ## DNS checks
 
@@ -113,3 +124,6 @@ The practical workflow is:
 4. run the smoke test from `docs/runbooks/langgraph-validation.md`
 5. if persistence is the concern, delete the LangGraph pod and repeat the final
    `GET /threads/{thread_id}` check after the replacement pod is ready
+6. if semantic memory is the concern, verify `OPENAI_API_KEY` exists in the
+   ConfigMap, check `kubectl -n semantic-memory get pods`, and rerun the
+   semantic-memory smoke test

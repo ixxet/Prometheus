@@ -84,7 +84,7 @@ flowchart LR
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
 | **AI -- Orchestrator** | LangGraph | Self-hosted OSS runtime for tool loops, retries, HITL resume, and thread execution | Live |
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
-| **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Mem0-capable LangGraph image is live; provider remains disabled until staged support infra is activated |
+| **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Live with Qdrant + TEI support; cross-thread write and recall validated |
 | **AI -- Semantic Memory Alt** | LangMem | LangGraph-native alternative to Mem0 | Documented only |
 | **AI -- Archive Sink** | Obsidian | Human-readable summaries, ADRs, project logs | Planned external sink |
 | **AI -- Parked Runtime** | Ollama | Kept in-repo as reference, not first-wave | Parked |
@@ -133,8 +133,8 @@ integration polish, DNS cutover, and the memory/archive layers.
 | AdGuard Home | Stable | Serving on `http://192.168.2.200`; test-only rewrites are configured and router DNS cutover is still intentionally deferred |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
-| LangGraph | Stable | Internal-only runtime is live on the Mem0-capable image; create, run, resume, restart-persistence, and no-op `v0.4.0` seam checks have passed |
-| Mem0 / Obsidian | In progress | Mem0 provider path and staged Qdrant/TEI infra are authored; external Obsidian sink still pending |
+| LangGraph | Stable | Internal-only runtime is live on the Mem0-enabled image; create, run, resume, restart-persistence, and semantic-memory smoke checks have passed |
+| Mem0 / Obsidian | In progress | Mem0 is live with Qdrant + TEI backing; external Obsidian sink is still pending |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
 ### Already real in the live cluster
@@ -157,19 +157,20 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] `vLLM` model cache on the PVC is populated
 - [x] LangGraph is running internally in the `agents` namespace
 - [x] LangGraph thread, run, approval, and restart persistence checks have passed
-- [x] LangGraph health now reports `semantic_memory_provider: none` and `archive_sink: none`
+- [x] LangGraph health now reports `semantic_memory_provider: mem0` and `archive_sink: none`
 - [x] Tailscale remote access works through MIMIR advertising `192.168.2.0/24`
 - [x] A real Mem0-backed semantic-memory path now exists in the LangGraph source
 - [x] The live LangGraph deployment is pinned to the Mem0-capable immutable image tag
-- [x] Qdrant plus TEI support manifests are authored under suspended `infra-semantic-memory`
+- [x] Qdrant plus TEI support services are live under `infra-semantic-memory`
+- [x] Cross-thread semantic-memory write and recall have been validated against the live cluster
 
 ### Live but still provisional
 
 - [ ] Router DNS is not yet cut over to AdGuard Home
 - [ ] Clients are not yet pointed at AdGuard by default, so `home.arpa` naming is still in test-only mode
 - [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
-- [ ] `infra-semantic-memory` is intentionally still suspended
-- [ ] LangGraph still runs with `semantic_memory_provider: none` until the staged memory layer is enabled
+- [ ] External Obsidian summary/export flow is still not live
+- [ ] Router DNS is still test-only and not cut over by default
 
 ### Real in the repo and aligned with the cluster
 
@@ -179,7 +180,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] Open WebUI manifests pointed directly at vLLM
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
 - [x] Self-hosted LangGraph service source under `services/langgraph/`
-- [x] `v0.4.0` semantic-memory and archive seams are authored and live behind no-op providers
+- [x] `v0.4.0` semantic-memory seam is live with Mem0, while archive export remains on the no-op sink
 - [x] GitHub Actions builds and publishes the LangGraph runtime image to GHCR
 - [x] LangGraph rollout is validated end to end against the live cluster
 - [x] Ollama manifests kept as parked reference material, not the active path
@@ -233,6 +234,13 @@ Current notable examples:
   checkpoint persistence
 - immutable LangGraph image pinning still surfaced a slow first-pull boundary on
   the Talos node before the replacement pod could take over
+- ConfigMap-driven runtime changes did not restart the LangGraph pod by
+  themselves
+- Flux got temporarily pinned behind a failing intermediate LangGraph revision,
+  so the live objects had to be converged to the already-committed repo state
+  before the final `mem0` rollout could clear
+- Mem0's Hugging Face embedder path still required `OPENAI_API_KEY` to exist in
+  the environment even though the embedder was pointing at local TEI
 - Flux and live-state drift surfaced where repo truth and runtime truth can
   briefly diverge during recovery
 

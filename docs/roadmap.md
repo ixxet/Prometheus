@@ -15,7 +15,7 @@ what "done" means for each milestone.
   next milestones
 - MIMIR stays Debian first, then may become a Talos worker later, then HA
   control-plane work deliberately later
-- Agent stack is `self-hosted OSS LangGraph + Postgres + self-hosted Mem0 later + external Obsidian vault sink`
+- Agent stack is `self-hosted OSS LangGraph + Postgres + self-hosted Mem0 + external Obsidian vault sink`
 - `Open WebUI` remains a human chat UI; it is not the orchestrator
 - `vLLM` remains the only model backend for the first agent platform
 - `Ollama`, `LiteLLM`, `Graphiti/Zep`, and `Letta` stay out of the active path
@@ -115,11 +115,10 @@ Status: complete on 2026-03-26.
 Goal: add long-term memory and human-readable outputs without turning the stack
 into overlapping memory products.
 
-Status: in progress on 2026-03-26. The LangGraph service now runs the
-Mem0-capable immutable image in-cluster, and the supporting `Qdrant + TEI`
-stack is authored under suspended GitOps. The provider is still intentionally
-disabled in the live config until that support stack is activated and
-validated.
+Status: in progress on 2026-03-26. Mem0 is now live in-cluster through
+LangGraph with `Qdrant + TEI` backing, and cross-thread write/recall has been
+validated. The remaining `v0.4.0` gap is the external Obsidian summary/export
+path.
 
 ### Implementation
 
@@ -138,9 +137,9 @@ validated.
 
 ### Acceptance
 
-- [ ] a run can write at least one durable semantic-memory record into Mem0
+- [x] a run can write at least one durable semantic-memory record into Mem0
 - a run can export a Markdown summary or ADR artifact to the chosen external sink
-- the same user preference can be retrieved in a later thread
+- [x] the same user preference can be retrieved in a later thread
 - no duplicate semantic-memory system is live
 
 ## `v0.5.0` DNS Cutover And First Real Workflow

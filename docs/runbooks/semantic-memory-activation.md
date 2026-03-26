@@ -8,8 +8,15 @@ This runbook turns the staged `v0.4.0` semantic-memory layer into a live one.
 It assumes:
 
 - LangGraph already runs with the Mem0-backed provider code present
-- `infra-semantic-memory` exists in GitOps but is still suspended
 - AdGuard remains test-only on the tower
+
+Current live state on 2026-03-26:
+
+- `infra-semantic-memory` is already unsuspended and healthy
+- `Qdrant` and `TEI` are both `1/1 Running`
+- LangGraph already reports `semantic_memory_provider: mem0`
+- cross-thread write and recall have already been validated once
+- the remaining `v0.4.0` gap is external Obsidian summary/export
 
 ## What will be enabled
 
@@ -49,6 +56,7 @@ Edit:
 Change:
 
 - `SEMANTIC_MEMORY_PROVIDER: none` -> `SEMANTIC_MEMORY_PROVIDER: mem0`
+- ensure `OPENAI_API_KEY: local-not-required` is present for the local TEI-compatible embedder path
 
 Keep:
 
@@ -75,6 +83,7 @@ Expected:
 
 - `semantic_memory_provider: "mem0"`
 - `archive_sink: "none"`
+- `OPENAI_API_KEY` must be present in the runtime environment, even though TEI is local
 
 ## 5. Smoke-test semantic write and recall
 
@@ -124,6 +133,7 @@ Expected:
 
 - the answer should reflect the stored DNS constraint
 - LangGraph logs should not show semantic-memory initialization failures
+- Qdrant should expose the `prometheus-memory` collection after the first write
 
 ## 6. If it regresses
 
@@ -134,3 +144,8 @@ Expected:
    - `kubectl -n agents logs deploy/langgraph --tail=200`
    - `kubectl -n semantic-memory logs deploy/tei-embeddings --tail=200`
    - `kubectl -n semantic-memory logs deploy/qdrant --tail=200`
+4. if the runtime is crashing before startup completes, confirm whether:
+   - the latest ConfigMap changes actually reached the live object
+   - a pod-template change was needed to reroll after `envFrom` updates
+   - Flux is stuck behind an older failing revision and the live objects need to
+     be converged to the already-committed repo state

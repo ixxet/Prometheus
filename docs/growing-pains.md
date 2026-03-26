@@ -437,6 +437,86 @@ Lesson:
 - on this link, first-pull cost is part of rollout planning even when the
   control-plane change itself is trivial
 
+### 18. ConfigMap-driven runtime changes did not restart LangGraph
+
+What happened:
+
+- `SEMANTIC_MEMORY_PROVIDER` was changed from `none` to `mem0` in the LangGraph
+  ConfigMap
+- the deployment consumed that ConfigMap through `envFrom`
+- the existing LangGraph pod kept running unchanged
+
+Effect:
+
+- the repo said semantic memory was enabled
+- the live pod still reported `semantic_memory_provider: none`
+
+Fix:
+
+- added an explicit pod-template revision annotation to the LangGraph
+  deployment
+- treated each config-driven behavior change as a rollout event that must be
+  visible in Git history
+
+Lesson:
+
+- `envFrom` config changes are not rollout events by themselves
+- if runtime behavior depends on ConfigMap values, the pod replacement path must
+  be explicit
+
+### 19. Flux got pinned behind a failing intermediate revision
+
+What happened:
+
+- the first `mem0` flip crashed LangGraph because the embedder path still wanted
+  `OPENAI_API_KEY` to exist in the environment
+- the fix for that was committed in Git
+- Flux was still stuck reconciling the older failing revision
+
+Effect:
+
+- newer repo fixes existed
+- the live cluster remained trapped on the older bad state until that
+  reconciliation cleared
+
+Fix:
+
+- added the explicit `OPENAI_API_KEY: local-not-required` config
+- converged the live ConfigMap and Deployment to the already-committed repo
+  state so the rollout could recover
+
+Lesson:
+
+- a later good revision does not help immediately if the controller is still
+  blocked by an older failing one
+- sometimes the fastest honest recovery is applying the repo-authored fix live
+  so GitOps can catch back up
+
+### 20. Mem0's Hugging Face embedder path still wanted an API key for local TEI
+
+What happened:
+
+- TEI was running locally and healthy
+- Mem0's Hugging Face embedder wrapper still constructed an OpenAI client for
+  the TEI-compatible base URL
+- that client refused to start without `OPENAI_API_KEY` in the environment
+
+Effect:
+
+- LangGraph crashed during application startup before the first semantic-memory
+  run could execute
+
+Fix:
+
+- set `OPENAI_API_KEY=local-not-required` explicitly in the LangGraph ConfigMap
+- rerolled LangGraph after the config change
+
+Lesson:
+
+- "local" does not always mean "no API key path exists" in wrapper libraries
+- explicit environment is safer than relying on code-level defaults when nested
+  dependencies create their own clients
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -449,6 +529,7 @@ Lesson:
 - the node is still on DHCP `.49`, not the planned reserved `.45`
 - the runbooks are authored now, but they still need live rehearsal as new
   milestones land
+- Obsidian export is still the missing piece before `v0.4.0` is complete
 
 ## Why keep this visible
 
@@ -494,6 +575,10 @@ already do on modest, real-world home hardware.
 - Rolled the live LangGraph deployment forward to the Mem0-capable immutable
   image without changing runtime behavior, then verified that the service still
   reported `semantic_memory_provider: none`.
+- Brought `Qdrant + TEI` up on the live cluster and validated them before
+  changing LangGraph behavior.
+- Turned live semantic memory on and validated a real cross-thread write and
+  recall against the running cluster.
 
 ## Success Stories
 
