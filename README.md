@@ -36,7 +36,7 @@ expressed as API-driven state.
 
 The live system and the future shape are both captured here. The standalone
 Mermaid source for this diagram lives at
-[`docs/diagrams/system-architecture.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/system-architecture.mmd).
+[`docs/diagrams/system-architecture.mmd`](docs/diagrams/system-architecture.mmd).
 
 ```mermaid
 flowchart LR
@@ -199,7 +199,7 @@ to integration polish, DNS cutover, and the next application layers.
 This project is intentionally documenting the rough edges, not just the wins.
 The current log of mistakes, dead ends, and fixes lives in:
 
-- [`docs/growing-pains.md`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/growing-pains.md)
+- [`docs/growing-pains.md`](docs/growing-pains.md)
 
 Current notable examples:
 

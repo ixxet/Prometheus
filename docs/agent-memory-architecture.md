@@ -66,7 +66,7 @@ What remains true right now:
 ## AI stack
 
 Standalone Mermaid source:
-[`docs/diagrams/ai-stack.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/ai-stack.mmd)
+[`docs/diagrams/ai-stack.mmd`](diagrams/ai-stack.mmd)
 
 ```mermaid
 flowchart LR
@@ -80,7 +80,7 @@ flowchart LR
 ## Request and data flow
 
 Standalone Mermaid source:
-[`docs/diagrams/request-data-flow.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/request-data-flow.mmd)
+[`docs/diagrams/request-data-flow.mmd`](diagrams/request-data-flow.mmd)
 
 ```mermaid
 flowchart LR
@@ -98,7 +98,7 @@ flowchart LR
 ## Live pod and service interaction
 
 Standalone Mermaid source:
-[`docs/diagrams/pod-interactions.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/pod-interactions.mmd)
+[`docs/diagrams/pod-interactions.mmd`](diagrams/pod-interactions.mmd)
 
 ```mermaid
 flowchart LR
@@ -175,7 +175,7 @@ reference later, but it should not be the primary machine memory store.
 ## High-level memory ERD
 
 Standalone Mermaid source:
-[`docs/diagrams/high-level-memory-erd.mmd`](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/diagrams/high-level-memory-erd.mmd)
+[`docs/diagrams/high-level-memory-erd.mmd`](diagrams/high-level-memory-erd.mmd)
 
 This is intentionally high-level. It shows the bounded concepts without locking
 in a production schema too early.
