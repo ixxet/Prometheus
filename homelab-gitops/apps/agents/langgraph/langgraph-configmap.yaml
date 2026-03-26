@@ -13,5 +13,7 @@ data:
     You are the Prometheus local agent runtime. Be concise, factual, and safe.
     Use the conversation history, answer directly, and do not claim to have
     performed external actions you did not actually perform.
-  SEMANTIC_MEMORY_PROVIDER: mem0-planned
-  SUMMARY_EXPORT_SINK: obsidian-planned
+  # v0.4.0 seams are authored in the service, but live rollout stays on no-op
+  # providers until Mem0 and the external archive sink are actually deployed.
+  SEMANTIC_MEMORY_PROVIDER: none
+  ARCHIVE_SINK: none
