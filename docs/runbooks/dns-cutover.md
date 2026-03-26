@@ -16,6 +16,22 @@ the primary resolver.
 - not yet rehearsed end to end for router cutover
 - router cutover is still deferred
 
+## Recommended cutover window
+
+Do the router cutover only when all of the following are true:
+
+- the tower is expected to stay on Talos for the full test window
+- there is no plan to boot Windows on the tower during or immediately after the cutover
+- MIMIR subnet-router access is healthy so rollback can still be done remotely if needed
+- you can spend at least 30 uninterrupted minutes validating clients and undoing the change if necessary
+- the current router DNS settings are captured before any change
+
+Practical recommendation:
+
+- do the cutover when you are home or otherwise able to touch the router directly
+- use one controlled client first, then widen out after public DNS and `home.arpa` both behave
+- do not combine the router cutover with unrelated network or storage changes
+
 ## Preconditions
 
 - AdGuard Home is reachable on `http://192.168.2.200`
