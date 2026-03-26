@@ -77,8 +77,9 @@ flowchart LR
 | **GitOps** | Flux | Bootstrapped and reconciling this repo | Live |
 | **Secrets** | SOPS + age | Encrypted secrets in git, cluster decryption wired | Live |
 | **DNS** | AdGuard Home | Local DNS + ad blocking | Live, router cutover deferred |
-| **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend | Live pod, model downloaded, startup tuning still in progress |
-| **AI -- Web UI** | Open WebUI | Human-facing chat UI pointed directly at vLLM | Live |
+| **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
+| **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
+| **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
 | **AI -- Orchestrator** | LangGraph | Tool loops, retries, HITL resume, thread execution | Scaffolded, inactive |
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
 | **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Planned next layer |
@@ -97,9 +98,9 @@ flowchart LR
 ## Current State
 
 The base cluster is live, Flux is live, and the first stateful services are now
-running on the Talos system SSD. The current bottleneck is no longer image
-pulls or model download; it is `vLLM` starting with a context window that is too
-large for the current 3090 KV-cache budget.
+running on the Talos system SSD. `vLLM` is serving successfully, Open WebUI is
+reachable remotely through Tailscale, and the next work has shifted from bring-up
+to integration polish, DNS cutover, and the next application layers.
 
 ## Live Status Block
 
@@ -112,10 +113,11 @@ large for the current 3090 KV-cache budget.
 | Storage | Stable | `local-path-provisioner` uses `/var/mnt/local-path-provisioner` on the OS SSD |
 | Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
 | AdGuard Home | Stable | Running on `192.168.2.200`, but router DNS cutover is not done |
-| Open WebUI | Stable | Serving successfully on `http://192.168.2.201` |
-| vLLM | Provisional | Model cache is populated; pod is restarting on a KV-cache/context-length mismatch fix |
+| Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
+| vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Scaffold only | Manifests exist, runtime is not active |
 | Mem0 / Obsidian | Planned | Not deployed yet |
+| Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
 ### Already real in the live cluster
 
@@ -132,13 +134,12 @@ large for the current 3090 KV-cache budget.
 - [x] Postgres is running in-cluster
 - [x] AdGuard Home is running in-cluster
 - [x] Open WebUI is running and reachable on `192.168.2.201`
-- [x] `vLLM` image is present and the pod is live
+- [x] `vLLM` is serving on `192.168.2.205:8000`
 - [x] `vLLM` model cache on the PVC is populated
+- [x] Tailscale remote access works through MIMIR advertising `192.168.2.0/24`
 
 ### Live but still provisional
 
-- [ ] `vLLM` is not serving yet because its default `32768` token context window exceeds the current KV-cache limit on the RTX 3090
-- [ ] `apps` `Kustomization` remains unhealthy until `vLLM` passes readiness
 - [ ] Router DNS is not yet cut over to AdGuard Home
 - [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
 

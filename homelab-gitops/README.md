@@ -98,9 +98,9 @@ As of 2026-03-25:
 - `Postgres` is running
 - `AdGuard Home` is running
 - `Open WebUI` is serving successfully on `192.168.2.201`
-- `vLLM` is deployed, the cache PVC is populated, and the remaining blocker is
-  startup sizing on the RTX 3090
-- the `apps` `Kustomization` stays unhealthy until `vLLM` becomes ready
+- `vLLM` is serving successfully on `192.168.2.205:8000`
+- the `vLLM` cache PVC is populated on the system SSD
+- the `apps` `Kustomization` is healthy again
 
 ## Storage stance for the first wave
 
@@ -147,7 +147,7 @@ Future direction remains unchanged:
 
 ## Next activation steps
 
-1. Let the `vLLM` context-window fix roll out and pass `/v1/models` readiness.
+1. Verify Open WebUI uses the recovered `vLLM` backend cleanly from the UI path.
 2. Configure AdGuard rewrites and choose the router DNS cutover window.
 3. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
 4. Bring up LangGraph only after `vLLM` and Postgres are fully stable.
