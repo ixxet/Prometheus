@@ -82,7 +82,7 @@ flowchart LR
 | **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
-| **AI -- Orchestrator** | LangGraph | Tool loops, retries, HITL resume, thread execution | Scaffolded, inactive |
+| **AI -- Orchestrator** | LangGraph | Self-hosted OSS runtime for tool loops, retries, HITL resume, and thread execution | Next milestone |
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
 | **AI -- Semantic Memory** | Mem0 | Durable facts, preferences, and project conventions | Planned next layer |
 | **AI -- Semantic Memory Alt** | LangMem | LangGraph-native alternative to Mem0 | Documented only |
@@ -128,7 +128,7 @@ to integration polish, DNS cutover, and the next application layers.
 | Flux + SOPS | Stable | Repo is bootstrapped and decrypting secrets in-cluster |
 | Storage | Stable | `local-path-provisioner` uses `/var/mnt/local-path-provisioner` on the OS SSD |
 | Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
-| AdGuard Home | Stable | First-run setup is on `http://192.168.2.200:3000`; router DNS cutover is not done |
+| AdGuard Home | Stable | Serving on `http://192.168.2.200`; router DNS cutover is still intentionally deferred |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Scaffold only | Manifests exist, runtime is not active |
@@ -178,7 +178,7 @@ to integration polish, DNS cutover, and the next application layers.
 - [ ] Media stack manifests
 - [ ] Immich manifests
 - [ ] Tailscale manifests, if the subnet-router path is ever replaced with an in-cluster approach
-- [ ] Runbooks for disaster recovery, add-worker, and DNS cutover
+- [x] Runbooks for disaster recovery, add-worker, DNS cutover, releases, and model changes
 
 ### Deferred on purpose
 
@@ -200,6 +200,7 @@ This project is intentionally documenting the rough edges, not just the wins.
 The current log of mistakes, dead ends, and fixes lives in:
 
 - [`docs/growing-pains.md`](docs/growing-pains.md)
+- [`docs/roadmap.md`](docs/roadmap.md)
 
 Current notable examples:
 
@@ -256,13 +257,13 @@ Explicit non-goals for this phase:
 
 ### Immediate execution queue
 
-- [ ] Finish AdGuard configuration cleanly
-- [ ] Add AdGuard rewrites for the service names
-- [ ] Decide and perform router DNS cutover
-- [ ] Verify Open WebUI from the UI path, not just raw API calls
-- [ ] Bring up LangGraph
-- [ ] Keep LangGraph backed by Postgres
+- [x] Finish AdGuard configuration cleanly
+- [ ] Add AdGuard rewrites for the first service names
+- [ ] Verify `Open WebUI` from the UI path, not just raw API calls
+- [ ] Bring up a self-hosted OSS `LangGraph` runtime
+- [ ] Keep `LangGraph` backed by Postgres only for `v0.3.0`
 - [ ] Make the first agent runtime actually usable
+- [ ] Choose the safe window for router DNS cutover
 
 ### After LangGraph
 
@@ -299,14 +300,16 @@ Explicit non-goals for this phase:
 |------|---------|-------|
 | `plan-addendum-ai-workloads-gpu-nuc.md` | Historical AI workload strategy and NUC expansion notes | Superseded by the v0.2.0 pivot docs |
 | `docs/agent-memory-architecture.md` | Current AI and memory architecture source of truth | Records the `vLLM + LangGraph + Postgres + Obsidian` pivot and compares `Mem0` vs `LangMem` |
-| `docs/growing-pains.md` | Troubleshooting log and lessons learned | Records the real failures and why the fixes were needed |
+| `docs/growing-pains.md` | Troubleshooting log and lessons learned | Records the real failures, recovery path, and what those fixes changed |
+| `docs/roadmap.md` | End-to-end roadmap from `v0.2.1` to `v1.0.0` | Captures the locked decisions, milestones, acceptance gates, and sequencing |
 | `docs/tailscale-remote-access.md` | Remote access runbook | Explains the safe Tailscale path, why Talos-side install is deferred, and how subnet routing should work |
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
 | `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
+| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, and worker expansion | First authored pass; still needs rehearsal against future milestones |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
-| `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux now reconciles this repo; app health still depends on `vLLM` becoming ready |
-| `homelab-gitops/README.md` | GitOps stage inventory | Documents what is live, what is provisional, and what remains missing |
+| `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux reconciles this repo; the next major runtime layer is LangGraph |
+| `homelab-gitops/README.md` | GitOps stage inventory | Documents what is live, what is still provisional, and what comes next |
 
 ---
 

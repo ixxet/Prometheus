@@ -1,6 +1,6 @@
 # Runtime Checks And Quick Runbook
 
-Last updated: 2026-03-25 (America/Toronto)
+Last updated: 2026-03-26 (America/Toronto)
 
 ## What this is for
 
@@ -13,9 +13,9 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- | --- | --- |
 | Talos API | node | Talos API | `192.168.2.49:50000` | reachable from the control station |
 | Kubernetes API | cluster | VIP | `192.168.2.46:6443` | reachable |
-| AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200:3000` | first-run setup UI reachable; router cutover deferred |
+| AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200` | serving the admin UI; router cutover deferred |
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
-| vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | should answer `/v1/models` once startup sizing is correct |
+| vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
 
 ## Control station commands
@@ -24,7 +24,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | Talos health | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 health` | health checks pass |
 | Kubernetes nodes | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get nodes -o wide` | node is `Ready` |
-| Flux state | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n flux-system get kustomizations` | infra entries `True`; `apps` only green when `vllm` is ready |
+| Flux state | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n flux-system get kustomizations` | infra entries `True`; `apps` `True` while LangGraph remains intentionally inactive |
 | GPU allocatable | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig describe node talos-p0d-y77 | rg nvidia.com/gpu` | `nvidia.com/gpu: 1` |
 
 ## Storage checks
@@ -39,9 +39,9 @@ full project docs. Commands are grouped by what you are trying to verify.
 
 | Goal | Command | Success signal |
 | --- | --- | --- |
-| Pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai get pods -o wide` | `open-webui` running; `vllm` eventually `1/1` |
+| Pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai get pods -o wide` | `open-webui` and `vllm` both `1/1` |
 | Open WebUI logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/open-webui --tail=100` | no crash loop |
-| vLLM logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --tail=200` | model load completes and no fatal KV-cache error appears |
+| vLLM logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --tail=200` | API server reaches steady state and no fatal KV-cache error appears |
 | vLLM previous crash | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --previous --tail=200` | old crash reason is understood before changing manifests |
 | vLLM service via port-forward | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai port-forward svc/vllm 18000:8000` then `curl http://127.0.0.1:18000/v1/models` | JSON response once ready |
 
@@ -50,7 +50,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | Goal | Command | Success signal |
 | --- | --- | --- |
 | AdGuard pod | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n dns get pods,svc,pvc` | pod running, PVC bound, `192.168.2.200` assigned |
-| AdGuard setup UI | `curl -I http://192.168.2.200:3000` | `302` to `/install.html` or `200` on `/install.html` |
+| AdGuard admin UI | `curl -I http://192.168.2.200` | `302` to `/login.html` or `200` on `/login.html` |
 | Router cutover reminder | manual | only do this after AdGuard rewrites are configured |
 
 ## LAN endpoint checks
@@ -59,7 +59,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | Open WebUI on LAN | `curl -I http://192.168.2.201/` | `HTTP/1.1 200 OK` |
 | vLLM on LAN | `curl http://192.168.2.205:8000/v1/models` | JSON response once ready |
-| AdGuard on LAN | `curl -I http://192.168.2.200:3000` | `302` to `/install.html` during first launch |
+| AdGuard on LAN | `curl -I http://192.168.2.200/` | `302` to `/login.html` or `200` after login |
 
 ## Remote access note
 
@@ -76,13 +76,19 @@ Current validated path:
 - the control Mac can reach Talos, Kubernetes, and the service IPs remotely
 - this keeps Talos itself untouched while remote ops stay available
 
-## Interpreting the current AI hangup
+## If the AI layer regresses
 
 If `open-webui` is healthy and `vllm` is not, check the `vllm` logs first.
-Current known failure mode:
+Known failure modes already seen in this repo:
 
-- model weights are already cached on the PVC
-- the pod is restarting because the default `32768` token context window is
-  larger than the current KV-cache budget on the RTX 3090
-- the practical fix is to lower `--max-model-len` or increase GPU memory
-  reservation, not to keep waiting on image pulls
+- service-link env injection can collide with `VLLM_PORT`
+- single-GPU rolling updates can deadlock unless the deployment uses `Recreate`
+- slow WAN links can make model distribution fail long after the container image is present
+- the default `32768` token context window can exceed the RTX 3090 KV-cache budget
+
+The practical workflow is:
+
+1. check `kubectl -n ai get pods`
+2. check `kubectl -n ai logs deploy/vllm --tail=200`
+3. verify `curl http://192.168.2.205:8000/v1/models`
+4. only then change manifests

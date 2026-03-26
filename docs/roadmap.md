@@ -1,0 +1,223 @@
+# Prometheus Roadmap From `v0.2.1` To `v1.0.0`
+
+Last updated: 2026-03-26 (America/Toronto)
+
+## Why this document exists
+
+The README should stay readable. This file is the full sequencing document for
+the rest of the project: what is locked, what is next, what stays deferred, and
+what "done" means for each milestone.
+
+## Locked decisions
+
+- AI platform first, not media first and not template first
+- Tower-only longer for storage planning; do not assume NAS or Unraid before the
+  next milestones
+- MIMIR stays Debian first, then may become a Talos worker later, then HA
+  control-plane work deliberately later
+- Agent stack is `self-hosted OSS LangGraph + Postgres + self-hosted Mem0 later + external Obsidian vault sink`
+- `Open WebUI` remains a human chat UI; it is not the orchestrator
+- `vLLM` remains the only model backend for the first agent platform
+- `Ollama`, `LiteLLM`, `Graphiti/Zep`, and `Letta` stay out of the active path
+- Public template extraction waits until the live instance proves itself
+
+## Release map
+
+| Version | Theme | What must be true |
+| --- | --- | --- |
+| `v0.2.1` | Stable AI serving checkpoint | `vLLM`, Open WebUI, Postgres, AdGuard, Flux, and Tailscale remote ops are working together |
+| `v0.3.0` | First agent runtime | LangGraph is live with Postgres-backed execution state |
+| `v0.4.0` | Memory and archive layer | Mem0 plus Obsidian summary/export workflow are live |
+| `v0.5.0` | Naming and first real workflow | AdGuard cutover, stable LAN naming, and a real end-to-end agent workflow exist |
+| `v0.6.0+` | Platform expansion | Observability, storage maturity, media/photos, and NUC split happen deliberately |
+| `v1.0.0` | Complete platform | The system feels complete, operable, and no longer reads like bring-up notes |
+
+## `v0.2.x` Stabilization And Naming
+
+Goal: finish the platform layer so the current checkpoint is operationally clean
+before the agent runtime lands.
+
+### Deliverables
+
+- complete AdGuard configuration and keep the operator path documented
+- create AdGuard rewrites for:
+  - `k8s.home.arpa -> 192.168.2.46`
+  - `adguard.home.arpa -> 192.168.2.200`
+  - `openwebui.home.arpa -> 192.168.2.201`
+  - `vllm.home.arpa -> 192.168.2.205`
+- verify Open WebUI from the actual UI path after the `vLLM` recovery, not only
+  from raw `curl` tests
+- keep remote ops through MIMIR as the supported Tailscale path; do not add
+  Talos-side Tailscale yet
+- update repo docs anywhere they still imply `vLLM` is blocked or `apps` is red
+- reserve `192.168.2.45` on the router and move the tower back from DHCP `.49`
+  when there is a safe window
+
+### Acceptance
+
+- `http://openwebui.home.arpa` works from a LAN client after rewrites are active
+- `http://vllm.home.arpa:8000/v1/models` resolves and answers
+- `talosctl` and `kubectl` still work remotely over Tailscale after any IP cleanup
+- AdGuard remains on `192.168.2.200`
+- router DNS cutover is still deferred until `v0.5.0`
+
+## `v0.3.0` First Agent Runtime
+
+Goal: move from "local model serving" to "actual orchestrated execution state."
+
+### Implementation
+
+- replace the LangGraph placeholder with a real self-hosted OSS runtime
+- keep LangGraph internal-only at first:
+  - `ClusterIP` service only
+  - no public `LoadBalancer`
+  - access through port-forward or internal clients during first rollout
+- remove assumptions that require paid or hosted features:
+  - no LangSmith dependency
+  - no LangGraph cloud license requirement
+  - no Redis requirement unless a real OSS need appears during implementation
+- use Postgres as the only required durable store for `v0.3.0`
+- build a small LangGraph service rather than a generic framework dump:
+  - `GET /healthz`
+  - `POST /threads`
+  - `POST /threads/{thread_id}/runs`
+  - `POST /threads/{thread_id}/resume`
+  - `GET /threads/{thread_id}`
+- keep the first workflow narrow and safe:
+  - multi-turn runs
+  - checkpointed execution
+  - human-in-the-loop resume
+  - read-only retrieval only if it becomes necessary
+  - no arbitrary cluster mutation tools in the first version
+- keep Open WebUI pointed directly at `vLLM`; do not force Open WebUI to become
+  the LangGraph client yet
+
+### Repo changes
+
+- turn `homelab-gitops/apps/agents/langgraph/` into a runnable service
+- replace placeholder runtime secrets with only the secrets actually needed
+- update docs so LangGraph no longer implies LangSmith, Redis, or hosted
+  LangGraph requirements
+
+### Acceptance
+
+- LangGraph pod is `1/1 Running`
+- Postgres-backed thread/run/checkpoint state survives pod restart
+- one thread can start, pause, resume, and complete successfully
+- no additional durable state store beyond Postgres is required
+
+## `v0.4.0` Memory And Archive Layer
+
+Goal: add long-term memory and human-readable outputs without turning the stack
+into overlapping memory products.
+
+### Implementation
+
+- add self-hosted Mem0 as the only semantic-memory system
+- keep LangMem documented only as an alternative; do not deploy both
+- keep Obsidian outside the cluster
+- define the Obsidian path as an external vault sink for Markdown summaries and
+  ADR exports
+- extend LangGraph with:
+  - semantic memory read/write through Mem0
+  - summary export to the external vault sink
+- keep memory boundaries explicit:
+  - execution memory = LangGraph + Postgres
+  - semantic memory = Mem0
+  - archive = external Obsidian vault
+
+### Acceptance
+
+- a run can write at least one durable semantic-memory record into Mem0
+- a run can export a Markdown summary or ADR artifact to the chosen external sink
+- the same user preference can be retrieved in a later thread
+- no duplicate semantic-memory system is live
+
+## `v0.5.0` DNS Cutover And First Real Workflow
+
+Goal: make the platform pleasant and stable for daily use, not just technically
+functional.
+
+### Implementation
+
+- perform router DNS cutover to AdGuard after rewrites are validated
+- standardize the first stable service names:
+  - `k8s.home.arpa`
+  - `adguard.home.arpa`
+  - `openwebui.home.arpa`
+  - `vllm.home.arpa`
+- define the first real agent workflow:
+  - request comes in
+  - LangGraph runs against `vLLM`
+  - Postgres persists execution state
+  - Mem0 updates durable facts when appropriate
+  - Markdown summary or ADR exports to the external Obsidian sink
+- keep the workflow read-mostly and human-supervised
+- rehearse and harden the operator runbooks so they become credible in practice:
+  - DNS cutover
+  - disaster recovery
+  - add-worker / future NUC conversion
+  - release/tagging process
+  - model upgrade/change process
+
+### Acceptance
+
+- at least one LAN client and one Tailscale-remote client resolve `*.home.arpa`
+  correctly
+- Open WebUI and direct API usage work by name, not just IP
+- the first real agent workflow completes end to end and emits both execution
+  state and a human-readable export
+- operator runbooks are credible enough that another engineer could repeat the
+  cutover and validation
+
+## `v0.6.0+` Platform Expansion
+
+Goal: expand from "AI-capable single-node platform" into a broader homelab
+platform without losing clarity.
+
+### Implementation order
+
+1. Observability first
+   - `kube-prometheus-stack`
+   - Grafana dashboards
+   - node, Cilium, Flux, Postgres, and GPU visibility
+2. Storage maturity second
+   - keep the tower-only stance until hardware changes
+   - when storage pressure forces it, add a second SSD for fast AI/app data
+   - only then plan larger model tiers, ComfyUI assets, or heavier stateful apps
+3. Media and photos after storage
+   - media stack manifests
+   - Immich manifests
+   - avoid pretending bulk media fits cleanly on the current SSD-only path
+4. NUC role split
+   - keep MIMIR useful as Debian app tier and utility node first
+   - later decide whether to move it into the cluster as a Talos worker
+   - only after that revisit deliberate HA control-plane work
+5. Public-template extraction after `v0.5.0`
+   - keep `Prometheus` as the real instance repo
+   - extract a second sanitized public repo from the proven GitOps structure
+   - remove personal IPs, hostnames, and machine-specific assumptions there
+   - keep Jinja and Ansible out of the live platform path unless they become
+     useful for template generation or peripheral bootstrap
+
+### Acceptance
+
+- dashboards cover node, GPU, Flux, and app health
+- storage pressure is no longer concentrated only on the Talos system SSD before
+  heavy apps land
+- media and Immich only move forward when storage and placement are credible
+- NUC integration is deliberate, not opportunistic
+- public template extraction starts only after the live instance has a proven story
+
+## `v1.0.0` Completion Criteria
+
+Prometheus reaches `v1.0.0` when all of the following are true:
+
+- core platform services are stable by name, not just by IP
+- agent runtime, semantic memory, and archive flow are all live
+- observability is in place
+- recovery and operator runbooks exist and are credible
+- storage and app placement are no longer obviously temporary
+- the repo reads as a complete environment, not a bring-up journal
+- the public reusable template path is defined and no longer competes with the
+  private instance repo for identity

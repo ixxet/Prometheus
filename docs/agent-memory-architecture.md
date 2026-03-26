@@ -1,6 +1,6 @@
 # Agent And Memory Architecture
 
-Last updated: 2026-03-25 (America/Toronto)
+Last updated: 2026-03-26 (America/Toronto)
 
 ## Why this document exists
 
@@ -22,9 +22,9 @@ The current direction is narrower and easier to operate:
 The current preferred stack is:
 
 - `vLLM` as the only model-serving backend
-- `LangGraph` as the orchestrator
+- `LangGraph` as the self-hosted OSS orchestrator
 - `Postgres` as the durable execution store
-- `Obsidian` as the human-readable archive sink
+- `Obsidian` as the external human-readable archive sink
 - `Mem0` as the likely semantic memory layer
 
 The following are explicitly not part of the first activation wave:
@@ -119,8 +119,10 @@ later"]
 later"]
 ```
 
-Right now, `Open WebUI` is serving and `vLLM` is the only blocked part of the AI
-stack. The blocker is model download/load time, not container image pulls.
+Right now, `Open WebUI`, `vLLM`, and Postgres are all live. The next AI milestone
+is not another model server. It is a real self-hosted `LangGraph` runtime that
+uses Postgres for durable execution state without dragging in Redis, LangSmith,
+or hosted LangGraph licensing for the first usable version.
 
 ## The three memory layers
 

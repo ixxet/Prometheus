@@ -1,13 +1,13 @@
 # Homelab GitOps
 
-Last updated: 2026-03-25 (America/Toronto)
+Last updated: 2026-03-26 (America/Toronto)
 
 ## Status
 
 This directory is no longer a skeleton. It now drives the live cluster via Flux.
-The first stateful services are running, but the app wave is not fully healthy yet
-because `vLLM` is still restarting on a model context/KV-cache mismatch after
-the model weights finished downloading.
+The first stateful services are healthy, `vLLM` is serving successfully, and the
+next meaningful step is replacing the LangGraph placeholder with a real
+self-hosted OSS runtime.
 
 Authored and render-valid now:
 
@@ -30,10 +30,6 @@ Live now:
 - `infra-postgres`
 - `infra-dns`
 - `apps`
-
-Current hangup:
-
-- `apps` remains red until `vLLM` becomes truly ready and serves `/v1/models`
 
 ## What this repo is intended to become
 
@@ -62,8 +58,8 @@ The first coherent activation path is now:
 
 1. `Postgres`
 2. `AdGuard Home`
-3. `Open WebUI`
-4. `vLLM`
+3. `vLLM`
+4. `Open WebUI`
 5. `LangGraph`
 
 Explicitly out of this first wave:
@@ -87,13 +83,13 @@ Explicitly out of this first wave:
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
-| `apps/agents/langgraph/` | Scaffold for the LangGraph runtime layer and its runtime assumptions. | Still inactive, requires a built image and runtime secrets before activation. | It does not yet include Redis or LangSmith/LangGraph licensing setup. |
+| `apps/agents/langgraph/` | Scaffold for the LangGraph runtime layer and its runtime assumptions. | Still inactive, but the target is now a Postgres-only OSS runtime. | It does not yet include the real service image or a live workflow. |
 | `apps/media/` | Future Arr stack, Jellyfin, qBittorrent, and Seerr manifests. | Storage paths and service exposure must be designed before deployment. | No manifests exist yet. |
 | `apps/immich/` | Future Immich deployment. | Needs storage, DNS, and likely split CPU/GPU concerns later. | No manifests exist yet. |
 
 ## Live runtime note
 
-As of 2026-03-25:
+As of 2026-03-26:
 
 - `Postgres` is running
 - `AdGuard Home` is running
@@ -101,6 +97,7 @@ As of 2026-03-25:
 - `vLLM` is serving successfully on `192.168.2.205:8000`
 - the `vLLM` cache PVC is populated on the system SSD
 - the `apps` `Kustomization` is healthy again
+- AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
 
 ## Storage stance for the first wave
 
@@ -136,7 +133,7 @@ Future direction remains unchanged:
 | Planned file | What it should accomplish | Restrictions | What it should not do |
 | --- | --- | --- | --- |
 | `clusters/talos-tower/infrastructure.yaml` | Reconcile Cilium, network, NVIDIA, storage, Postgres, and DNS in the right order. | Must remain aligned with the live dependency graph. | It must not imply that later app layers are already healthy. |
-| `clusters/talos-tower/apps.yaml` | Reconcile application workloads after infrastructure is ready. | App health still depends on `vLLM` readiness. | It must not bypass future SOPS secret handling. |
+| `clusters/talos-tower/apps.yaml` | Reconcile application workloads after infrastructure is ready. | The next runtime jump is LangGraph, not another model server. | It must not bypass future SOPS secret handling. |
 | `.sops.yaml` | Define how YAML secrets are encrypted for the repo. | Needs the real `age` public key first. | It does not store the private key. |
 | `infrastructure/network/ip-pool.yaml` | Declare the `192.168.2.200-220` service pool. | LAN range must remain conflict-free. | It does not expose services by itself. |
 | `infrastructure/network/l2-policy.yaml` | Announce service IPs on the real LAN NIC. | Interface name must match the live node. | It does not allocate IPs by itself. |
@@ -147,8 +144,8 @@ Future direction remains unchanged:
 
 ## Next activation steps
 
-1. Verify Open WebUI uses the recovered `vLLM` backend cleanly from the UI path.
-2. Configure AdGuard rewrites and choose the router DNS cutover window.
+1. Configure AdGuard rewrites for `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa`.
+2. Verify Open WebUI uses the recovered `vLLM` backend cleanly from the actual UI path.
 3. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
-4. Bring up LangGraph only after `vLLM` and Postgres are fully stable.
+4. Replace the LangGraph placeholder with a real self-hosted OSS runtime backed only by Postgres.
 5. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.

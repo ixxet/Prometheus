@@ -169,6 +169,54 @@ Lesson:
 
 - "available to Linux" is not the same thing as "safe to take"
 
+### 8. AdGuard warned about the wrong address during first-run setup
+
+What happened:
+
+- AdGuard's setup wizard surfaced the pod IP such as `10.244.x.x`
+- the live entrypoint users actually care about is the fixed `LoadBalancer` IP
+  `192.168.2.200`
+
+Effect:
+
+- the static-IP warning looked more alarming than it really was
+- it was easy to confuse pod networking with the stable service address
+
+Fix:
+
+- completed setup with the standard ports on all interfaces
+- treated the Cilium `LoadBalancer` IP as the stable operator-facing address
+- updated docs so the runbook points at `192.168.2.200`, not the pod IP
+
+Lesson:
+
+- Kubernetes apps often describe their pod view of the world, not the stable
+  service address operators should use
+
+### 9. Tailscale route approval was invisible until the route was truly advertised
+
+What happened:
+
+- the Tailscale admin UI showed MIMIR as connected
+- the subnet route approval controls were missing
+- the NUC had not actually advertised `192.168.2.0/24` yet
+
+Effect:
+
+- the route looked like a control-plane problem
+- the real issue was local node configuration on the subnet router
+
+Fix:
+
+- enabled forwarding on the Debian NUC
+- ran `tailscale up --advertise-routes=192.168.2.0/24`
+- approved the route only after Tailscale reported it correctly
+
+Lesson:
+
+- Tailscale only exposes the approval controls after the subnet router is truly
+  advertising the route
+
 ## Current open pain points
 
 - AdGuard is up, but router DNS cutover and service rewrites are still pending
@@ -179,6 +227,8 @@ Lesson:
 - remote access works now through MIMIR advertising `192.168.2.0/24` into
   Tailscale, but it remains an external dependency rather than an in-cluster feature
 - the node is still on DHCP `.49`, not the planned reserved `.45`
+- the runbooks are authored now, but they still need live rehearsal as new
+  milestones land
 
 ## Why keep this visible
 
@@ -213,3 +263,16 @@ already do on modest, real-world home hardware.
   all working at the same time.
 - Established remote operations safely through Tailscale by using MIMIR as a
   subnet router instead of modifying the Talos node itself.
+
+## Success Stories
+
+- This cluster now serves a local model from owned hardware through `vLLM`,
+  exposes it on the LAN with Cilium `LoadBalancer` IPs, and does it on an
+  immutable Talos node rather than a hand-tuned snowflake server.
+- The first-wave storage path stayed disciplined even when it was tempting to
+  steal other disks. The platform moved forward without destructive shortcuts.
+- Remote operations are working without punching public holes into Talos or the
+  Kubernetes API. Tailscale plus MIMIR gave the project a practical operator path.
+- The repo shows the learning curve instead of airbrushing it away. The failures
+  around GPU rollout, model sizing, and service networking are now part of the
+  platform knowledge, not repeated future mistakes.
