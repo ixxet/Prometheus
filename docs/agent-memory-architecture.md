@@ -34,6 +34,9 @@ The following are explicitly not part of the first activation wave:
 - `Graphiti / Zep`
 - `Letta`
 
+The first `v0.4.0` decision record is now captured in:
+[`docs/adr/0001-v0.4.0-memory-and-archive-boundaries.md`](adr/0001-v0.4.0-memory-and-archive-boundaries.md)
+
 ## Where the project paused before this pivot
 
 Before the architecture pivot, the project stopped at the storage safety gate.
@@ -348,7 +351,8 @@ Reason:
 4. Keep `Open WebUI`, but point it directly at `vLLM`.
 5. Deploy `Postgres`.
 6. Deploy `LangGraph`.
-7. Add Obsidian summary/export workflow.
-8. Add `Mem0` as the semantic memory layer.
-9. Revisit `LiteLLM`, `Graphiti`, or `Letta` only if the single-backend,
+7. Add explicit LangGraph seams for semantic memory and archive export.
+8. Add Obsidian summary/export workflow.
+9. Add `Mem0` as the semantic memory layer.
+10. Revisit `LiteLLM`, `Graphiti`, or `Letta` only if the single-backend,
    single-memory approach stops being sufficient.
