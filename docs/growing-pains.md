@@ -188,3 +188,24 @@ Because this is where the engineering judgment lives:
 - how the fix changed the design
 
 That matters more than pretending the build was linear.
+
+## Hurdles We've Cleared
+
+These are the wins worth keeping visible because they show what the platform can
+already do on modest, real-world home hardware.
+
+- Installed Talos only to the intended `256 GB` SSD without touching the other
+  in-use tower disks.
+- Brought up a single-node Talos control plane on bare metal with Cilium,
+  `LoadBalancer` IPs, and L2 announcements on a normal home LAN.
+- Loaded NVIDIA support into Talos, exposed the RTX 3090 through the device
+  plugin, and validated GPU scheduling on the live node.
+- Kept first-wave persistent state on the Talos system SSD when every non-system
+  disk had to remain off-limits.
+- Recovered `vLLM` from multiple real startup issues: service-link env
+  collisions, single-GPU rollout deadlock, slow-link model distribution, and
+  KV-cache sizing on a 24 GB consumer GPU.
+- Got `Open WebUI`, `vLLM`, and Postgres running together on the same cluster
+  with the model served locally as an OpenAI-compatible API.
+- Established remote operations safely through Tailscale by using MIMIR as a
+  subnet router instead of modifying the Talos node itself.

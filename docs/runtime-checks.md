@@ -13,7 +13,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- | --- | --- |
 | Talos API | node | Talos API | `192.168.2.49:50000` | reachable from the control station |
 | Kubernetes API | cluster | VIP | `192.168.2.46:6443` | reachable |
-| AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200` | running, router cutover deferred |
+| AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200:3000` | first-run setup UI reachable; router cutover deferred |
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | should answer `/v1/models` once startup sizing is correct |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
@@ -50,7 +50,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | Goal | Command | Success signal |
 | --- | --- | --- |
 | AdGuard pod | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n dns get pods,svc,pvc` | pod running, PVC bound, `192.168.2.200` assigned |
-| AdGuard HTTP | `curl -I http://192.168.2.200` | HTTP response |
+| AdGuard setup UI | `curl -I http://192.168.2.200:3000` | `302` to `/install.html` or `200` on `/install.html` |
 | Router cutover reminder | manual | only do this after AdGuard rewrites are configured |
 
 ## LAN endpoint checks
@@ -59,7 +59,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | Open WebUI on LAN | `curl -I http://192.168.2.201/` | `HTTP/1.1 200 OK` |
 | vLLM on LAN | `curl http://192.168.2.205:8000/v1/models` | JSON response once ready |
-| AdGuard on LAN | `curl -I http://192.168.2.200` | HTTP response |
+| AdGuard on LAN | `curl -I http://192.168.2.200:3000` | `302` to `/install.html` during first launch |
 
 ## Remote access note
 

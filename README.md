@@ -112,7 +112,7 @@ to integration polish, DNS cutover, and the next application layers.
 | Flux + SOPS | Stable | Repo is bootstrapped and decrypting secrets in-cluster |
 | Storage | Stable | `local-path-provisioner` uses `/var/mnt/local-path-provisioner` on the OS SSD |
 | Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
-| AdGuard Home | Stable | Running on `192.168.2.200`, but router DNS cutover is not done |
+| AdGuard Home | Stable | First-run setup is on `http://192.168.2.200:3000`; router DNS cutover is not done |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Scaffold only | Manifests exist, runtime is not active |
