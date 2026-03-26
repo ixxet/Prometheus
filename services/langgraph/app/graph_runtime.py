@@ -15,6 +15,7 @@ class AgentState(TypedDict, total=False):
     messages: Annotated[list[AnyMessage], add_messages]
     approval_required: bool
     approval_decision: bool | None
+    memory_context: list[str]
 
 
 class LangGraphRuntime:
@@ -72,9 +73,20 @@ class LangGraphRuntime:
         return "call_model"
 
     def call_model(self, state: AgentState):
-        response = self.model.invoke(
-            [SystemMessage(content=self.settings.system_prompt), *state.get("messages", [])]
-        )
+        prompt_messages: list[AnyMessage] = [SystemMessage(content=self.settings.system_prompt)]
+        if state.get("memory_context"):
+            recalled_memories = "\n".join(f"- {item}" for item in state["memory_context"])
+            prompt_messages.append(
+                SystemMessage(
+                    content=(
+                        "Relevant durable memory from prior runs. Use it when it helps, "
+                        "but prefer the current conversation if there is a conflict.\n"
+                        f"{recalled_memories}"
+                    )
+                )
+            )
+        prompt_messages.extend(state.get("messages", []))
+        response = self.model.invoke(prompt_messages)
         return {"messages": [response]}
 
     @staticmethod

@@ -6,3 +6,5 @@ langchain-openai==1.1.12
 SQLAlchemy==2.0.48
 psycopg[binary]==3.3.3
 httpx==0.28.1
+mem0ai==1.0.7
+sentence-transformers==5.0.0

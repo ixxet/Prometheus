@@ -120,7 +120,7 @@ async def lifespan(app: FastAPI):
 
     runtime = LangGraphRuntime(settings)
     graph = runtime.build_graph(checkpointer)
-    semantic_memory = build_semantic_memory_provider(settings.semantic_memory_provider)
+    semantic_memory = build_semantic_memory_provider(settings)
     archive_sink = build_archive_sink(settings.archive_sink, settings.archive_export_dir)
 
     app.state.settings = settings
@@ -242,9 +242,11 @@ def get_thread(thread_id: str, request: Request):
 def create_run(thread_id: str, payload: RunCreateRequest, request: Request):
     database: Database = request.app.state.database
     graph = request.app.state.graph
+    semantic_memory = request.app.state.semantic_memory
     _ = get_thread_or_404(database, thread_id)
     run_id = str(uuid4())
     artifact: RunArtifact | None = None
+    memory_context: list[str] = []
 
     with database.session() as session:
         thread = session.get(ThreadRecord, thread_id)
@@ -270,11 +272,21 @@ def create_run(thread_id: str, payload: RunCreateRequest, request: Request):
         session.expunge(record)
 
     try:
+        memory_context = semantic_memory.recall(
+            query=payload.message,
+            thread_id=thread_id,
+            limit=request.app.state.settings.semantic_memory_top_k,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("semantic memory recall failed: %s", exc)
+
+    try:
         result = graph.invoke(
             {
                 "messages": [HumanMessage(content=payload.message)],
                 "approval_required": payload.require_approval,
                 "approval_decision": None,
+                "memory_context": memory_context,
             },
             config=graph_config(thread_id),
         )
