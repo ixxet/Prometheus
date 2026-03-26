@@ -217,6 +217,56 @@ Lesson:
 - Tailscale only exposes the approval controls after the subnet router is truly
   advertising the route
 
+### 10. Postgres credentials were safer as components than as a naive URI
+
+What happened:
+
+- the Postgres password included a `/`
+- embedding it directly in a `DATABASE_URI` made the first LangGraph runtime
+  startup resolve the wrong host
+
+Effect:
+
+- the app looked like it had a networking problem
+- the real problem was URI encoding of the password inside the connection string
+
+Fix:
+
+- switched the runtime to accept `DATABASE_USER`, `DATABASE_PASSWORD`,
+  `DATABASE_HOST`, `DATABASE_PORT`, and `DATABASE_NAME`
+- build the URI inside the app with proper password escaping
+- reused the existing `postgres-auth` secret instead of inventing a second
+  fragile secret format
+
+Lesson:
+
+- explicit secret fields are often safer than stuffing credentials into one
+  opaque URI string
+
+### 11. Local git access did not imply local container publish access
+
+What happened:
+
+- the local GitHub CLI token could push commits to the repo
+- the same token did not have the package scopes needed to push to `ghcr.io`
+
+Effect:
+
+- local Docker build succeeded
+- local image publication failed at the final push step
+
+Fix:
+
+- moved container publication to GitHub Actions with explicit `packages: write`
+  permissions
+- kept the manifest on a deliberate dev image tag instead of pretending local
+  package push was dependable
+
+Lesson:
+
+- git write access and container registry write access are separate permissions
+- delivery automation belongs in CI once the image matters to the cluster
+
 ## Current open pain points
 
 - AdGuard is up, but router DNS cutover and service rewrites are still pending

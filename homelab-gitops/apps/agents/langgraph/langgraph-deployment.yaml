@@ -1,12 +1,11 @@
-# Scaffold only. Keep replicas at zero until a real LangGraph image, Redis
-# choice, and encrypted runtime secrets exist.
+# First OSS LangGraph runtime. Postgres is the only durable store for v0.3.0.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: langgraph
   namespace: agents
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: langgraph
@@ -15,20 +14,48 @@ spec:
       labels:
         app.kubernetes.io/name: langgraph
     spec:
+      enableServiceLinks: false
       containers:
         - name: langgraph
-          image: ghcr.io/ixxet/prometheus-langgraph:0.0.0-placeholder
+          image: ghcr.io/ixxet/prometheus-langgraph:v0.3.0-dev
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8000
           envFrom:
             - configMapRef:
                 name: langgraph-config
-            - secretRef:
-                name: langgraph-runtime
+          env:
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: password
+            - name: DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: database
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
           resources:
             requests:
-              cpu: 250m
-              memory: 512Mi
+              cpu: 100m
+              memory: 256Mi
             limits:
-              memory: 2Gi
+              memory: 1Gi

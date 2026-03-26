@@ -131,7 +131,7 @@ to integration polish, DNS cutover, and the next application layers.
 | AdGuard Home | Stable | Serving on `http://192.168.2.200`; router DNS cutover is still intentionally deferred |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
-| LangGraph | In repo, inactive | Service code now exists under `services/langgraph/`; cluster deployment is still intentionally inactive |
+| LangGraph | Authoring complete | Service code and GitOps wiring now exist; image publication and cluster validation are the remaining delivery steps |
 | Mem0 / Obsidian | Planned | Not deployed yet |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
@@ -262,7 +262,7 @@ Explicit non-goals for this phase:
 - [ ] Add AdGuard rewrites for the first service names
 - [ ] Verify `Open WebUI` from the UI path, not just raw API calls
 - [ ] Bring up a self-hosted OSS `LangGraph` runtime
-- [ ] Keep `LangGraph` backed by Postgres only for `v0.3.0`
+- [x] Keep `LangGraph` backed by Postgres only for `v0.3.0`
 - [ ] Make the first agent runtime actually usable
 - [ ] Choose the safe window for router DNS cutover
 
@@ -307,7 +307,8 @@ Explicit non-goals for this phase:
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
 | `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
 | `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, and worker expansion | First authored pass; still needs rehearsal against future milestones |
-| `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state; deployment still needs image build and live activation |
+| `.github/workflows/` | CI automation for building the LangGraph runtime image | Keeps container publication out of fragile local-token workflows |
+| `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state with approval/resume flow; live rollout still needs cluster validation |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |
 | `tower-bootstrap/README.md` | Bootstrap file inventory | Documents every artifact and its role |
 | `homelab-gitops/` | Live GitOps tree for the current cluster state | Flux reconciles this repo; the next major runtime layer is LangGraph |

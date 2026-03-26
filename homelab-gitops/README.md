@@ -83,7 +83,7 @@ Explicitly out of this first wave:
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
-| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime. | Still inactive until the real service image is built and secrets are trimmed down. | The cluster does not yet run the authored service code from `services/langgraph/`. |
+| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime. | Uses the existing Postgres secret and a Postgres-only OSS runtime shape. | The cluster still needs live rollout and validation of the authored service code from `services/langgraph/`. |
 | `apps/media/` | Future Arr stack, Jellyfin, qBittorrent, and Seerr manifests. | Storage paths and service exposure must be designed before deployment. | No manifests exist yet. |
 | `apps/immich/` | Future Immich deployment. | Needs storage, DNS, and likely split CPU/GPU concerns later. | No manifests exist yet. |
 
@@ -147,5 +147,5 @@ Future direction remains unchanged:
 1. Configure AdGuard rewrites for `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa`.
 2. Verify Open WebUI uses the recovered `vLLM` backend cleanly from the actual UI path.
 3. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
-4. Replace the LangGraph placeholder with a real self-hosted OSS runtime backed only by Postgres.
+4. Roll out and validate the real self-hosted OSS LangGraph runtime backed only by Postgres.
 5. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.
