@@ -108,7 +108,6 @@ spec:
   timeout: 5m
   prune: true
   wait: true
-  suspend: true
   dependsOn:
     - name: infra-storage
   path: ./homelab-gitops/infrastructure/semantic-memory
