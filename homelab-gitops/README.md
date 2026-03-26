@@ -7,8 +7,9 @@ Last updated: 2026-03-26 (America/Toronto)
 This directory is no longer a skeleton. It now drives the live cluster via Flux.
 The first stateful services are healthy, `vLLM` is serving successfully, and the
 LangGraph runtime is now live. The next meaningful steps are naming cleanup,
-router cutover preparation, and building the first real agent workflow on top
-of the now-live memory and archive layers.
+router cutover preparation, and turning the now-defined first real agent
+workflow into the default named path rather than an operator-only validation
+path.
 
 Authored and render-valid now:
 
@@ -105,6 +106,8 @@ As of 2026-03-26:
   actively using `Qdrant + TEI`
 - a live cross-thread semantic-memory write and recall check has passed
 - a live Markdown archive export now lands on MIMIR under `/srv/obsidian/prometheus-vault/Agents`
+- the first real agent workflow has now been rehearsed live end to end through
+  LangGraph, Mem0, and the off-tower MIMIR archive sink
 - the `apps` `Kustomization` is healthy again
 - AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
 - AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.2.200`
@@ -154,9 +157,9 @@ Future direction remains unchanged:
 
 ## Next activation steps
 
-1. Point a test client directly at AdGuard and prove `openwebui.home.arpa` and `vllm.home.arpa` resolve by name.
-2. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
-3. Preserve the `v0.3.0` LangGraph validation path in docs and runbooks as the baseline smoke test.
-4. Preserve the Mem0 smoke test as the new baseline after LangGraph health and restart checks.
-5. Preserve the off-tower archive export as the baseline before changing the first real agent workflow.
+1. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
+2. Preserve the `v0.3.0` LangGraph validation path in docs and runbooks as the baseline smoke test.
+3. Preserve the Mem0 smoke test as the new baseline after LangGraph health and restart checks.
+4. Preserve the off-tower archive export as the baseline before changing the first real agent workflow.
+5. Decide the safe router DNS cutover window and capture the router rollback path before any change.
 6. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.

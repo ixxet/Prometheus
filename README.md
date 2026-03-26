@@ -103,8 +103,11 @@ The base cluster is live, Flux is live, and the first stateful services are now
 running on the Talos system SSD. `vLLM` is serving successfully, Open WebUI is
 reachable remotely through Tailscale, LangGraph is live internally with
 Postgres-backed execution state, and completed runs now export Markdown
-artifacts to the off-tower MIMIR vault path. The next work has shifted from
-bring-up to naming cleanup, DNS cutover, and the first real agent workflow.
+artifacts to the off-tower MIMIR vault path. The first real agent workflow has
+now been rehearsed live end to end: approval-gated request, Postgres-backed
+execution state, Mem0 recall, and Markdown export to MIMIR. The remaining
+`v0.5.0` work is now mostly about router DNS cutover and making the naming path
+the default instead of a test-only path.
 
 ## Release Milestones
 
@@ -298,12 +301,14 @@ Explicit non-goals for this phase:
 - [x] Add Mem0 as semantic memory
 - [x] Add Obsidian summary/export workflow
 - [x] Validate `home.arpa` access from a client pointed directly at AdGuard
+- [x] Define and validate the first real agent workflow
 - [ ] Choose the safe window for router DNS cutover
+- [ ] Perform router DNS cutover and validate client behavior by default
 
 ### After LangGraph
 
 - [ ] Keep LangMem only as the documented alternative
-- [ ] Route a real agent-facing client through LangGraph instead of using only direct API smoke tests
+- [ ] Route a real agent-facing client through LangGraph instead of using only direct operator runbooks and API smoke tests
 - [ ] Define the first durable archive curation path inside the Obsidian vault
 
 ### Phase 3 -- Multi-Node Pressure Test
@@ -341,7 +346,7 @@ Explicit non-goals for this phase:
 | `docs/tailscale-remote-access.md` | Remote access runbook | Explains the safe Tailscale path, why Talos-side install is deferred, and how subnet routing should work |
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
 | `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
-| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, worker expansion, LangGraph validation, and archive export checks | First authored pass; now includes the live `v0.3.0` and `v0.4.0` validation paths |
+| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, worker expansion, LangGraph validation, and archive export checks | First authored pass; now includes the live `v0.3.0`, `v0.4.0`, and first real agent-workflow validation paths |
 | `.github/workflows/` | CI automation for building the LangGraph runtime image | Keeps container publication out of fragile local-token workflows |
 | `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state with approval/resume flow; live rollout and restart persistence are validated |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |

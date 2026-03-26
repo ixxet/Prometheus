@@ -577,6 +577,40 @@ Lesson:
 - Tailscale's DNS stub is useful operationally, but it can blur direct DNS
   tests if you do not account for it
 
+### 23. A "real workflow" had to be narrower than the platform ambition
+
+What happened:
+
+- by `v0.4.0`, the stack already had:
+  - LangGraph
+  - Postgres
+  - Mem0
+  - off-tower archive export
+- that still did not mean there was a credible first workflow
+- the easy mistake would have been to describe a broad future agent instead of
+  proving a narrow live path
+
+Effect:
+
+- the platform would have looked more complete on paper than it really was
+- `v0.5.0` needed a workflow with an honest boundary and a repeatable runbook
+
+Fix:
+
+- defined the first real workflow as an approval-gated operator brief
+- kept it read-only and human-supervised
+- validated the full live path:
+  - approval interrupt
+  - Postgres-backed run state
+  - `vLLM` response
+  - Mem0-backed recall in a later thread
+  - Markdown export to MIMIR
+
+Lesson:
+
+- the first credible workflow is usually smaller than the platform vision
+- a narrow live workflow is better evidence than a broad future promise
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -643,6 +677,8 @@ already do on modest, real-world home hardware.
 - Proved that a real client on MIMIR can resolve and reach the first-wave
   `home.arpa` names when pointed directly at AdGuard, without doing the full
   router DNS cutover yet.
+- Rehearsed the first real agent workflow end to end: approval gate, Postgres
+  execution state, Mem0 recall, and Markdown export to the MIMIR vault.
 
 ## Success Stories
 
@@ -670,3 +706,6 @@ already do on modest, real-world home hardware.
 - The archive layer is now real instead of theoretical. Completed runs can
   leave the cluster as Markdown artifacts on MIMIR without turning Git into the
   vault itself.
+- The first real workflow is now more than a smoke test. The platform can take
+  an approval-gated operator request, persist it, recall durable facts in a new
+  thread, and leave behind a human-readable artifact off-tower.

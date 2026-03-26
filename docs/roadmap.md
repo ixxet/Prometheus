@@ -148,6 +148,10 @@ path used by Obsidian.
 Goal: make the platform pleasant and stable for daily use, not just technically
 functional.
 
+Status: in progress on 2026-03-26. The first real workflow has been defined and
+rehearsed against the live stack; router DNS cutover and default client naming
+are still pending.
+
 ### Implementation
 
 - perform router DNS cutover to AdGuard after rewrites are validated
@@ -157,6 +161,7 @@ functional.
   - `openwebui.home.arpa`
   - `vllm.home.arpa`
 - define the first real agent workflow:
+  - chosen workflow: `approval-gated operator brief`
   - request comes in
   - LangGraph runs against `vLLM`
   - Postgres persists execution state
@@ -172,13 +177,13 @@ functional.
 
 ### Acceptance
 
-- at least one LAN client and one Tailscale-remote client resolve `*.home.arpa`
-  correctly
-- Open WebUI and direct API usage work by name, not just IP
-- the first real agent workflow completes end to end and emits both execution
-  state and a human-readable export
-- operator runbooks are credible enough that another engineer could repeat the
-  cutover and validation
+- [ ] at least one LAN client and one Tailscale-remote client resolve
+  `*.home.arpa` correctly
+- [ ] Open WebUI and direct API usage work by name, not just IP
+- [x] the first real agent workflow completes end to end and emits both
+  execution state and a human-readable export
+- [ ] operator runbooks are credible enough that another engineer could repeat
+  the cutover and validation
 
 ## `v0.6.0+` Platform Expansion
 

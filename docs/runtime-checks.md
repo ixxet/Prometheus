@@ -59,6 +59,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | LangGraph thread smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use the commands in `docs/runbooks/langgraph-validation.md` | thread create, run, resume, and fetch all succeed |
 | Semantic-memory smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` and `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n semantic-memory port-forward svc/qdrant 16333:6333` then use `docs/runbooks/semantic-memory-activation.md` | a preference written in one thread is recalled in a fresh thread |
 | Archive export smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use `docs/runbooks/archive-export-validation.md` | a completed run writes a Markdown file into MIMIR's `Agents/` vault path |
+| First real workflow smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use `docs/runbooks/first-agent-workflow.md` | approval, Postgres state, Mem0 recall, and MIMIR archive export all succeed in one path |
 
 ## Semantic-memory namespace checks
 
