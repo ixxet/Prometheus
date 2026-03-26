@@ -13,7 +13,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- | --- | --- |
 | Talos API | node | Talos API | `192.168.2.49:50000` | reachable from the control station |
 | Kubernetes API | cluster | VIP | `192.168.2.46:6443` | reachable |
-| AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200` | serving the admin UI; router cutover deferred |
+| AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200` | serving the admin UI and direct-query rewrites; router cutover deferred |
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
@@ -61,6 +61,8 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | AdGuard pod | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n dns get pods,svc,pvc` | pod running, PVC bound, `192.168.2.200` assigned |
 | AdGuard admin UI | `curl -I http://192.168.2.200` | `302` to `/login.html` or `200` on `/login.html` |
+| AdGuard rewrite checks | `for name in k8s.home.arpa adguard.home.arpa openwebui.home.arpa vllm.home.arpa; do dig +short @192.168.2.200 $name; done` | returns the expected `192.168.2.x` addresses |
+| AdGuard public DNS check | `dig +short @192.168.2.200 github.com` | returns a public IP |
 | Router cutover reminder | manual | only do this after AdGuard rewrites are configured |
 
 ## LAN endpoint checks

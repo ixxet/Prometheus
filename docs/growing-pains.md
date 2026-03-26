@@ -295,9 +295,41 @@ Lesson:
   different milestones
 - restart testing is part of the feature definition, not a nice-to-have
 
+### 13. AdGuard's first upstream choice was too fancy for this network
+
+What happened:
+
+- AdGuard came up using Quad9 over DNS-over-HTTPS
+- local rewrites were fine, but public lookups and filter updates kept failing
+- logs showed repeated connection resets and IPv6 reachability errors during
+  upstream resolution
+
+Effect:
+
+- AdGuard looked healthy from the UI, but it was a weak test resolver for real
+  queries
+
+Fix:
+
+- switched AdGuard to plain upstream resolvers:
+  - `9.9.9.9`
+  - `149.112.112.112`
+  - `1.1.1.1`
+  - `1.0.0.1`
+- added the first four `home.arpa` rewrites directly in the live runtime config
+- restarted the pod and validated both local rewrite resolution and public DNS
+  resolution with direct queries to `192.168.2.200`
+
+Lesson:
+
+- a DNS service can be up and still be a bad fit for the network path it sits on
+- direct query validation matters more than trusting the admin UI alone
+
 ## Current open pain points
 
-- AdGuard is up, but router DNS cutover and service rewrites are still pending
+- AdGuard rewrites are in place, but router DNS cutover is still pending
+- `home.arpa` names are proven only when querying AdGuard directly; clients are
+  not using it by default yet
 - Mem0 and Obsidian are still planned layers, not live ones
 - remote access works now through MIMIR advertising `192.168.2.0/24` into
   Tailscale, but it remains an external dependency rather than an in-cluster feature
@@ -340,6 +372,8 @@ already do on modest, real-world home hardware.
   subnet router instead of modifying the Talos node itself.
 - Reached a stable `v0.3.0` checkpoint with LangGraph running live, backed only
   by Postgres, and validated through approval/resume plus pod-restart persistence.
+- Brought AdGuard past the "UI works but DNS path is weak" stage by switching to
+  plain upstream resolvers and validating the first four `home.arpa` rewrites.
 
 ## Success Stories
 
@@ -356,3 +390,5 @@ already do on modest, real-world home hardware.
 - The first agent runtime now exists as a real in-cluster service, not a design
   document. LangGraph can create a thread, pause for approval, resume, and keep
   its execution history after the pod is replaced.
+- The naming layer is now real enough to test. AdGuard answers the first-wave
+  `home.arpa` names directly without taking over router DNS yet.

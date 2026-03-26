@@ -78,7 +78,7 @@ flowchart LR
 | **GPU Runtime** | NVIDIA Device Plugin | v0.17.0 -- RTX 3090, 24 GB VRAM | Live |
 | **GitOps** | Flux | Bootstrapped and reconciling this repo | Live |
 | **Secrets** | SOPS + age | Encrypted secrets in git, cluster decryption wired | Live |
-| **DNS** | AdGuard Home | Local DNS + ad blocking | Live, router cutover deferred |
+| **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live, router cutover deferred |
 | **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
@@ -130,7 +130,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 | Flux + SOPS | Stable | Repo is bootstrapped and decrypting secrets in-cluster |
 | Storage | Stable | `local-path-provisioner` uses `/var/mnt/local-path-provisioner` on the OS SSD |
 | Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
-| AdGuard Home | Stable | Serving on `http://192.168.2.200`; router DNS cutover is still intentionally deferred |
+| AdGuard Home | Stable | Serving on `http://192.168.2.200`; test-only rewrites are configured and router DNS cutover is still intentionally deferred |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Stable | Internal-only runtime is live; create, run, resume, and restart-persistence checks have passed |
@@ -151,6 +151,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] SSD-backed `local-path-provisioner` is live on `/var/mnt/local-path-provisioner`
 - [x] Postgres is running in-cluster
 - [x] AdGuard Home is running in-cluster
+- [x] AdGuard rewrites exist for `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa`
 - [x] Open WebUI is running and reachable on `192.168.2.201`
 - [x] `vLLM` is serving on `192.168.2.205:8000`
 - [x] `vLLM` model cache on the PVC is populated
@@ -161,6 +162,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 ### Live but still provisional
 
 - [ ] Router DNS is not yet cut over to AdGuard Home
+- [ ] Clients are not yet pointed at AdGuard by default, so `home.arpa` naming is still in test-only mode
 - [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
 
 ### Real in the repo and aligned with the cluster
@@ -176,6 +178,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] Ollama manifests kept as parked reference material, not the active path
 - [x] Mermaid diagram sources under `docs/diagrams/`
 - [x] Tailscale subnet-router runbook is documented and validated through MIMIR
+- [x] AdGuard test-only rewrites and direct-query validation are documented
 
 ### Not yet authored or activated
 
@@ -214,6 +217,7 @@ Current notable examples:
 
 - Kubernetes service-link env injection collided with `vLLM_PORT`
 - single-GPU rollout strategy caused a replacement deadlock
+- AdGuard's default DoH upstream choice turned out to be a poor fit for this network
 - `vLLM` model startup exposed the difference between container image pulls and
   model weight downloads
 - `vLLM` also exposed a second startup boundary: model weights can be present
@@ -268,11 +272,12 @@ Explicit non-goals for this phase:
 ### Immediate execution queue
 
 - [x] Finish AdGuard configuration cleanly
-- [ ] Add AdGuard rewrites for the first service names
+- [x] Add AdGuard rewrites for the first service names
 - [x] Verify `Open WebUI` from the UI path, not just raw API calls
 - [x] Bring up a self-hosted OSS `LangGraph` runtime
 - [x] Keep `LangGraph` backed by Postgres only for `v0.3.0`
 - [x] Make the first agent runtime actually usable
+- [ ] Validate `home.arpa` access from a client pointed directly at AdGuard
 - [ ] Choose the safe window for router DNS cutover
 
 ### After LangGraph

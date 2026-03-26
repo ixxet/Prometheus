@@ -10,7 +10,9 @@ the primary resolver.
 ## Current status
 
 - authored
-- not yet rehearsed end to end
+- first-wave rewrites are configured in the live AdGuard runtime
+- direct queries against `192.168.2.200` already resolve the first-wave names
+- not yet rehearsed end to end for router cutover
 - router cutover is still deferred
 
 ## Preconditions
@@ -24,6 +26,13 @@ the primary resolver.
 - at least one LAN client resolves those names correctly when pointed directly
   at AdGuard
 - Tailscale remote access through MIMIR is working in case rollback is needed
+
+## Current first-wave rewrites
+
+- `k8s.home.arpa -> 192.168.2.46`
+- `adguard.home.arpa -> 192.168.2.200`
+- `openwebui.home.arpa -> 192.168.2.201`
+- `vllm.home.arpa -> 192.168.2.205`
 
 ## Cutover steps
 

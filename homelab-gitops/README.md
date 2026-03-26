@@ -100,6 +100,7 @@ As of 2026-03-26:
 - LangGraph thread, approval/resume, and restart persistence checks have passed
 - the `apps` `Kustomization` is healthy again
 - AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
+- AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.2.200`
 
 ## Storage stance for the first wave
 
@@ -146,9 +147,8 @@ Future direction remains unchanged:
 
 ## Next activation steps
 
-1. Configure AdGuard rewrites for `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa`.
-2. Verify Open WebUI uses the recovered `vLLM` backend cleanly from the actual UI path.
-3. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
-4. Preserve the `v0.3.0` LangGraph validation path in docs and runbooks as the baseline smoke test.
-5. Move next into Mem0 and external Obsidian summary/export work without expanding the serving layer.
-6. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.
+1. Point a test client directly at AdGuard and prove `openwebui.home.arpa` and `vllm.home.arpa` resolve by name.
+2. Keep using the validated Tailscale subnet-router path through MIMIR for remote ops.
+3. Preserve the `v0.3.0` LangGraph validation path in docs and runbooks as the baseline smoke test.
+4. Move next into Mem0 and external Obsidian summary/export work without expanding the serving layer.
+5. Keep `Ollama`, `LiteLLM`, `Graphiti`, and `Letta` out of the first activation wave.

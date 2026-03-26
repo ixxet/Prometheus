@@ -60,6 +60,7 @@ before the agent runtime lands.
 - [x] `talosctl` and `kubectl` still work remotely over Tailscale after any IP cleanup path
 - [x] Open WebUI is reachable from the actual UI path, not only via raw API checks
 - [x] AdGuard remains on `192.168.2.200`
+- [x] the first-wave AdGuard rewrites are configured and answer direct queries to `192.168.2.200`
 - [x] router DNS cutover is still deferred until `v0.5.0`
 
 ## `v0.3.0` First Agent Runtime
