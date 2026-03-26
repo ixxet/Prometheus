@@ -1,10 +1,12 @@
 # Prometheus
 
-![Talos OS](https://img.shields.io/badge/Talos_OS-v1.12.6-orange?style=for-the-badge&logo=kubernetes&logoColor=white)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.35.2-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
-![Cilium](https://img.shields.io/badge/Cilium-1.18.0-E8C229?style=for-the-badge&logo=cilium&logoColor=black)
-![NVIDIA](https://img.shields.io/badge/RTX_3090-24GB_VRAM-76B900?style=for-the-badge&logo=nvidia&logoColor=white)
-![Flux](https://img.shields.io/badge/Flux-live_in_cluster-green?style=for-the-badge&logo=flux&logoColor=white)
+![Talos OS](https://img.shields.io/badge/Talos_OS-v1.12.6-F25C05?style=for-the-badge&logo=kubernetes&logoColor=white&labelColor=1F1F1F)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.35.2-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white&labelColor=1F1F1F)
+![Cilium](https://img.shields.io/badge/Cilium-1.18.0-F8C517?style=for-the-badge&logo=cilium&logoColor=111111&labelColor=1F1F1F)
+![RTX 3090](https://img.shields.io/badge/RTX_3090-24GB_VRAM-76B900?style=for-the-badge&logo=nvidia&logoColor=white&labelColor=1F1F1F)
+![vLLM](https://img.shields.io/badge/vLLM-Mistral_7B-FF6B35?style=for-the-badge&logo=openai&logoColor=white&labelColor=1F1F1F)
+![Flux](https://img.shields.io/badge/Flux-live-5468FF?style=for-the-badge&logo=flux&logoColor=white&labelColor=1F1F1F)
+![Tailscale](https://img.shields.io/badge/Tailscale-remote_ops-242424?style=for-the-badge&logo=tailscale&logoColor=white&labelColor=1F1F1F)
 
 > Bare-metal Kubernetes on owned hardware. Self-hosted AI inference, media automation, and full infrastructure sovereignty.
 
@@ -102,6 +104,20 @@ running on the Talos system SSD. `vLLM` is serving successfully, Open WebUI is
 reachable remotely through Tailscale, and the next work has shifted from bring-up
 to integration polish, DNS cutover, and the next application layers.
 
+## Release Milestones
+
+- [x] ~~`v0.1.0`~~ Initial public/project baseline with bootstrap artifacts and
+  foundational documentation.
+- [x] ~~`v0.2.0`~~ Architecture pivot committed: `vLLM + LangGraph + Postgres + Obsidian`
+  replaced the broader Ollama-first direction.
+- [x] ~~`v0.2.1`~~ Stable `vLLM`, `Open WebUI`, and Tailscale remote-access
+  checkpoint on the live cluster.
+- [ ] `v0.3.0` LangGraph live with Postgres-backed execution state.
+- [ ] `v0.4.0` Mem0 plus Obsidian summary/export workflow live.
+- [ ] `v0.5.0` AdGuard cutover, stable LAN naming, and first real agent workflow.
+- [ ] `v0.6.0+` Observability, media, Immich, better storage tiers, and NUC role split.
+- [ ] `v1.0.0` The system reads as a complete, reproducible, serious single-environment platform.
+
 ## Live Status Block
 
 | Area | Status | Notes |
@@ -196,15 +212,30 @@ Current notable examples:
 - Flux and live-state drift surfaced where repo truth and runtime truth can
   briefly diverge during recovery
 
+## Why This Project Matters
+
+This project fills a real gap between polished cloud-native theory and what it
+actually takes to run a modern AI-capable platform on owned hardware:
+
+- bare-metal Talos bring-up without managed control planes
+- Cilium `LoadBalancer` networking on a normal home LAN
+- NVIDIA/Talos integration on an immutable OS
+- GitOps and SOPS on a real single-node cluster, not just as template files
+- remote operations without exposing the cluster directly to the public internet
+- local AI serving on consumer hardware with the mistakes and recovery path left visible
+
+The point is not just to end with a nice diagram. The point is to leave behind a
+system that is operable, explainable, and reusable.
+
 ## Roadmap
 
-### Phase 1 -- Foundation *(current)*
+### Phase 1 -- Foundation *(completed)*
 
 Bare-metal Kubernetes on Talos OS with Cilium networking and verified GPU
 acceleration. Bootstrap infrastructure is documented and reproducible, and the
 first GitOps layer is now authored in-repo.
 
-### Phase 2 -- First Agent Platform
+### Phase 2 -- First Agent Platform *(current)*
 
 Deploy the smallest coherent local agent stack on the RTX 3090:
 
@@ -223,6 +254,22 @@ Explicit non-goals for this phase:
 - No Graphiti/Zep temporal graph memory yet
 - No Letta; LangGraph is the orchestrator
 
+### Immediate execution queue
+
+- [ ] Finish AdGuard configuration cleanly
+- [ ] Add AdGuard rewrites for the service names
+- [ ] Decide and perform router DNS cutover
+- [ ] Verify Open WebUI from the UI path, not just raw API calls
+- [ ] Bring up LangGraph
+- [ ] Keep LangGraph backed by Postgres
+- [ ] Make the first agent runtime actually usable
+
+### After LangGraph
+
+- [ ] Add Obsidian summary/export workflow
+- [ ] Add Mem0 as semantic memory
+- [ ] Keep LangMem only as the documented alternative
+
 ### Phase 3 -- Multi-Node Pressure Test
 
 - Keep the NUC on Debian in the near term and use it as a low-level app/CPU host if needed
@@ -240,6 +287,8 @@ Explicit non-goals for this phase:
 - Immich photo management with GPU-accelerated ML
 - Second SSD for fast AI/model-cache storage
 - HDD or Unraid as bulk and cold storage
+- NUC role split / multi-node pressure test
+- HA control-plane work later, deliberately
 - CI/CD pipelines for image builds and deployment automation
 
 ---

@@ -1,6 +1,6 @@
 # Growing Pains
 
-Last updated: 2026-03-25 (America/Toronto)
+Last updated: 2026-03-26 (America/Toronto)
 
 ## Why this file exists
 
@@ -171,11 +171,13 @@ Lesson:
 
 ## Current open pain points
 
-- `vLLM` still needs one more clean restart after the KV-cache sizing fix before
-  it can be considered stable
-- router DNS is not yet cut over to AdGuard
+- AdGuard is up, but router DNS cutover and service rewrites are still pending
+- Open WebUI still needs final UI-path verification against the recovered `vLLM`
+  backend
+- LangGraph is scaffolded in-repo but not yet active
+- Mem0 and Obsidian are still planned layers, not live ones
 - remote access works now through MIMIR advertising `192.168.2.0/24` into
-  Tailscale, but it is still a dependency outside the cluster itself
+  Tailscale, but it remains an external dependency rather than an in-cluster feature
 - the node is still on DHCP `.49`, not the planned reserved `.45`
 
 ## Why keep this visible
@@ -207,5 +209,7 @@ already do on modest, real-world home hardware.
   KV-cache sizing on a 24 GB consumer GPU.
 - Got `Open WebUI`, `vLLM`, and Postgres running together on the same cluster
   with the model served locally as an OpenAI-compatible API.
+- Reached a stable `v0.2.1` checkpoint with AI serving, GitOps, and remote ops
+  all working at the same time.
 - Established remote operations safely through Tailscale by using MIMIR as a
   subnet router instead of modifying the Talos node itself.
