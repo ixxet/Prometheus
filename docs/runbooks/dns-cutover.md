@@ -7,6 +7,13 @@ Last updated: 2026-03-26 (America/Toronto)
 This runbook exists for the eventual move from ad hoc LAN DNS to AdGuard Home as
 the primary resolver.
 
+Important boundary:
+
+- AdGuard Home stays a separate service on `192.168.2.200`
+- the router is not expected to run AdGuard
+- "router cutover" means the router or DHCP server hands out `192.168.2.200`
+  as the LAN DNS resolver
+
 ## Current status
 
 - authored
@@ -15,6 +22,18 @@ the primary resolver.
 - a real client on MIMIR has already resolved and reached the first-wave names when pointed directly at AdGuard
 - not yet rehearsed end to end for router cutover
 - router cutover is still deferred
+
+## First-wave topology
+
+- Talos node: `192.168.2.49`
+- Kubernetes API VIP: `192.168.2.46`
+- AdGuard Home: `192.168.2.200`
+- Open WebUI: `192.168.2.201`
+- vLLM: `192.168.2.205`
+- MIMIR LAN IP: `192.168.2.40`
+- MIMIR Tailscale IP: `100.109.171.72`
+
+These are the operator-facing addresses that matter during rollout and rollback.
 
 ## Recommended cutover window
 
@@ -31,6 +50,17 @@ Practical recommendation:
 - do the cutover when you are home or otherwise able to touch the router directly
 - use one controlled client first, then widen out after public DNS and `home.arpa` both behave
 - do not combine the router cutover with unrelated network or storage changes
+
+## Safer staged rollout options
+
+Preferred order:
+
+1. test a single client by manually pointing it at `192.168.2.200`
+2. if you have a second router or isolated segment, hand out `192.168.2.200`
+   there first
+3. only then change the main router or main DHCP scope
+
+This keeps the blast radius smaller than a house-wide switch on the first try.
 
 ## Preconditions
 
@@ -62,6 +92,7 @@ Practical recommendation:
    - `adguard.home.arpa`
    - `openwebui.home.arpa`
    - `vllm.home.arpa`
+   - `k8s.home.arpa`
    - normal public DNS resolution
 7. Monitor AdGuard query logs and cluster service health.
 
