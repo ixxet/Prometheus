@@ -35,6 +35,8 @@ Expected:
 - `ok: true`
 - `database: ok`
 - `model_backend` points at the in-cluster `vLLM` service
+- `semantic_memory_provider` is `none`
+- `archive_sink` is `none`
 
 ## 2. Create a thread
 

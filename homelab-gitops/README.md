@@ -83,7 +83,7 @@ Explicitly out of this first wave:
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
-| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime. | Uses the existing Postgres secret and a Postgres-only OSS runtime shape. | It is live now; the next work is memory/archive integration, not a second runtime. |
+| `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime. | Uses the existing Postgres secret, explicit no-op seam providers for `v0.4.0`, and an immutable image tag. | It is live now; the next work is memory/archive integration, not a second runtime. |
 | `apps/media/` | Future Arr stack, Jellyfin, qBittorrent, and Seerr manifests. | Storage paths and service exposure must be designed before deployment. | No manifests exist yet. |
 | `apps/immich/` | Future Immich deployment. | Needs storage, DNS, and likely split CPU/GPU concerns later. | No manifests exist yet. |
 
@@ -98,6 +98,7 @@ As of 2026-03-26:
 - the `vLLM` cache PVC is populated on the system SSD
 - `LangGraph` is running internally in the `agents` namespace
 - LangGraph thread, approval/resume, and restart persistence checks have passed
+- LangGraph now exposes no-op semantic-memory and archive seams in `/healthz`
 - the `apps` `Kustomization` is healthy again
 - AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
 - AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.2.200`

@@ -325,6 +325,58 @@ Lesson:
 - a DNS service can be up and still be a bad fit for the network path it sits on
 - direct query validation matters more than trusting the admin UI alone
 
+### 14. Mutable dev image tags were too weak for LangGraph rollout verification
+
+What happened:
+
+- GitHub Actions built the LangGraph image for commit `e97edbf`
+- the deployment still referenced the mutable tag `v0.3.0-dev`
+- restarting the deployment came back on the old runtime code even though the
+  new image had already been published
+
+Effect:
+
+- the repo said the seam work existed
+- the cluster still served the old health payload
+- rollout confidence was false until the live container filesystem was checked
+
+Fix:
+
+- pinned the deployment to the immutable image tag
+  `sha-e97edbfc189b5c0b2424be39b1e53abe678890c0`
+- verified the live container really contained `post_run.py` and the new
+  health payload fields
+
+Lesson:
+
+- mutable tags are weak evidence in GitOps
+- if the runtime matters, pin an immutable image reference until image
+  automation exists
+
+### 15. Planned config values should not pretend a provider exists
+
+What happened:
+
+- the LangGraph ConfigMap still said `SEMANTIC_MEMORY_PROVIDER=mem0-planned`
+- the new seam code only supported real provider names or `none`
+
+Effect:
+
+- the new pod crashed at startup
+- the old pod stayed up, which masked the broken replacement for a moment
+
+Fix:
+
+- changed the live config to:
+  - `SEMANTIC_MEMORY_PROVIDER=none`
+  - `ARCHIVE_SINK=none`
+- rerolled LangGraph and revalidated the live service
+
+Lesson:
+
+- planned values are not the same thing as disabled values
+- feature staging needs explicit no-op configuration until the backing system is real
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -374,6 +426,8 @@ already do on modest, real-world home hardware.
   by Postgres, and validated through approval/resume plus pod-restart persistence.
 - Brought AdGuard past the "UI works but DNS path is weak" stage by switching to
   plain upstream resolvers and validating the first four `home.arpa` rewrites.
+- Brought the first `v0.4.0` seam work live without changing runtime behavior by
+  keeping semantic memory and archive export on explicit no-op providers.
 
 ## Success Stories
 
@@ -392,3 +446,6 @@ already do on modest, real-world home hardware.
   its execution history after the pod is replaced.
 - The naming layer is now real enough to test. AdGuard answers the first-wave
   `home.arpa` names directly without taking over router DNS yet.
+- The LangGraph runtime now exposes the next integration seam cleanly: semantic
+  memory and archive hooks are live, visible in health checks, and still safe
+  because they default to no-op providers.

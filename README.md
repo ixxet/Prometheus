@@ -133,7 +133,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 | AdGuard Home | Stable | Serving on `http://192.168.2.200`; test-only rewrites are configured and router DNS cutover is still intentionally deferred |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
-| LangGraph | Stable | Internal-only runtime is live; create, run, resume, and restart-persistence checks have passed |
+| LangGraph | Stable | Internal-only runtime is live; create, run, resume, restart-persistence, and no-op `v0.4.0` seam checks have passed |
 | Mem0 / Obsidian | Planned | Not deployed yet |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
@@ -157,6 +157,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] `vLLM` model cache on the PVC is populated
 - [x] LangGraph is running internally in the `agents` namespace
 - [x] LangGraph thread, run, approval, and restart persistence checks have passed
+- [x] LangGraph health now reports `semantic_memory_provider: none` and `archive_sink: none`
 - [x] Tailscale remote access works through MIMIR advertising `192.168.2.0/24`
 
 ### Live but still provisional
@@ -173,7 +174,7 @@ integration polish, DNS cutover, and the memory/archive layers.
 - [x] Open WebUI manifests pointed directly at vLLM
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
 - [x] Self-hosted LangGraph service source under `services/langgraph/`
-- [x] `v0.4.0` semantic-memory and archive seams authored in the LangGraph service
+- [x] `v0.4.0` semantic-memory and archive seams are authored and live behind no-op providers
 - [x] GitHub Actions builds and publishes the LangGraph runtime image to GHCR
 - [x] LangGraph rollout is validated end to end against the live cluster
 - [x] Ollama manifests kept as parked reference material, not the active path

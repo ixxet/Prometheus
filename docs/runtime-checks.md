@@ -17,7 +17,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
-| LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz` and thread APIs |
+| LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz`, thread APIs, and no-op seam status |
 
 ## Control station commands
 
@@ -52,7 +52,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 | --- | --- | --- |
 | LangGraph pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents get pods -o wide` | `langgraph` and `postgres` are `1/1` |
 | LangGraph logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents logs deploy/langgraph --tail=200` | startup completes without DB or model-backend errors |
-| LangGraph health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then `curl http://127.0.0.1:18081/healthz` | JSON shows `ok: true` and the expected `vLLM` backend |
+| LangGraph health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then `curl http://127.0.0.1:18081/healthz` | JSON shows `ok: true`, the expected `vLLM` backend, `semantic_memory_provider: none`, and `archive_sink: none` |
 | LangGraph thread smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use the commands in `docs/runbooks/langgraph-validation.md` | thread create, run, resume, and fetch all succeed |
 
 ## DNS checks
