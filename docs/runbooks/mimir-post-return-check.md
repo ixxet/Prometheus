@@ -59,10 +59,17 @@ cp ops/mimir/talos-return.env.example /etc/prometheus-ops/talos-return.env
 Key values:
 
 - `NODE_IP=192.168.2.49`
+- `TALOS_API_PORT=50000`
+- `TALOS_HEALTH_MODE=auto`
 - `OPEN_WEBUI_URL=http://192.168.2.201/`
 - `VLLM_MODELS_URL=http://192.168.2.205:8000/v1/models`
 - `ADGUARD_URL=http://192.168.2.200/`
 - `GRAFANA_URL=http://192.168.2.202/login`
+
+`TALOS_HEALTH_MODE=auto` prefers `talosctl health` when the helper host can run
+`talosctl` natively. If the helper host cannot execute `talosctl`, the script
+falls back to a direct TCP reachability probe of the Talos API on
+`NODE_IP:TALOS_API_PORT`.
 
 ## Manual activation plan once the link is stable
 

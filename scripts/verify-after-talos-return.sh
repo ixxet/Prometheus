@@ -7,6 +7,8 @@ KUBECTL_BIN="${KUBECTL_BIN:-kubectl}"
 TALOSCONFIG_PATH="${TALOSCONFIG_PATH:-/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig}"
 KUBECONFIG_PATH="${KUBECONFIG_PATH:-/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig}"
 NODE_IP="${NODE_IP:-192.168.2.49}"
+TALOS_API_PORT="${TALOS_API_PORT:-50000}"
+TALOS_HEALTH_MODE="${TALOS_HEALTH_MODE:-auto}"
 OPEN_WEBUI_URL="${OPEN_WEBUI_URL:-http://192.168.2.201/}"
 VLLM_MODELS_URL="${VLLM_MODELS_URL:-http://192.168.2.205:8000/v1/models}"
 ADGUARD_URL="${ADGUARD_URL:-http://192.168.2.200/}"
@@ -26,6 +28,18 @@ require_cmd() {
     echo "missing required command: $1" >&2
     exit 1
   fi
+}
+
+talosctl_usable() {
+  if [[ "${TALOS_HEALTH_MODE}" == "tcp" ]]; then
+    return 1
+  fi
+
+  if ! command -v "${TALOSCTL_BIN}" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  "${TALOSCTL_BIN}" version --client >/dev/null 2>&1
 }
 
 wait_for() {
@@ -48,17 +62,42 @@ wait_for() {
   done
 }
 
-require_cmd "${TALOSCTL_BIN}"
 require_cmd "${KUBECTL_BIN}"
 require_cmd curl
 require_cmd grep
 
 export KUBECONFIG="${KUBECONFIG_PATH}"
 
-echo "== Talos node health =="
-wait_for "talos health" \
+if talosctl_usable; then
+  echo "== Talos node health =="
+  wait_for "talos health" \
+    "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -n "${NODE_IP}" health
   "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -n "${NODE_IP}" health
-"${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -n "${NODE_IP}" health
+else
+  require_cmd python3
+  echo "== Talos API reachability =="
+  echo "talosctl is unavailable or unusable on this host; falling back to a TCP probe of ${NODE_IP}:${TALOS_API_PORT}"
+  wait_for "talos api tcp ${TALOS_API_PORT}" \
+    python3 - "${NODE_IP}" "${TALOS_API_PORT}" <<'PY'
+import socket
+import sys
+
+host = sys.argv[1]
+port = int(sys.argv[2])
+sock = socket.create_connection((host, port), timeout=5)
+sock.close()
+PY
+  python3 - "${NODE_IP}" "${TALOS_API_PORT}" <<'PY'
+import socket
+import sys
+
+host = sys.argv[1]
+port = int(sys.argv[2])
+sock = socket.create_connection((host, port), timeout=5)
+sock.close()
+print(f"ok: Talos API reachable on {host}:{port}")
+PY
+fi
 
 echo
 echo "== Kubernetes and Flux =="
