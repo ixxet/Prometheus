@@ -1,0 +1,25 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 5, "w": 8, "x": 0, "y": 0}, "id": 1, "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}, "targets": [{"expr": "sum(up{namespace=\"kube-system\",service=~\"cilium-operator-metrics|cilium-envoy\"})", "refId": "A"}], "title": "Cilium Metrics Targets Up", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 5, "w": 8, "x": 8, "y": 0}, "id": 2, "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}, "targets": [{"expr": "sum(kube_daemonset_status_number_ready{namespace=\"kube-system\",daemonset=\"cilium\"})", "refId": "A"}], "title": "Cilium Agents Ready", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 5, "w": 8, "x": 16, "y": 0}, "id": 3, "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}, "targets": [{"expr": "sum(kube_daemonset_status_number_ready{namespace=\"kube-system\",daemonset=\"cilium-envoy\"})", "refId": "A"}], "title": "Cilium Envoy Ready", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5}, "id": 4, "targets": [{"expr": "histogram_quantile(0.95, sum by (le, service) (rate(prometheus_http_request_duration_seconds_bucket{namespace=\"kube-system\",service=\"cilium-operator-metrics\"}[5m])))", "legendFormat": "{{service}}", "refId": "A"}], "title": "Cilium Operator HTTP P95", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5}, "id": 5, "targets": [{"expr": "sum by (service) (rate(http_server_requests_seconds_count{namespace=\"kube-system\",service=\"cilium-operator-metrics\"}[5m]))", "legendFormat": "{{service}}", "refId": "A"}], "title": "Cilium Operator Request Rate", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 8, "w": 24, "x": 0, "y": 13}, "id": 6, "targets": [{"expr": "sum by (service) (up{namespace=~\"kube-system|observability\",service=~\"cilium-operator-metrics|cilium-envoy|metrics-server|dcgm-exporter\"})", "legendFormat": "{{service}}", "refId": "A"}], "title": "Network / Metrics Infrastructure Availability", "type": "timeseries"}
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["prometheus", "network", "cilium"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "Prometheus - Network and Cilium",
+  "uid": "prom-network-cilium",
+  "version": 1
+}

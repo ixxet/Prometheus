@@ -1,0 +1,23 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 9, "w": 12, "x": 0, "y": 0}, "id": 1, "targets": [{"expr": "sum by (namespace, deployment) (kube_deployment_status_replicas_available{namespace=~\"ai|agents|semantic-memory|dns\",deployment=~\"open-webui|vllm|langgraph|qdrant|tei-embeddings|adguard-home|postgres-exporter\"})", "legendFormat": "{{namespace}}/{{deployment}}", "refId": "A"}], "title": "AI Runtime Deployments Available", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 9, "w": 12, "x": 12, "y": 0}, "id": 2, "targets": [{"expr": "sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total{namespace=~\"ai|agents|semantic-memory|dns\"}[24h]))", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}], "title": "AI Runtime Restarts (24h)", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 9, "w": 12, "x": 0, "y": 9}, "id": 3, "targets": [{"expr": "sum by (namespace, pod) (kube_pod_status_phase{namespace=~\"ai|agents|semantic-memory|dns\",phase=~\"Pending|Failed|Unknown\"})", "legendFormat": "{{namespace}}/{{pod}}", "refId": "A"}], "title": "AI Runtime Problem Pods", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 9, "w": 12, "x": 12, "y": 9}, "id": 4, "targets": [{"expr": "sum by (namespace, persistentvolumeclaim) (kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace=~\"ai|agents|semantic-memory|dns\"})", "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}", "refId": "A"}], "title": "AI Runtime PVC Requests", "type": "timeseries"}
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["prometheus", "ai", "runtime"],
+  "templating": {"list": []},
+  "time": {"from": "now-24h", "to": "now"},
+  "timezone": "browser",
+  "title": "Prometheus - AI Runtime Health",
+  "uid": "prom-ai-runtime-health",
+  "version": 1
+}

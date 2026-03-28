@@ -9,3 +9,60 @@ resources:
   - kube-prometheus-stack-helmrelease.yaml
   - metrics-server-helmrelease.yaml
   - dcgm-exporter-helmrelease.yaml
+  - flux-helm-controller-metrics-service.yaml
+  - flux-kustomize-controller-metrics-service.yaml
+  - flux-source-controller-metrics-service.yaml
+  - flux-notification-controller-metrics-service.yaml
+  - flux-service-monitors.yaml
+  - cilium-operator-metrics-service.yaml
+  - cilium-service-monitors.yaml
+  - postgres-exporter-auth-secret.yaml
+  - postgres-exporter-deployment.yaml
+  - postgres-exporter-service.yaml
+  - postgres-exporter-service-monitor.yaml
+  - vllm-service-monitor.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: grafana-dashboard-cluster-node-health
+    namespace: observability
+    files:
+      - dashboards/cluster-node-health.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-flux-health
+    namespace: observability
+    files:
+      - dashboards/flux-health.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-gpu-vllm
+    namespace: observability
+    files:
+      - dashboards/gpu-vllm.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-postgres-health
+    namespace: observability
+    files:
+      - dashboards/postgres-health.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-ai-runtime-health
+    namespace: observability
+    files:
+      - dashboards/ai-runtime-health.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-network-cilium
+    namespace: observability
+    files:
+      - dashboards/network-cilium.json
+    options:
+      labels:
+        grafana_dashboard: "1"

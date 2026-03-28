@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cilium-operator-metrics
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: cilium-operator
+    app.kubernetes.io/part-of: cilium
+spec:
+  type: ClusterIP
+  selector:
+    io.cilium/app: operator
+    name: cilium-operator
+  ports:
+    - name: metrics
+      port: 9963
+      targetPort: prometheus
+      protocol: TCP

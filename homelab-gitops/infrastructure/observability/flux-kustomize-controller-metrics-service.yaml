@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kustomize-controller-metrics
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: kustomize-controller
+    app.kubernetes.io/component: kustomize-controller
+    app.kubernetes.io/part-of: flux
+spec:
+  type: ClusterIP
+  selector:
+    app: kustomize-controller
+  ports:
+    - name: http-metrics
+      port: 8080
+      targetPort: http-prom
+      protocol: TCP
