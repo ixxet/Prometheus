@@ -1,15 +1,16 @@
 # Homelab GitOps
 
-Last updated: 2026-03-26 (America/Toronto)
+Last updated: 2026-03-27 (America/Toronto)
 
 ## Status
 
 This directory is no longer a skeleton. It now drives the live cluster via Flux.
-The first stateful services are healthy, `vLLM` is serving successfully, and the
-LangGraph runtime is now live. The next meaningful steps are naming cleanup,
-router cutover preparation, and turning the now-defined first real agent
-workflow into the default named path rather than an operator-only validation
-path.
+The first stateful services are healthy, `vLLM` is serving successfully, the
+LangGraph runtime is live, and the observability slice is now running too. The
+next meaningful steps are naming cleanup, router cutover preparation, installing
+the committed MIMIR return-check timer, and turning the now-defined first real
+agent workflow into the default named path rather than an operator-only
+validation path.
 
 Authored and render-valid now:
 
@@ -22,6 +23,7 @@ Authored and render-valid now:
 - `infrastructure/postgres/` for the first execution store
 - `infrastructure/semantic-memory/` for staged `Qdrant + TEI` support services
 - `infrastructure/dns/` for AdGuard Home
+- `infrastructure/observability/` for Prometheus, Grafana, metrics-server, DCGM, scrape targets, and dashboards
 - `apps/ai/vllm/`
 - `apps/ai/open-webui/`
 - `apps/agents/langgraph/`
@@ -32,6 +34,7 @@ Live now:
 - `infra-storage`
 - `infra-postgres`
 - `infra-dns`
+- `infra-observability`
 - `apps`
 
 ## What this repo is intended to become
@@ -83,6 +86,7 @@ Explicitly out of this first wave:
 | `infrastructure/postgres/` | Internal Postgres service for checkpoint and application state. | Running on small SSD-backed PVC storage for now. | It does not solve semantic memory or archive export by itself. |
 | `infrastructure/semantic-memory/` | `Qdrant + TEI` support services for the `v0.4.0` Mem0 layer. | Live now on the SSD-backed first-wave storage path. | It does not provide human-readable archive export by itself. |
 | `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Running, but router cutover is still intentionally deferred. | It does not update router-side DNS settings for you. |
+| `infrastructure/observability/` | Prometheus, Grafana, metrics-server, DCGM exporter, scrape targets, and provisioned dashboards. | Runs on the SSD-backed first-wave storage model and keeps Grafana LAN/Tailscale-only. | It does not expose Grafana publicly or solve host-side timer installation on MIMIR. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
@@ -111,6 +115,9 @@ As of 2026-03-26:
 - the `apps` `Kustomization` is healthy again
 - AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
 - AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.2.200`
+- Prometheus, Grafana, metrics-server, and DCGM exporter are live in `observability`
+- Grafana is reachable at `192.168.2.202` and the dashboard set is provisioned from Git
+- Flux, Cilium, Postgres exporter, and `vLLM` scrape targets are live
 
 ## Storage stance for the first wave
 

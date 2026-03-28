@@ -1,6 +1,6 @@
 # Runtime Checks And Quick Runbook
 
-Last updated: 2026-03-26 (America/Toronto)
+Last updated: 2026-03-27 (America/Toronto)
 
 ## What this is for
 
@@ -8,7 +8,8 @@ This file is the fast path for checking the live cluster without rereading the
 full project docs. Commands are grouped by what you are trying to verify.
 
 If the tower has just returned from a Windows session, use the scripted path
-first:
+first. The script is now host-neutral enough to run either from the Mac or from
+MIMIR once the NUC install is in place:
 
 ```bash
 /Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh
@@ -23,6 +24,7 @@ first:
 | AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200` | serving the admin UI and direct-query rewrites; router cutover deferred |
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
+| Grafana | `observability` | `LoadBalancer` | `192.168.2.202` | serving `/login` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
 | LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz`, thread APIs, Mem0-backed semantic memory, and filesystem archive exports |
 | Qdrant | `semantic-memory` | `ClusterIP` | in-cluster only | `readyz` returns healthy |
@@ -33,7 +35,7 @@ first:
 
 | Goal | Command | Success signal |
 | --- | --- | --- |
-| Full post-return verification | `/Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh` | Talos, Kubernetes, Flux, core pods, LAN endpoints, and LangGraph health all pass |
+| Full post-return verification | `/Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh` | Talos, Kubernetes, Flux, metrics API, core pods, LAN endpoints, Grafana, and LangGraph health all pass |
 | Talos health | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 health` | health checks pass |
 | Kubernetes nodes | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get nodes -o wide` | node is `Ready` |
 | Flux state | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n flux-system get kustomizations` | infra entries `True`; `apps` `True` on the current revision |
@@ -68,6 +70,17 @@ first:
 | Semantic-memory smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` and `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n semantic-memory port-forward svc/qdrant 16333:6333` then use `docs/runbooks/semantic-memory-activation.md` | a preference written in one thread is recalled in a fresh thread |
 | Archive export smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use `docs/runbooks/archive-export-validation.md` | a completed run writes a Markdown file into MIMIR's `Agents/` vault path |
 | First real workflow smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use `docs/runbooks/first-agent-workflow.md` | approval, Postgres state, Mem0 recall, and MIMIR archive export all succeed in one path |
+
+## Observability checks
+
+| Goal | Command | Success signal |
+| --- | --- | --- |
+| Observability pods | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n observability get pods` | Prometheus, Grafana, metrics-server, kube-state-metrics, node-exporter, and DCGM exporter are running |
+| Grafana UI | `curl -I http://192.168.2.202` | `302` to `/login` or `200 OK` |
+| Metrics API | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig top nodes` | node metrics return successfully |
+| Dashboard ConfigMaps | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get configmaps -n observability -l grafana_dashboard=1` | custom and upstream dashboard ConfigMaps are present |
+| Grafana-provisioned dashboards | use the commands in `docs/runbooks/observability-validation.md` | the custom dashboard UIDs show up in the Grafana API |
+| Postgres exporter | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents get pods -l app.kubernetes.io/name=postgres-exporter` | exporter is `1/1 Running` |
 
 ## Semantic-memory namespace checks
 

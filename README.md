@@ -5,6 +5,7 @@
 ![Cilium](https://img.shields.io/badge/Cilium-1.18.0-F8C517?style=for-the-badge&logo=cilium&logoColor=111111&labelColor=1F1F1F)
 ![RTX 3090](https://img.shields.io/badge/RTX_3090-24GB_VRAM-76B900?style=for-the-badge&logo=nvidia&logoColor=white&labelColor=1F1F1F)
 ![vLLM](https://img.shields.io/badge/vLLM-Mistral_7B-FF6B35?style=for-the-badge&logo=openai&logoColor=white&labelColor=1F1F1F)
+![Grafana](https://img.shields.io/badge/Grafana-live-F46800?style=for-the-badge&logo=grafana&logoColor=white&labelColor=1F1F1F)
 ![Flux](https://img.shields.io/badge/Flux-live-5468FF?style=for-the-badge&logo=flux&logoColor=white&labelColor=1F1F1F)
 ![Tailscale](https://img.shields.io/badge/Tailscale-remote_ops-242424?style=for-the-badge&logo=tailscale&logoColor=white&labelColor=1F1F1F)
 
@@ -91,7 +92,7 @@ flowchart LR
 | **AI -- Deferred Gateway** | LiteLLM | Useful later if multiple backends appear | Deferred |
 | **AI -- Deferred Memory** | Graphiti / Zep | Temporal graph memory for point-in-time queries | Deferred |
 | **AI -- Deferred Agent Platform** | Letta | Alternative agent platform, not chosen here | Deferred |
-| **Observability** | Prometheus + Grafana | Metrics, dashboards, alerting | Planned |
+| **Observability** | Prometheus + Grafana + metrics-server + DCGM exporter | In-cluster metrics, dashboards, alerting, and `kubectl top`; dashboards provisioned from Git | Live in-cluster; MIMIR timer install still pending |
 | **Media** | Arr Stack + Jellyfin | Sonarr, Radarr, Prowlarr, qBittorrent | Migration later |
 | **Photos** | Immich | Self-hosted photo management with ML | Planned |
 
@@ -105,11 +106,15 @@ reachable remotely through Tailscale, LangGraph is live internally with
 Postgres-backed execution state, and completed runs now export Markdown
 artifacts to the off-tower MIMIR vault path. The first real agent workflow has
 now been rehearsed live end to end: approval-gated request, Postgres-backed
-execution state, Mem0 recall, and Markdown export to MIMIR. The remaining
-`v0.5.0` work is now mostly about router DNS cutover and making the naming path
-the default instead of a test-only path. Windows/Talos dual-boot is now treated
-as a real operating constraint, and the post-return health verification path is
-documented and scriptable.
+execution state, Mem0 recall, and Markdown export to MIMIR. Observability is
+now live too: Prometheus, Grafana, metrics-server, DCGM exporter, Flux
+scrape-targets, Postgres exporter, `vLLM` metrics, and Git-provisioned
+dashboards are all running in-cluster. The remaining `v0.5.0` work is still
+mostly about router DNS cutover and making the naming path the default instead
+of a test-only path. Windows/Talos dual-boot is treated as a real operating
+constraint, the return-verification path is now host-neutral, and the MIMIR
+timer assets are committed even though the actual host install is still waiting
+on a better remote link.
 
 ## Release Milestones
 
@@ -141,6 +146,8 @@ documented and scriptable.
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | LangGraph | Stable | Internal-only runtime is live on the Mem0-enabled image; create, run, resume, restart-persistence, and semantic-memory smoke checks have passed |
 | Mem0 / Obsidian | Stable | Mem0 is live with Qdrant + TEI backing; LangGraph now exports Markdown run artifacts to the off-tower MIMIR vault path |
+| Observability | Stable | Prometheus, Grafana, metrics-server, DCGM exporter, Flux scrape-targets, Postgres exporter, and `vLLM` metrics are live |
+| MIMIR return automation | In progress | Host-neutral script and systemd timer assets are committed; the actual host install is still pending because the current remote link is degraded |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
 ### Already real in the live cluster
@@ -171,12 +178,18 @@ documented and scriptable.
 - [x] Qdrant plus TEI support services are live under `infra-semantic-memory`
 - [x] Cross-thread semantic-memory write and recall have been validated against the live cluster
 - [x] LangGraph exports Markdown run artifacts to `/srv/obsidian/prometheus-vault/Agents` on MIMIR
+- [x] Prometheus, Grafana, metrics-server, and DCGM exporter are running in the `observability` namespace
+- [x] Grafana is reachable on `http://192.168.2.202`
+- [x] Grafana dashboards are provisioned from Git rather than created manually in the UI
+- [x] `kubectl top nodes` and `kubectl top pods -A` now work
+- [x] Flux, Cilium, Postgres exporter, and `vLLM` scrape surfaces are authored and live
 
 ### Live but still provisional
 
 - [ ] Router DNS is not yet cut over to AdGuard Home
 - [ ] Clients are not yet pointed at AdGuard by default, so `home.arpa` naming is still in test-only mode
 - [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
+- [ ] The MIMIR systemd timer for the return-check path is committed in-repo but not yet installed on the NUC
 
 ### Real in the repo and aligned with the cluster
 
@@ -196,6 +209,8 @@ documented and scriptable.
 - [x] AdGuard real-client validation from MIMIR is documented
 - [x] DNS break-glass and raw-IP fallback path are documented
 - [x] Windows/Talos dual-boot shutdown and return path are documented
+- [x] Observability manifests, dashboard provisioning, and validation runbooks are authored and aligned with the live cluster
+- [x] MIMIR timer/service assets for the post-return check exist in-repo under `ops/mimir/`
 
 ### Not yet authored or activated
 
@@ -252,6 +267,13 @@ Current notable examples:
 - the first NFS export attempt for the off-tower archive sink failed because
   MIMIR's UFW blocked NFS traffic and the initial NFSv4 export layout did not
   match the client mount path
+- observability rollout surfaced a second Flux recovery edge: a bad
+  `postgres-exporter` secret held the kustomization in health-check progress
+  until the already-committed fixed secret was applied and the exporter was
+  restarted
+- the MIMIR automation path is now committed in the repo, but the actual host
+  install is still pending because the remote link is too degraded to trust for
+  a clean systemd rollout
 
 ## Why This Project Matters
 
@@ -310,6 +332,8 @@ Explicit non-goals for this phase:
 - [ ] Choose the safe window for router-side DHCP/DNS handoff
 - [ ] Decide whether the first default-DNS rollout happens on a single client, a secondary router segment, or the main router
 - [ ] Perform the router-side DHCP/DNS handoff and validate client behavior by default
+- [ ] Install the committed post-return systemd timer on MIMIR once the remote link is stable enough to trust
+- [ ] Decide whether `v0.6.0` should be tagged after the MIMIR timer install or after the next storage/observability hardening pass
 
 ### After LangGraph
 
@@ -329,6 +353,7 @@ Explicit non-goals for this phase:
 
 - Flux GitOps with SOPS-encrypted secrets
 - Prometheus + Grafana observability stack
+- MIMIR-hosted automatic post-return verification once the NUC install is actually activated
 - AdGuard Home fully cut over as the LAN DNS authority
 - Arr media stack migration from MIMIR, if that still makes sense after the Talos platform settles
 - Immich photo management with GPU-accelerated ML
@@ -351,9 +376,12 @@ Explicit non-goals for this phase:
 | `docs/roadmap.md` | End-to-end roadmap from `v0.2.1` to `v1.0.0` | Captures the locked decisions, milestones, acceptance gates, and sequencing |
 | `docs/tailscale-remote-access.md` | Remote access runbook | Explains the safe Tailscale path, why Talos-side install is deferred, and how subnet routing should work |
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
-| `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
-| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, worker expansion, LangGraph validation, and archive export checks | First authored pass; now includes the live `v0.3.0`, `v0.4.0`, and first real agent-workflow validation paths |
-| `scripts/verify-after-talos-return.sh` | Post-Windows return check for the live tower | Validated against the live cluster; waits for Talos, Kubernetes, core pods, endpoints, and LangGraph health |
+| `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, endpoint, and observability commands |
+| `docs/runbooks/observability-validation.md` | Observability rollout validation path | Covers Grafana reachability, dashboard provisioning, metrics API checks, and Prometheus scrape surfaces |
+| `docs/runbooks/mimir-post-return-check.md` | MIMIR automation runbook | Records the repo assets, install path, and current host-install status for the return-check timer |
+| `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, worker expansion, LangGraph validation, and archive export checks | First authored pass; now includes the live `v0.3.0`, `v0.4.0`, `v0.6.x` observability, and first real agent-workflow validation paths |
+| `scripts/verify-after-talos-return.sh` | Post-Windows return check for the live tower | Validated against the live cluster; now host-neutral enough to run from MIMIR once the configs and timer are installed |
+| `ops/mimir/` | MIMIR-side automation assets for the post-return check | Includes the systemd service, timer, and example env file; repo side is done, host install is still pending |
 | `.github/workflows/` | CI automation for building the LangGraph runtime image | Keeps container publication out of fragile local-token workflows |
 | `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state with approval/resume flow; live rollout and restart persistence are validated |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |

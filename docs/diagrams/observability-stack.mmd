@@ -1,0 +1,31 @@
+flowchart LR
+  clients["LAN + Tailscale Clients"]
+  grafana["Grafana\n192.168.2.202"]
+  prometheus["Prometheus\nClusterIP only"]
+  alertmanager["Alertmanager\nClusterIP only"]
+  metrics["metrics-server"]
+  flux["Flux controllers\nhelm, kustomize, source, notification"]
+  cilium["Cilium\noperator + envoy metrics"]
+  gpu["DCGM exporter\nGPU telemetry"]
+  vllm["vLLM\n/metrics"]
+  pgexp["postgres-exporter"]
+  kube["kube-state-metrics\nnode-exporter\napiserver + kubelet"]
+  runtimes["LangGraph, Open WebUI, AdGuard,\nQdrant, TEI\navailability via kube-state"]
+  mimir["MIMIR\nplanned systemd timer"]
+  verify["verify-after-talos-return.sh"]
+
+  clients --> grafana
+  grafana --> prometheus
+  prometheus --> alertmanager
+  prometheus --> metrics
+  prometheus --> flux
+  prometheus --> cilium
+  prometheus --> gpu
+  prometheus --> vllm
+  prometheus --> pgexp
+  prometheus --> kube
+  prometheus --> runtimes
+  mimir --> verify
+  verify --> grafana
+  verify --> vllm
+  verify --> runtimes

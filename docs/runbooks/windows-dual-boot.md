@@ -100,15 +100,19 @@ That is why the script waits instead of checking once and failing immediately.
 - Do not use Windows Disk Management on the Talos disk.
 - Treat BIOS boot-order changes as likely if Windows was used most recently.
 
-## Relationship to future observability
+## Relationship to live observability
 
-Prometheus and Grafana are still valid future work on this machine.
+Prometheus, Grafana, metrics-server, and the dashboard set are already live on
+this machine. What dual boot changes is the operator model, not the value of
+the observability stack.
 
 What changes because of dual boot:
 
-- metrics history will have expected gaps while the tower is in Windows
-- dashboards will be useful for health and regression spotting, but they will
+- metrics history has expected gaps while the tower is in Windows
+- dashboards are still useful for health and regression spotting, but they do
   not represent continuous uptime until the tower stops acting as a dual-boot
   workstation
+- the return-check script is now host-neutral enough to run from the Mac or
+  from MIMIR once the committed systemd timer assets are installed on the NUC
 
 That is acceptable for this phase.

@@ -1,6 +1,6 @@
 # Growing Pains
 
-Last updated: 2026-03-26 (America/Toronto)
+Last updated: 2026-03-27 (America/Toronto)
 
 ## Why this file exists
 
@@ -643,6 +643,62 @@ Lesson:
 - observability is still worth adding, but expected gaps must be treated as
   normal until the hardware role stabilizes
 
+### 25. Observability health checks can stall behind a broken support target
+
+What happened:
+
+- the first observability rollout added `postgres-exporter` under the same
+  Flux kustomization as the Prometheus/Grafana stack
+- the exporter DSN secret used a raw password containing `/`
+- that broke the exporter, which then held `infra-observability` in health-check
+  progress
+- a later repo fix existed, but Flux was still pinned behind the failing earlier
+  revision
+
+Effect:
+
+- the base observability pods were healthy, but the kustomization stayed
+  mid-reconcile
+- repo truth and the live secret diverged until the broken target was cleared
+
+Fix:
+
+- percent-encoded the Postgres password in the exporter DSN
+- applied the already-committed fixed secret directly to the cluster to unstick
+  the health gate
+- restarted only `postgres-exporter`
+
+Lesson:
+
+- support exporters are part of the health contract once they live in the same
+  Flux slice
+- a small secret bug can stall an otherwise healthy platform expansion
+
+### 26. Repo-side automation and host-side automation are different completion points
+
+What happened:
+
+- the return-check script was refactored to be host-neutral
+- the MIMIR systemd service, timer, and env template were committed in-repo
+- the remote link to MIMIR degraded badly enough that the actual host install
+  could not be trusted in the same session
+
+Effect:
+
+- the repo now contains the correct automation assets
+- but the NUC is not yet the active source of automatic post-return checks
+
+Fix:
+
+- committed the automation assets separately from the script refactor
+- kept the repo truthful: assets done, host install still pending
+
+Lesson:
+
+- external automation needs both repo truth and reachable host execution to be
+  considered complete
+- do not mark the operator path done just because the files exist in Git
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -656,6 +712,8 @@ Lesson:
 - router DNS cutover is still the bigger operational boundary than the memory stack now
 - recurring Windows sessions on the tower still mean planned downtime and
   expected observability gaps
+- the MIMIR timer assets are committed, but the actual host install is still
+  pending because the remote link was too degraded for a safe rollout
 
 ## Why keep this visible
 
@@ -713,6 +771,9 @@ already do on modest, real-world home hardware.
   router DNS cutover yet.
 - Rehearsed the first real agent workflow end to end: approval gate, Postgres
   execution state, Mem0 recall, and Markdown export to the MIMIR vault.
+- Brought up a real observability stack with Prometheus, Grafana, metrics-server,
+  DCGM exporter, Flux/Cilium/`vLLM`/Postgres scrape surfaces, and Git-provisioned
+  dashboards on the live cluster.
 
 ## Success Stories
 
@@ -746,3 +807,6 @@ already do on modest, real-world home hardware.
 - The tower can now be treated honestly as both a cluster node and a temporary
   workstation. Shutdown and return checks are documented and scriptable instead
   of being left to memory.
+- Observability is now real enough to be useful during that dual-boot reality.
+  Grafana, Prometheus, and the provisioned dashboards make regressions visible
+  without pretending the tower is a 24/7 server yet.

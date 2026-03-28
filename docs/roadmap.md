@@ -1,6 +1,6 @@
 # Prometheus Roadmap From `v0.3.0` To `v1.0.0`
 
-Last updated: 2026-03-26 (America/Toronto)
+Last updated: 2026-03-27 (America/Toronto)
 
 ## Why this document exists
 
@@ -29,7 +29,7 @@ what "done" means for each milestone.
 | `v0.3.0` | First agent runtime | LangGraph is live with Postgres-backed execution state, approval/resume, and restart-tested persistence |
 | `v0.4.0` | Memory and archive layer | Mem0 plus Obsidian summary/export workflow are live |
 | `v0.5.0` | Naming and first real workflow | AdGuard cutover, stable LAN naming, and a real end-to-end agent workflow exist |
-| `v0.6.0+` | Platform expansion | Observability, storage maturity, media/photos, and NUC split happen deliberately |
+| `v0.6.0+` | Platform expansion | Observability is now live; storage maturity, media/photos, and NUC split still happen deliberately |
 | `v1.0.0` | Complete platform | The system feels complete, operable, and no longer reads like bring-up notes |
 
 ## `v0.2.x` Stabilization And Naming
@@ -195,6 +195,12 @@ are still pending.
 Goal: expand from "AI-capable single-node platform" into a broader homelab
 platform without losing clarity.
 
+Status: in progress on 2026-03-27. The observability slice is now live in-cluster
+with Prometheus, Grafana, metrics-server, DCGM exporter, Git-provisioned
+dashboards, and the Flux/Cilium/Postgres/`vLLM` scrape surfaces. The remaining
+open item from this first observability pass is the actual MIMIR-side systemd
+install for the post-return timer.
+
 ### Implementation order
 
 1. Observability first
@@ -224,14 +230,16 @@ platform without losing clarity.
 
 ### Acceptance
 
-- dashboards cover node, GPU, Flux, and app health
-- expected downtime from Windows sessions is visible but does not corrupt the
+- [x] dashboards cover node, GPU, Flux, and app health
+- [x] `kubectl top` works through metrics-server
+- [x] expected downtime from Windows sessions is visible but does not corrupt the
   observability stack
-- storage pressure is no longer concentrated only on the Talos system SSD before
+- [ ] MIMIR has the committed post-return timer assets installed and enabled
+- [ ] storage pressure is no longer concentrated only on the Talos system SSD before
   heavy apps land
-- media and Immich only move forward when storage and placement are credible
-- NUC integration is deliberate, not opportunistic
-- public template extraction starts only after the live instance has a proven story
+- [ ] media and Immich only move forward when storage and placement are credible
+- [ ] NUC integration is deliberate, not opportunistic
+- [ ] public template extraction starts only after the live instance has a proven story
 
 ## `v1.0.0` Completion Criteria
 
