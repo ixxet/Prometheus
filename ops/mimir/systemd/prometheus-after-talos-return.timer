@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic Prometheus post-return health verification
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=30m
+Persistent=true
+Unit=prometheus-after-talos-return.service
+
+[Install]
+WantedBy=timers.target

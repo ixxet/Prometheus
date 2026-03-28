@@ -1,0 +1,16 @@
+[Unit]
+Description=Prometheus post-return health verification
+Wants=network-online.target
+After=network-online.target tailscaled.service
+ConditionPathExists=/opt/prometheus-ops/verify-after-talos-return.sh
+ConditionPathExists=/etc/prometheus-ops/talos-return.env
+
+[Service]
+Type=oneshot
+User=boi
+Group=boi
+EnvironmentFile=/etc/prometheus-ops/talos-return.env
+WorkingDirectory=/opt/prometheus-ops
+ExecStartPre=/usr/bin/install -d -m 0755 -o boi -g boi /home/boi/.config/prometheus
+ExecStartPre=/usr/bin/install -d -m 0755 -o boi -g boi /home/boi/.local/state/prometheus-ops
+ExecStart=/usr/bin/env bash -lc 'set -o pipefail; /opt/prometheus-ops/verify-after-talos-return.sh 2>&1 | tee -a /home/boi/.local/state/prometheus-ops/verify-after-talos-return.log'
