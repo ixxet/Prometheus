@@ -9,7 +9,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 
 If the tower has just returned from a Windows session, use the scripted path
 first. The script is now host-neutral enough to run either from the Mac or from
-MIMIR once the NUC install is in place:
+MIMIR, where the systemd timer is now installed and active:
 
 ```bash
 /Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh

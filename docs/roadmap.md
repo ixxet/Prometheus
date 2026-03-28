@@ -28,8 +28,9 @@ what "done" means for each milestone.
 | `v0.2.1` | Stable AI serving checkpoint | `vLLM`, Open WebUI, Postgres, AdGuard, Flux, and Tailscale remote ops are working together |
 | `v0.3.0` | First agent runtime | LangGraph is live with Postgres-backed execution state, approval/resume, and restart-tested persistence |
 | `v0.4.0` | Memory and archive layer | Mem0 plus Obsidian summary/export workflow are live |
-| `v0.5.0` | Naming and first real workflow | AdGuard cutover, stable LAN naming, and a real end-to-end agent workflow exist |
-| `v0.6.0+` | Platform expansion | Observability is now live; storage maturity, media/photos, and NUC split still happen deliberately |
+| `v0.5.0` | Naming and first real workflow | The first real workflow exists, but AdGuard cutover and stable LAN naming are still environment-gated |
+| `v0.6.0` | Observability slice | Prometheus, Grafana, metrics-server, DCGM exporter, provisioned dashboards, and the MIMIR return-check timer are live |
+| `v0.6.x+` | Platform expansion | Storage maturity, media/photos, and NUC split still happen deliberately |
 | `v1.0.0` | Complete platform | The system feels complete, operable, and no longer reads like bring-up notes |
 
 ## `v0.2.x` Stabilization And Naming
@@ -197,9 +198,10 @@ platform without losing clarity.
 
 Status: in progress on 2026-03-27. The observability slice is now live in-cluster
 with Prometheus, Grafana, metrics-server, DCGM exporter, Git-provisioned
-dashboards, and the Flux/Cilium/Postgres/`vLLM` scrape surfaces. The remaining
-open item from this first observability pass is the actual MIMIR-side systemd
-install for the post-return timer.
+dashboards, the Flux/Cilium/Postgres/`vLLM` scrape surfaces, and the
+MIMIR-hosted post-return timer. This first observability pass is now complete
+even though the `v0.5.0` DNS cutover work remains deferred by the tower's
+temporary LAN placement.
 
 ### Implementation order
 
@@ -234,7 +236,7 @@ install for the post-return timer.
 - [x] `kubectl top` works through metrics-server
 - [x] expected downtime from Windows sessions is visible but does not corrupt the
   observability stack
-- [ ] MIMIR has the committed post-return timer assets installed and enabled
+- [x] MIMIR has the committed post-return timer assets installed, enabled, and tested once
 - [ ] storage pressure is no longer concentrated only on the Talos system SSD before
   heavy apps land
 - [ ] media and Immich only move forward when storage and placement are credible

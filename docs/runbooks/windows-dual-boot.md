@@ -113,6 +113,7 @@ What changes because of dual boot:
   not represent continuous uptime until the tower stops acting as a dual-boot
   workstation
 - the return-check script is now host-neutral enough to run from the Mac or
-  from MIMIR once the committed systemd timer assets are installed on the NUC
+  from MIMIR, where the committed systemd timer assets are now installed and
+  enabled
 
 That is acceptable for this phase.

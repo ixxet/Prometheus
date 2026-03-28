@@ -19,10 +19,11 @@ Repo side:
 
 Host side on MIMIR:
 
-- not yet installed
-- blocked only by a degraded remote link during this rollout session
+- installed
+- manual service invocation passed
+- timer enabled and active
 
-That means the automation path is designed and versioned, but not yet active on
+That means the automation path is now both versioned in Git and active on
 MIMIR.
 
 ## Repo assets
@@ -32,7 +33,7 @@ MIMIR.
 - `ops/mimir/systemd/prometheus-after-talos-return.timer`
 - `ops/mimir/talos-return.env.example`
 
-## Intended MIMIR install paths
+## Live MIMIR install paths
 
 - script: `/opt/prometheus-ops/verify-after-talos-return.sh`
 - env file: `/etc/prometheus-ops/talos-return.env`
@@ -40,7 +41,7 @@ MIMIR.
 - kubeconfig: `/home/boi/.config/prometheus/kubeconfig`
 - log file: `/home/boi/.local/state/prometheus-ops/verify-after-talos-return.log`
 
-## Intended timer behavior
+## Timer behavior
 
 - one-shot service: `prometheus-after-talos-return.service`
 - timer: `prometheus-after-talos-return.timer`
@@ -71,17 +72,31 @@ Key values:
 falls back to a direct TCP reachability probe of the Talos API on
 `NODE_IP:TALOS_API_PORT`.
 
-## Manual activation plan once the link is stable
+## Verified activation path
 
-1. Copy `talosctl`, the verification script, the unit files, and both configs to MIMIR.
+1. Copy the verification script, configs, and unit files to MIMIR.
 2. Install the script into `/opt/prometheus-ops/`.
 3. Install the env file into `/etc/prometheus-ops/`.
 4. Install the unit files into `/etc/systemd/system/`.
-5. Run `sudo systemctl daemon-reload`.
-6. Run `sudo systemctl start prometheus-after-talos-return.service` once.
-7. Check the log file under `/home/boi/.local/state/prometheus-ops/`.
-8. Run `sudo systemctl enable --now prometheus-after-talos-return.timer`.
-9. Confirm the timer with `systemctl list-timers | grep prometheus-after-talos-return`.
+5. Install `talosctl` into `/usr/local/bin/`.
+6. Run `sudo systemctl daemon-reload`.
+7. Run `sudo systemctl start prometheus-after-talos-return.service` once.
+8. Check the log file under `/home/boi/.local/state/prometheus-ops/`.
+9. Run `sudo systemctl enable --now prometheus-after-talos-return.timer`.
+10. Confirm the timer with `systemctl list-timers | grep prometheus-after-talos-return`.
+
+## Current live status
+
+Current timer state:
+
+- `enabled`
+- `active`
+- next trigger every `30m`
+
+Current service result:
+
+- last manual invocation exited `0/SUCCESS`
+- log file confirmed `Post-return verification passed.`
 
 ## Why this is external automation
 

@@ -699,6 +699,37 @@ Lesson:
   considered complete
 - do not mark the operator path done just because the files exist in Git
 
+### 27. Helper hosts do not always behave like the primary operator machine
+
+What happened:
+
+- the first MIMIR install attempt copied the Mac `talosctl` binary by mistake
+- the second attempt put a Linux `talosctl` binary on MIMIR, but the helper
+  host still rejected it with `Exec format error`
+- that left the new systemd service unable to complete even though the repo
+  assets and the rest of the host install were correct
+
+Effect:
+
+- the MIMIR service was installed but not yet trustworthy
+- the timer could not be treated as real until the verification path had a
+  working Talos-side check
+
+Fix:
+
+- changed the return-check script so it prefers `talosctl health` when it
+  works, but falls back to a direct TCP probe of the Talos API on `:50000`
+  when the helper host cannot execute `talosctl`
+- reapplied the script and env file on MIMIR
+- reran the service successfully and then enabled the timer
+
+Lesson:
+
+- helper-host automation should degrade gracefully when one binary path is
+  unavailable
+- for this operator check, proving Talos API reachability is better than having
+  the whole timer path fail on a helper-host edge case
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -712,8 +743,6 @@ Lesson:
 - router DNS cutover is still the bigger operational boundary than the memory stack now
 - recurring Windows sessions on the tower still mean planned downtime and
   expected observability gaps
-- the MIMIR timer assets are committed, but the actual host install is still
-  pending because the remote link was too degraded for a safe rollout
 
 ## Why keep this visible
 
