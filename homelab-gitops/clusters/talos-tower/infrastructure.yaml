@@ -115,6 +115,31 @@ spec:
     kind: GitRepository
     name: flux-system
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-observability
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 10m
+  prune: true
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  dependsOn:
+    - name: infra-network
+    - name: infra-nvidia
+    - name: infra-storage
+    - name: infra-postgres
+  path: ./homelab-gitops/infrastructure/observability
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+---
 # Enabled once storage is live. Router DNS cutover remains a separate manual
 # step after AdGuard is healthy.
 apiVersion: kustomize.toolkit.fluxcd.io/v1

@@ -8,3 +8,4 @@ resources:
   - postgres
   - semantic-memory
   - dns
+  - observability
