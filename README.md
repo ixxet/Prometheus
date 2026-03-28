@@ -107,7 +107,9 @@ artifacts to the off-tower MIMIR vault path. The first real agent workflow has
 now been rehearsed live end to end: approval-gated request, Postgres-backed
 execution state, Mem0 recall, and Markdown export to MIMIR. The remaining
 `v0.5.0` work is now mostly about router DNS cutover and making the naming path
-the default instead of a test-only path.
+the default instead of a test-only path. Windows/Talos dual-boot is now treated
+as a real operating constraint, and the post-return health verification path is
+documented and scriptable.
 
 ## Release Milestones
 
@@ -193,6 +195,7 @@ the default instead of a test-only path.
 - [x] AdGuard test-only rewrites and direct-query validation are documented
 - [x] AdGuard real-client validation from MIMIR is documented
 - [x] DNS break-glass and raw-IP fallback path are documented
+- [x] Windows/Talos dual-boot shutdown and return path are documented
 
 ### Not yet authored or activated
 
@@ -214,6 +217,7 @@ the default instead of a test-only path.
 - [ ] All currently installed non-system tower disks remain off-limits
 - [ ] First-wave persistent state is intentionally kept on the Talos SSD only
 - [ ] `vLLM` model storage stays small until a second SSD or NAS tier exists
+- [ ] Frequent Windows sessions on the tower still mean expected service downtime and future observability gaps
 
 ## Growing Pains
 
@@ -349,6 +353,7 @@ Explicit non-goals for this phase:
 | `docs/diagrams/` | Mermaid source files for system, AI, request flow, and memory ERD diagrams | Mirrors the embedded diagrams in the Markdown docs |
 | `docs/runtime-checks.md` | Fast operational runbook for live checks | Groups the most useful Talos, Kubernetes, Flux, and endpoint commands |
 | `docs/runbooks/` | Operator runbooks for cutover, recovery, model changes, worker expansion, LangGraph validation, and archive export checks | First authored pass; now includes the live `v0.3.0`, `v0.4.0`, and first real agent-workflow validation paths |
+| `scripts/verify-after-talos-return.sh` | Post-Windows return check for the live tower | Validated against the live cluster; waits for Talos, Kubernetes, core pods, endpoints, and LangGraph health |
 | `.github/workflows/` | CI automation for building the LangGraph runtime image | Keeps container publication out of fragile local-token workflows |
 | `services/langgraph/` | Self-hosted OSS LangGraph runtime source for `v0.3.0` | Postgres-backed thread and run state with approval/resume flow; live rollout and restart persistence are validated |
 | `tower-bootstrap/` | Bootstrap artifacts for the live Talos cluster | Captures what shaped the current cluster before Flux |

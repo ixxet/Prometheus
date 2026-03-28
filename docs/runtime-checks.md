@@ -7,6 +7,13 @@ Last updated: 2026-03-26 (America/Toronto)
 This file is the fast path for checking the live cluster without rereading the
 full project docs. Commands are grouped by what you are trying to verify.
 
+If the tower has just returned from a Windows session, use the scripted path
+first:
+
+```bash
+/Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh
+```
+
 ## Current service map
 
 | Service | Namespace | Type | Address | Expected state |
@@ -26,6 +33,7 @@ full project docs. Commands are grouped by what you are trying to verify.
 
 | Goal | Command | Success signal |
 | --- | --- | --- |
+| Full post-return verification | `/Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh` | Talos, Kubernetes, Flux, core pods, LAN endpoints, and LangGraph health all pass |
 | Talos health | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 health` | health checks pass |
 | Kubernetes nodes | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get nodes -o wide` | node is `Ready` |
 | Flux state | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n flux-system get kustomizations` | infra entries `True`; `apps` `True` on the current revision |

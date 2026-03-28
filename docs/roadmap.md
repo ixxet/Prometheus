@@ -201,6 +201,8 @@ platform without losing clarity.
    - `kube-prometheus-stack`
    - Grafana dashboards
    - node, Cilium, Flux, Postgres, and GPU visibility
+   - expected dashboard gaps are acceptable while the tower still boots Windows
+     sometimes; continuity is not the current success criterion
 2. Storage maturity second
    - keep the tower-only stance until hardware changes
    - when storage pressure forces it, add a second SSD for fast AI/app data
@@ -223,6 +225,8 @@ platform without losing clarity.
 ### Acceptance
 
 - dashboards cover node, GPU, Flux, and app health
+- expected downtime from Windows sessions is visible but does not corrupt the
+  observability stack
 - storage pressure is no longer concentrated only on the Talos system SSD before
   heavy apps land
 - media and Immich only move forward when storage and placement are credible

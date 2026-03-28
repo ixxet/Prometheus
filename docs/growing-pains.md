@@ -611,6 +611,38 @@ Lesson:
 - the first credible workflow is usually smaller than the platform vision
 - a narrow live workflow is better evidence than a broad future promise
 
+### 24. Dual-boot convenience changes the operations bar
+
+What happened:
+
+- the tower is still expected to boot Windows sometimes
+- that means the single-node Talos cluster is not a continuously available host
+- manual post-return checks would become repetitive and easy to skip
+
+Effect:
+
+- safe shutdown and clean return had to become part of the documented operator
+  path
+- future observability work cannot pretend the node will be up 24/7 yet
+
+Fix:
+
+- documented the Windows/Talos dual-boot runbook
+- added a post-return verification script that checks:
+  - Talos health
+  - Kubernetes and Flux
+  - core pods
+  - LAN endpoints
+  - LangGraph health
+- validated that script once against the live cluster
+
+Lesson:
+
+- if a platform sometimes becomes a workstation, operator recovery has to be
+  scripted
+- observability is still worth adding, but expected gaps must be treated as
+  normal until the hardware role stabilizes
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -622,6 +654,8 @@ Lesson:
 - the runbooks are authored now, but they still need live rehearsal as new
   milestones land
 - router DNS cutover is still the bigger operational boundary than the memory stack now
+- recurring Windows sessions on the tower still mean planned downtime and
+  expected observability gaps
 
 ## Why keep this visible
 
@@ -709,3 +743,6 @@ already do on modest, real-world home hardware.
 - The first real workflow is now more than a smoke test. The platform can take
   an approval-gated operator request, persist it, recall durable facts in a new
   thread, and leave behind a human-readable artifact off-tower.
+- The tower can now be treated honestly as both a cluster node and a temporary
+  workstation. Shutdown and return checks are documented and scriptable instead
+  of being left to memory.
