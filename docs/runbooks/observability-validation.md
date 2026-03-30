@@ -123,3 +123,15 @@ Expected non-default targets include:
 - custom LangGraph or Open WebUI instrumentation
 
 Those remain later observability hardening tasks.
+
+## Known restart pitfall
+
+If Grafana comes back as `Init:CrashLoopBackOff` after a tower reboot, inspect:
+
+```bash
+kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n observability logs kube-prometheus-stack-grafana-0 -c init-chown-data --previous
+```
+
+The observed failure mode in this repo was the `init-chown-data` container
+trying to `chown` restart-created `png`, `csv`, and `pdf` directories on the
+Grafana PVC. The current fix in Git is to keep `grafana.initChownData` disabled.

@@ -730,6 +730,36 @@ Lesson:
 - for this operator check, proving Talos API reachability is better than having
   the whole timer path fail on a helper-host edge case
 
+### 28. Grafana can fail on restart even when the PVC is healthy
+
+What happened:
+
+- after a Talos reboot, the post-return script caught Grafana in
+  `Init:CrashLoopBackOff`
+- the failing init container was `init-chown-data`
+- the Grafana PVC itself was healthy and still contained the expected data
+- the actual failure was `chown: /var/lib/grafana/png: Permission denied`
+  for the restart-created `png`, `csv`, and `pdf` directories
+
+Effect:
+
+- the post-return verification could not pass cleanly
+- Grafana stayed down even though the rest of the observability stack was fine
+
+Fix:
+
+- disabled `grafana.initChownData` in the HelmRelease
+- reconciled `infra-observability`
+- deleted the old Grafana pod once the new StatefulSet revision existed so it
+  could be recreated without the failing init container
+
+Lesson:
+
+- a restart-safe stateful workload is not the same thing as a first-boot-safe
+  workload
+- if a chart keeps trying to re-own data it already owns, the right fix is
+  often to remove that init step instead of fighting the volume permissions
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
