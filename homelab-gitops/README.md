@@ -73,6 +73,115 @@ Explicitly out of this first wave:
 - `Graphiti/Zep`
 - `Letta`
 
+## How Helm, Flux, and Kubernetes fit here
+
+Short version:
+
+- `Kubernetes` is the cluster API and scheduler. It is where the final objects
+  live and where the pods actually run.
+- `Flux` is the GitOps control loop. It watches this repo and applies what Git
+  says the cluster should look like.
+- `Helm` is the packaging and templating layer used by some parts of the repo.
+  It does not run pods by itself. It renders charts into normal Kubernetes
+  objects.
+
+In this repo, there are two main paths:
+
+1. Plain YAML path
+- Flux `kustomize-controller` reads the repo and applies native manifests like
+  `Deployment`, `Service`, `PVC`, and `ConfigMap`.
+
+2. Helm path
+- Flux `kustomize-controller` first applies a `HelmRelease`.
+- Flux `helm-controller` then resolves the chart and values.
+- Helm renders normal Kubernetes objects.
+- Kubernetes stores those objects and runs the resulting pods.
+
+This is the high-level interaction structure:
+
+```mermaid
+flowchart LR
+  repo["Prometheus Git repo\nclusters/ infrastructure/ apps/"]
+  gitrepo["Flux GitRepository\nflux-system"]
+  kustomize["Flux kustomize-controller\napplies YAML + Kustomizations"]
+  helmrel["HelmRelease CRs\nin the cluster"]
+  helmctrl["Flux helm-controller\nresolves charts + values"]
+  chart["Helm chart\nexample: kube-prometheus-stack"]
+  api["Kubernetes API server"]
+  native["Rendered native objects\nStatefulSet, Deployment, Service, PVC, ServiceMonitor"]
+  pods["Running workloads\nPods + volumes + services"]
+  plain["Plain YAML path\nService, Deployment, ConfigMap, PVC"]
+
+  repo --> gitrepo
+  gitrepo --> kustomize
+  kustomize --> plain
+  plain --> api
+  kustomize --> helmrel
+  helmrel --> helmctrl
+  chart --> helmctrl
+  helmctrl --> native
+  native --> api
+  api --> pods
+```
+
+Standalone Mermaid source:
+- [helm-flux-kubernetes.mmd](docs/diagrams/helm-flux-kubernetes.mmd)
+
+### Render path example: `HelmRelease -> StatefulSet -> Pod`
+
+The observability stack is a good concrete example:
+
+- Git stores [`kube-prometheus-stack-helmrelease.yaml`](infrastructure/observability/kube-prometheus-stack-helmrelease.yaml)
+- Flux applies that `HelmRelease`
+- Helm renders the chart with the values from that file
+- Kubernetes receives the rendered `StatefulSet`
+- the `StatefulSet` creates the actual Grafana pod
+
+```mermaid
+flowchart LR
+  file["Git file\nhomelab-gitops/infrastructure/observability/kube-prometheus-stack-helmrelease.yaml"]
+  source["Flux GitRepository\ncurrent repo revision"]
+  kust["Flux Kustomization\ninfra-observability"]
+  hr["HelmRelease\nkube-prometheus-stack"]
+  helm["helm-controller\nrenders chart with values"]
+  values["Values from HelmRelease\nexample: grafana.initChownData.enabled=false"]
+  sts["StatefulSet\nkube-prometheus-stack-grafana"]
+  pod["Pod\nkube-prometheus-stack-grafana-0"]
+  ctr["Containers\ngrafana, sidecars"]
+
+  file --> source
+  source --> kust
+  kust --> hr
+  hr --> helm
+  values --> helm
+  helm --> sts
+  sts --> pod
+  pod --> ctr
+```
+
+Standalone Mermaid source:
+- [helmrelease-render-path.mmd](docs/diagrams/helmrelease-render-path.mmd)
+
+### Why Grafana no longer uses `init-chown-data`
+
+No, this repo does not currently need Grafana's `init-chown-data` step.
+
+Why:
+
+- that init container exists to recursively `chown` the Grafana data path before
+  Grafana starts
+- after the reboot, the Grafana PVC already had the correct owner for the real
+  data
+- the init container itself became the thing failing on restart
+
+So the current repo state is:
+
+- Grafana PVC ownership is already correct
+- `grafana.initChownData.enabled=false`
+- the pod now starts without that extra permission-reset step
+
+That is documented as a deliberate restart-safety fix, not a shortcut.
+
 ## Directory inventory
 
 | Path | Intended purpose | Restrictions | What it does not do yet |

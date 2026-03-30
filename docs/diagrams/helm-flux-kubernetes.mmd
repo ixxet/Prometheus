@@ -1,0 +1,22 @@
+flowchart LR
+  repo["Prometheus Git repo\nclusters/ infrastructure/ apps/"]
+  gitrepo["Flux GitRepository\nflux-system"]
+  kustomize["Flux kustomize-controller\napplies YAML + Kustomizations"]
+  helmrel["HelmRelease CRs\nin the cluster"]
+  helmctrl["Flux helm-controller\nresolves charts + values"]
+  chart["Helm chart\nexample: kube-prometheus-stack"]
+  api["Kubernetes API server"]
+  native["Rendered native objects\nStatefulSet, Deployment, Service, PVC, ServiceMonitor"]
+  pods["Running workloads\nPods + volumes + services"]
+  plain["Plain YAML path\nService, Deployment, ConfigMap, PVC"]
+
+  repo --> gitrepo
+  gitrepo --> kustomize
+  kustomize --> plain
+  plain --> api
+  kustomize --> helmrel
+  helmrel --> helmctrl
+  chart --> helmctrl
+  helmctrl --> native
+  native --> api
+  api --> pods

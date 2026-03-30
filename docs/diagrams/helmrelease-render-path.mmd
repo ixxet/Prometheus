@@ -1,0 +1,19 @@
+flowchart LR
+  file["Git file\nhomelab-gitops/infrastructure/observability/kube-prometheus-stack-helmrelease.yaml"]
+  source["Flux GitRepository\ncurrent repo revision"]
+  kust["Flux Kustomization\ninfra-observability"]
+  hr["HelmRelease\nkube-prometheus-stack"]
+  helm["helm-controller\nrenders chart with values"]
+  values["Values from HelmRelease\nexample: grafana.initChownData.enabled=false"]
+  sts["StatefulSet\nkube-prometheus-stack-grafana"]
+  pod["Pod\nkube-prometheus-stack-grafana-0"]
+  ctr["Containers\ngrafana, sidecars"]
+
+  file --> source
+  source --> kust
+  kust --> hr
+  hr --> helm
+  values --> helm
+  helm --> sts
+  sts --> pod
+  pod --> ctr
