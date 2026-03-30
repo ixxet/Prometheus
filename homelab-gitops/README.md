@@ -162,6 +162,60 @@ flowchart LR
 Standalone Mermaid source:
 - [helmrelease-render-path.mmd](docs/diagrams/helmrelease-render-path.mmd)
 
+### Where SOPS secrets enter the flow
+
+There is a third path in this repo besides plain YAML and Helm:
+
+- plain manifests like `Deployment`, `Service`, and `PVC` go straight through
+  Flux `kustomize-controller` into the Kubernetes API
+- encrypted secret manifests also go through Flux `kustomize-controller`, but
+  they are decrypted first using the in-cluster `flux-system/sops-age` key
+- `HelmRelease` objects still go through the separate Helm render path after
+  Flux applies the `HelmRelease` custom resource
+
+So the practical flow is:
+
+- plain YAML: `Git -> Flux kustomize-controller -> Kubernetes API`
+- encrypted YAML: `Git -> Flux kustomize-controller + SOPS key -> decrypted Secret -> Kubernetes API`
+- Helm: `Git -> Flux kustomize-controller -> HelmRelease -> helm-controller -> rendered objects -> Kubernetes API`
+
+```mermaid
+flowchart LR
+  repo["Prometheus Git repo"]
+  plain["Plain YAML\nDeployment, Service, ConfigMap, PVC"]
+  enc["SOPS-encrypted YAML\nSecret manifests in Git"]
+  hr["HelmRelease YAML"]
+  gitrepo["Flux GitRepository\nflux-system"]
+  kustomize["Flux kustomize-controller"]
+  sopskey["sops-age Secret\nflux-system/sops-age"]
+  decrypted["Decrypted Secret objects\nin memory during reconciliation"]
+  helmctrl["Flux helm-controller"]
+  chart["Helm chart"]
+  rendered["Rendered Kubernetes objects"]
+  api["Kubernetes API server"]
+  live["Live objects\nSecrets, StatefulSets, Deployments, Pods"]
+
+  repo --> plain
+  repo --> enc
+  repo --> hr
+  repo --> gitrepo
+  gitrepo --> kustomize
+  plain --> kustomize
+  enc --> kustomize
+  sopskey --> kustomize
+  kustomize --> decrypted
+  decrypted --> api
+  kustomize --> hr
+  hr --> helmctrl
+  chart --> helmctrl
+  helmctrl --> rendered
+  rendered --> api
+  api --> live
+```
+
+Standalone Mermaid source:
+- [gitops-sops-flow.mmd](docs/diagrams/gitops-sops-flow.mmd)
+
 ### Why Grafana no longer uses `init-chown-data`
 
 No, this repo does not currently need Grafana's `init-chown-data` step.

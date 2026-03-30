@@ -1,0 +1,31 @@
+flowchart LR
+  repo["Prometheus Git repo"]
+  plain["Plain YAML\nDeployment, Service, ConfigMap, PVC"]
+  enc["SOPS-encrypted YAML\nSecret manifests in Git"]
+  hr["HelmRelease YAML"]
+  gitrepo["Flux GitRepository\nflux-system"]
+  kustomize["Flux kustomize-controller"]
+  sopskey["sops-age Secret\nflux-system/sops-age"]
+  decrypted["Decrypted Secret objects\nin memory during reconciliation"]
+  helmctrl["Flux helm-controller"]
+  chart["Helm chart"]
+  rendered["Rendered Kubernetes objects"]
+  api["Kubernetes API server"]
+  live["Live objects\nSecrets, StatefulSets, Deployments, Pods"]
+
+  repo --> plain
+  repo --> enc
+  repo --> hr
+  repo --> gitrepo
+  gitrepo --> kustomize
+  plain --> kustomize
+  enc --> kustomize
+  sopskey --> kustomize
+  kustomize --> decrypted
+  decrypted --> api
+  kustomize --> hr
+  hr --> helmctrl
+  chart --> helmctrl
+  helmctrl --> rendered
+  rendered --> api
+  api --> live
