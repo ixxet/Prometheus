@@ -4,3 +4,4 @@ resources:
   - ai
   - agents
   - summarizer
+  - summarizer-external

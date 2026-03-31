@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: summarizer-proxy
+  namespace: summarizer
+  labels:
+    app.kubernetes.io/name: summarizer-proxy
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: summarizer-proxy
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
