@@ -1,6 +1,6 @@
 # Prometheus Roadmap From `v0.3.0` To `v1.0.0`
 
-Last updated: 2026-03-27 (America/Toronto)
+Last updated: 2026-03-31 (America/Toronto)
 
 ## Why this document exists
 
@@ -30,7 +30,9 @@ what "done" means for each milestone.
 | `v0.4.0` | Memory and archive layer | Mem0 plus Obsidian summary/export workflow are live |
 | `v0.5.0` | Naming and first real workflow | The first real workflow exists, but AdGuard cutover and stable LAN naming are still environment-gated |
 | `v0.6.0` | Observability slice | Prometheus, Grafana, metrics-server, DCGM exporter, provisioned dashboards, and the MIMIR return-check timer are live |
-| `v0.6.x+` | Platform expansion | Storage maturity, media/photos, and NUC split still happen deliberately |
+| `v0.7.0` | Proof-of-concept apps | The summarizer app is deployed, monitored, pinned to GHCR by commit-derived tag, and externally testable without exposing raw `vLLM` |
+| `v0.8.x+` | Platform expansion | Storage maturity, media/photos, and NUC split still happen deliberately |
+| `v0.9.x+` | Stable naming | Router-side DNS handoff resumes once the tower returns to its permanent LAN |
 | `v1.0.0` | Complete platform | The system feels complete, operable, and no longer reads like bring-up notes |
 
 ## `v0.2.x` Stabilization And Naming
@@ -63,7 +65,7 @@ before the agent runtime lands.
 - [x] AdGuard remains on `192.168.2.200`
 - [x] the first-wave AdGuard rewrites are configured and answer direct queries to `192.168.2.200`
 - [x] MIMIR can be pointed directly at AdGuard and resolve the first-wave `home.arpa` names as a real client
-- [x] router DNS cutover is still deferred until `v0.5.0`
+- [x] router DNS cutover remains deferred until the tower returns to its permanent LAN
 
 ## `v0.3.0` First Agent Runtime
 
@@ -191,6 +193,29 @@ are still pending.
 - [ ] operator runbooks are credible enough that another engineer could repeat
   the cutover and validation
 
+## `v0.7.0` Proof-Of-Concept App Integration
+
+Goal: prove that the private platform can host a real app without blurring the boundary between app ownership and infrastructure ownership.
+
+Status: in progress on 2026-03-31. The summarizer app is live in its own namespace, pinned to a commit-derived GHCR image, monitored in Prometheus, and reachable through a temporary auth-gated Cloudflare quick tunnel.
+
+### Implementation
+
+- keep the summarizer app code and image lifecycle in its own repository
+- deploy the app from Prometheus by immutable image reference only
+- point the app at `http://vllm.ai.svc.cluster.local:8000/v1`
+- keep raw `vllm` private
+- monitor the app through Prometheus and Grafana
+- expose only the summarizer app through a temporary auth proxy plus quick tunnel
+
+### Acceptance
+
+- [x] the summarizer app runs in its own `summarizer` namespace
+- [x] the deployed image is pinned to a commit-derived GHCR tag
+- [x] the app can reach private `vllm` internally
+- [x] the app exposes `/metrics` and is scraped by Prometheus
+- [x] the reviewer-facing path goes through an auth proxy and quick tunnel, not raw `vllm`
+
 ## `v0.6.0+` Platform Expansion
 
 Goal: expand from "AI-capable single-node platform" into a broader homelab
@@ -219,11 +244,14 @@ temporary LAN placement.
    - media stack manifests
    - Immich manifests
    - avoid pretending bulk media fits cleanly on the current SSD-only path
-4. NUC role split
+4. Deeper observability later
+   - Loki log aggregation
+   - Tempo tracing when request paths justify it
+5. NUC role split
    - keep MIMIR useful as Debian app tier and utility node first
    - later decide whether to move it into the cluster as a Talos worker
    - only after that revisit deliberate HA control-plane work
-5. Public-template extraction after `v0.5.0`
+6. Public-template extraction after `v0.5.0`
    - keep `Prometheus` as the real instance repo
    - extract a second sanitized public repo from the proven GitOps structure
    - remove personal IPs, hostnames, and machine-specific assumptions there
@@ -239,7 +267,7 @@ temporary LAN placement.
 - [x] MIMIR has the committed post-return timer assets installed, enabled, and tested once
 - [ ] storage pressure is no longer concentrated only on the Talos system SSD before
   heavy apps land
-- [ ] media and Immich only move forward when storage and placement are credible
+- [ ] media stays deliberate, and Immich remains on MIMIR unless a real GPU or storage reason justifies migration
 - [ ] NUC integration is deliberate, not opportunistic
 - [ ] public template extraction starts only after the live instance has a proven story
 

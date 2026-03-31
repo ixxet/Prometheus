@@ -1,6 +1,6 @@
 # Growing Pains
 
-Last updated: 2026-03-27 (America/Toronto)
+Last updated: 2026-03-31 (America/Toronto)
 
 ## Why this file exists
 
@@ -760,6 +760,74 @@ Lesson:
 - if a chart keeps trying to re-own data it already owns, the right fix is
   often to remove that init step instead of fighting the volume permissions
 
+### 29. The first summarizer image was built like a development workstation
+
+What happened:
+
+- the first deployable summarizer image installed the full project dependency set
+- that pulled in dataset and evaluation libraries the API runtime does not use
+- the resulting image was about `3.09 GB` compressed
+
+Effect:
+
+- the first cluster rollout was bottlenecked on image pull time, not Kubernetes
+- the proof-of-concept app looked broken when it was really just impractical to deliver
+
+Fix:
+
+- split the API runtime dependencies into `requirements.runtime.txt` in the app repo
+- added a `.dockerignore` so the build context stopped carrying development debris
+- republished the image and rolled Prometheus to the slimmer commit-derived tag
+
+Lesson:
+
+- a proof-of-concept app still needs a production-shaped runtime image if it is going to live on the platform
+- development and grading dependencies should not silently become cluster delivery cost
+
+### 30. Single-replica app upgrades were still punished by rolling-update defaults
+
+What happened:
+
+- the summarizer deployment used the default rolling update strategy
+- on a slow link, the cluster tried to pull the old `3.09 GB` image and the new slimmer image during the same replacement window
+
+Effect:
+
+- the rollout wasted bandwidth on an image we already wanted to replace
+- the live deployment got healthier before Flux itself was happy about the new strategy
+
+Fix:
+
+- changed the summarizer deployment strategy to `Recreate`
+- explicitly cleared the old `rollingUpdate` state so Flux could dry-run the committed shape successfully
+
+Lesson:
+
+- on single-replica workloads with slow delivery paths, the default rolling strategy can be actively wasteful
+- API dry-run behavior against live objects can force one-time cleanup of old strategy fields
+
+### 31. Auth-protected proxies need auth-safe probes
+
+What happened:
+
+- the summarizer proxy was meant to protect the app with basic auth
+- its original readiness and liveness probes hit `/` over HTTP
+- the proxy correctly answered `401 Unauthorized`, which Kubernetes treated as a failure
+
+Effect:
+
+- the auth layer looked unhealthy even though the proxy itself was serving exactly as configured
+
+Fix:
+
+- changed the proxy probes to `tcpSocket` checks on the listening port
+- validated the authenticated quick-tunnel path separately from the probe path
+
+Lesson:
+
+- health probes must validate process and listener health, not user-facing authorization behavior
+- protected surfaces often need different operator checks than open services
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
@@ -773,6 +841,7 @@ Lesson:
 - router DNS cutover is still the bigger operational boundary than the memory stack now
 - recurring Windows sessions on the tower still mean planned downtime and
   expected observability gaps
+- the quick tunnel is intentionally temporary and can change URL whenever the tunnel pod is replaced
 
 ## Why keep this visible
 
@@ -833,6 +902,13 @@ already do on modest, real-world home hardware.
 - Brought up a real observability stack with Prometheus, Grafana, metrics-server,
   DCGM exporter, Flux/Cilium/`vLLM`/Postgres scrape surfaces, and Git-provisioned
   dashboards on the live cluster.
+- Turned the summarizer capstone app into a real platform proof-of-concept by
+  keeping the app repo responsible for GHCR image publishing while Prometheus
+  only owned the deployment, monitoring, and external exposure path.
+- Cut the summarizer runtime image from roughly `3.09 GB` compressed to about
+  `238 MB` compressed by separating runtime dependencies from grading and evaluation dependencies.
+- Exposed the summarizer to external reviewers without exposing raw `vLLM` by
+  putting a basic-auth proxy and a temporary Cloudflare quick tunnel in front of the app.
 
 ## Success Stories
 
