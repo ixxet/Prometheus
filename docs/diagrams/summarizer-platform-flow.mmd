@@ -1,0 +1,12 @@
+flowchart LR
+  users["Reviewers / classmates"] --> tunnel["Cloudflare quick tunnel\nHTTPS public URL"]
+  tunnel --> proxy["summarizer-proxy\nNGINX basic auth"]
+  proxy --> app["summarizer app\nLoadBalancer 192.168.2.203"]
+  app --> vllm["vLLM\ninternal OpenAI-compatible API"]
+  app --> metrics["/metrics"]
+  metrics --> prom["Prometheus"]
+  prom --> grafana["Grafana"]
+  apprepo["Summarizer repo\nrouge-one branch"] --> ghcr["GHCR image\nghcr.io/ixxet/uas-api:sha-..."]
+  ghcr --> flux["Flux apps Kustomization"]
+  infrarepo["Prometheus repo\nGitOps source of truth"] --> flux
+  flux --> app

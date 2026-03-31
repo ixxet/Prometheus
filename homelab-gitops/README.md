@@ -1,15 +1,16 @@
 # Homelab GitOps
 
-Last updated: 2026-03-27 (America/Toronto)
+Last updated: 2026-03-31 (America/Toronto)
 
 ## Status
 
 This directory is no longer a skeleton. It now drives the live cluster via Flux.
 The first stateful services are healthy, `vLLM` is serving successfully, the
-LangGraph runtime is live, and the observability slice is now running too. The
-next meaningful steps are naming cleanup, router cutover preparation, and
-turning the now-defined first real agent workflow into the default named path
-rather than an operator-only validation path.
+LangGraph runtime is live, the observability slice is running, and the
+summarizer proof-of-concept is now deployed as a separate app workload on top
+of that stable base. The next meaningful steps are storage maturity, later
+app expansion, and a controlled naming cutover once the tower returns to its
+permanent LAN.
 
 Authored and render-valid now:
 
@@ -26,6 +27,8 @@ Authored and render-valid now:
 - `apps/ai/vllm/`
 - `apps/ai/open-webui/`
 - `apps/agents/langgraph/`
+- `apps/summarizer/` for the proof-of-concept app deployment
+- `apps/summarizer-external/` for the temporary auth proxy and quick tunnel
 - `apps/ai/ollama/` as parked reference material, not the active path
 
 Live now:
@@ -50,7 +53,8 @@ Live now:
 
 - Flux is already bootstrapped against this repo.
 - `.sops.yaml` exists and encrypted secrets are wired into the cluster.
-- It does not yet include ComfyUI, media, Immich, or Tailscale manifests.
+- It does not yet include ComfyUI, media, Loki/Tempo, or Tailscale manifests.
+- Immich remains on MIMIR for now; there is no Talos migration plan without a real GPU or storage reason.
 - Talos `UserVolumeConfig` documents exist, but they are intentionally outside
   Flux because they are Talos machine config, not Kubernetes resources.
 - The first-wave storage model is temporary and SSD-backed; it is designed to

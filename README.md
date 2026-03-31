@@ -93,8 +93,9 @@ flowchart LR
 | **AI -- Deferred Memory** | Graphiti / Zep | Temporal graph memory for point-in-time queries | Deferred |
 | **AI -- Deferred Agent Platform** | Letta | Alternative agent platform, not chosen here | Deferred |
 | **Observability** | Prometheus + Grafana + metrics-server + DCGM exporter | In-cluster metrics, dashboards, alerting, and `kubectl top`; dashboards provisioned from Git | Live |
+| **Proof of Concept App** | User-Adaptive Summarization | Summarizer app deployed from its own repo, pinned to GHCR by commit-derived image tag, and backed by private `vLLM` | Live on `192.168.2.203` with temporary Cloudflare tunnel access |
 | **Media** | Arr Stack + Jellyfin | Sonarr, Radarr, Prowlarr, qBittorrent | Migration later |
-| **Photos** | Immich | Self-hosted photo management with ML | Planned |
+| **Photos** | Immich | Existing MIMIR-side service; no Talos migration planned until a real GPU/storage reason exists | Staying on MIMIR for now |
 
 ---
 
@@ -109,9 +110,12 @@ now been rehearsed live end to end: approval-gated request, Postgres-backed
 execution state, Mem0 recall, and Markdown export to MIMIR. Observability is
 now live too: Prometheus, Grafana, metrics-server, DCGM exporter, Flux
 scrape-targets, Postgres exporter, `vLLM` metrics, and Git-provisioned
-dashboards are all running in-cluster. The remaining `v0.5.0` work is still
-mostly about router DNS cutover and making the naming path the default instead
-of a test-only path. Windows/Talos dual-boot is treated as a real operating
+dashboards are all running in-cluster. The summarizer proof-of-concept is now
+live on top of that stable base: deployed from its own repo, pinned to a
+commit-derived GHCR image tag, monitored in Prometheus, and reachable through a
+temporary basic-auth Cloudflare quick tunnel without exposing raw `vLLM`. DNS
+cutover remains intentionally deferred while the tower is off its permanent
+LAN. Windows/Talos dual-boot is treated as a real operating
 constraint, the return-verification path is now host-neutral, and the MIMIR
 automation path is live with a tested manual run and an enabled timer.
 
@@ -128,7 +132,9 @@ automation path is live with a tested manual run and an enabled timer.
 - [x] ~~`v0.4.0`~~ Mem0 plus the external Obsidian summary/export workflow are live.
 - [ ] `v0.5.0` AdGuard cutover and stable LAN naming. The first real agent workflow is already live, but DNS cutover is still deferred while the tower is off its permanent LAN.
 - [x] ~~`v0.6.0`~~ Observability is live: Prometheus, Grafana, metrics-server, DCGM exporter, Git-provisioned dashboards, and the MIMIR return-check timer are all active.
-- [ ] `v0.6.x+` Better storage tiers, media, Immich, and deliberate NUC role split.
+- [ ] `v0.7.0` Summarizer proof-of-concept is fully documented, upgradeable, and externally testable without exposing raw `vLLM`.
+- [ ] `v0.8.x+` Better storage tiers, media, Immich, and deliberate NUC role split.
+- [ ] `v0.9.x+` Stable naming and router-side DNS handoff once the tower returns to its permanent LAN.
 - [ ] `v1.0.0` The system reads as a complete, reproducible, serious single-environment platform.
 
 ## Live Status Block
@@ -147,6 +153,7 @@ automation path is live with a tested manual run and an enabled timer.
 | LangGraph | Stable | Internal-only runtime is live on the Mem0-enabled image; create, run, resume, restart-persistence, and semantic-memory smoke checks have passed |
 | Mem0 / Obsidian | Stable | Mem0 is live with Qdrant + TEI backing; LangGraph now exports Markdown run artifacts to the off-tower MIMIR vault path |
 | Observability | Stable | Prometheus, Grafana, metrics-server, DCGM exporter, Flux scrape-targets, Postgres exporter, and `vLLM` metrics are live |
+| Summarizer proof of concept | Stable | Deployed at `http://192.168.2.203`, scraping `/metrics`, and externally reachable through an auth-gated quick tunnel |
 | MIMIR return automation | Stable | Host-neutral script is installed on MIMIR, the manual service run passed, and the systemd timer is enabled |
 | Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
 
@@ -183,11 +190,15 @@ automation path is live with a tested manual run and an enabled timer.
 - [x] Grafana dashboards are provisioned from Git rather than created manually in the UI
 - [x] `kubectl top nodes` and `kubectl top pods -A` now work
 - [x] Flux, Cilium, Postgres exporter, and `vLLM` scrape surfaces are authored and live
+- [x] The summarizer proof-of-concept app is deployed in its own namespace and pinned to a commit-derived GHCR image tag
+- [x] The summarizer app is monitored through Prometheus and has a provisioned Grafana dashboard
+- [x] The summarizer app is externally reachable through a temporary auth-gated quick tunnel without exposing raw `vLLM`
 
 ### Live but still provisional
 
 - [ ] Router DNS is not yet cut over to AdGuard Home
 - [ ] Clients are not yet pointed at AdGuard by default, so `home.arpa` naming is still in test-only mode
+- [ ] The quick tunnel is intentionally temporary; a more durable external access path belongs in a later phase
 - [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
 - [x] The MIMIR systemd timer for the return-check path is installed, enabled, and tested once on the NUC
 
@@ -216,11 +227,13 @@ automation path is live with a tested manual run and an enabled timer.
 
 - [ ] ComfyUI manifests
 - [ ] Media stack manifests
-- [ ] Immich manifests
+- [ ] Loki log aggregation
+- [ ] Tempo distributed tracing
 - [ ] Tailscale manifests, if the subnet-router path is ever replaced with an in-cluster approach
 
 ### Deferred on purpose
 
+- [ ] Moving Immich off MIMIR without a concrete GPU or storage benefit
 - [ ] MIMIR integration, migration, or endpoint cutover
 - [ ] LiteLLM until there is more than one serving backend or a real cloud-fallback need
 - [ ] Graphiti/Zep until point-in-time relationship queries are actually needed
@@ -255,6 +268,10 @@ Current notable examples:
   checkpoint persistence
 - immutable LangGraph image pinning still surfaced a slow first-pull boundary on
   the Talos node before the replacement pod could take over
+- the summarizer proof-of-concept initially shipped a 3 GB runtime image because
+  development and evaluation dependencies were mixed into the deployable API image
+- the summarizer auth proxy initially failed its own health checks because the
+  probe path hit a `401 Unauthorized` by design
 - ConfigMap-driven runtime changes did not restart the LangGraph pod by
   themselves
 - Flux got temporarily pinned behind a failing intermediate LangGraph revision,

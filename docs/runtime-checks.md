@@ -1,6 +1,6 @@
 # Runtime Checks And Quick Runbook
 
-Last updated: 2026-03-27 (America/Toronto)
+Last updated: 2026-03-31 (America/Toronto)
 
 ## What this is for
 
@@ -25,6 +25,7 @@ MIMIR, where the systemd timer is now installed and active:
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
 | Grafana | `observability` | `LoadBalancer` | `192.168.2.202` | serving `/login` |
+| Summarizer | `summarizer` | `LoadBalancer` | `192.168.2.203` | serving `/api/health` and `/metrics` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
 | LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz`, thread APIs, Mem0-backed semantic memory, and filesystem archive exports |
 | Qdrant | `semantic-memory` | `ClusterIP` | in-cluster only | `readyz` returns healthy |
@@ -81,6 +82,16 @@ MIMIR, where the systemd timer is now installed and active:
 | Dashboard ConfigMaps | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get configmaps -n observability -l grafana_dashboard=1` | custom and upstream dashboard ConfigMaps are present |
 | Grafana-provisioned dashboards | use the commands in `docs/runbooks/observability-validation.md` | the custom dashboard UIDs show up in the Grafana API |
 | Postgres exporter | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents get pods -l app.kubernetes.io/name=postgres-exporter` | exporter is `1/1 Running` |
+
+## Summarizer checks
+
+| Goal | Command | Success signal |
+| --- | --- | --- |
+| Summarizer pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n summarizer get deploy,svc,pods -o wide` | `summarizer`, `summarizer-proxy`, and `summarizer-tunnel` are `1/1` |
+| Summarizer health | `curl http://192.168.2.203/api/health` | returns `{"status":"ok"}` |
+| Summarizer metrics | `curl http://192.168.2.203/metrics | sed -n '1,20p'` | Prometheus-format output returns |
+| Summarizer tunnel URL | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n summarizer logs deploy/summarizer-tunnel --tail=80 | rg 'https://.*trycloudflare.com'` | shows the current quick-tunnel URL |
+| Summarizer Prometheus target | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n observability port-forward svc/kube-prometheus-stack-prometheus 19090:9090` then `curl 'http://127.0.0.1:19090/api/v1/query?query=up%7Bnamespace%3D%22summarizer%22%7D'` | target returns `up == 1` |
 
 ## Semantic-memory namespace checks
 
