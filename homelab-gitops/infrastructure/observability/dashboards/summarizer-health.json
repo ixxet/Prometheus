@@ -1,0 +1,27 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}, "unit": "none"}, "overrides": []}, "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0}, "id": 1, "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}, "targets": [{"expr": "sum(up{namespace=\"summarizer\",service=\"summarizer\"})", "refId": "A"}], "title": "Summarizer Target Up", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0}, "id": 2, "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}, "targets": [{"expr": "sum(kube_deployment_status_replicas_available{namespace=\"summarizer\",deployment=\"summarizer\"})", "refId": "A"}], "title": "Available Replicas", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}, "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0}, "id": 3, "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}, "targets": [{"expr": "sum(rate(http_requests_total{namespace=\"summarizer\"}[5m]))", "refId": "A"}], "title": "Request Rate", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []}, "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0}, "id": 4, "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}, "targets": [{"expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"summarizer\",pod=~\"summarizer-.*\"}[24h]))", "refId": "A"}], "title": "Pod Restarts (24h)", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5}, "id": 5, "targets": [{"expr": "sum by (handler, method) (rate(http_requests_total{namespace=\"summarizer\"}[5m]))", "legendFormat": "{{method}} {{handler}}", "refId": "A"}], "title": "Requests by Handler", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5}, "id": 6, "targets": [{"expr": "histogram_quantile(0.95, sum by (le, handler) (rate(http_request_duration_highr_seconds_bucket{namespace=\"summarizer\"}[5m])))", "legendFormat": "{{handler}}", "refId": "A"}], "title": "P95 Request Latency", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13}, "id": 7, "targets": [{"expr": "sum by (status) (rate(http_requests_total{namespace=\"summarizer\",status=~\"4..|5..\"}[5m]))", "legendFormat": "{{status}}", "refId": "A"}], "title": "Client and Server Errors", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 13}, "id": 8, "targets": [{"expr": "sum by (handler) (rate(http_requests_total{namespace=\"summarizer\",handler=~\"/api/summarize|/api/summarize/stream\"}[5m]))", "legendFormat": "{{handler}}", "refId": "A"}], "title": "Summarization Endpoint Activity", "type": "timeseries"}
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["prometheus", "summarizer"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "Prometheus - Summarizer Health",
+  "uid": "prom-summarizer-health",
+  "version": 1
+}

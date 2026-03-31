@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: summarizer
+  namespace: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - summarizer
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: summarizer
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

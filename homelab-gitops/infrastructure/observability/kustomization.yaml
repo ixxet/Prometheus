@@ -21,6 +21,7 @@ resources:
   - postgres-exporter-service.yaml
   - postgres-exporter-service-monitor.yaml
   - vllm-service-monitor.yaml
+  - summarizer-service-monitor.yaml
 generatorOptions:
   disableNameSuffixHash: true
 configMapGenerator:
@@ -63,6 +64,13 @@ configMapGenerator:
     namespace: observability
     files:
       - dashboards/network-cilium.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-summarizer-health
+    namespace: observability
+    files:
+      - dashboards/summarizer-health.json
     options:
       labels:
         grafana_dashboard: "1"
