@@ -17,7 +17,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: summarizer
-          image: ghcr.io/ixxet/uas-api:sha-35c806fb1c1c
+          image: ghcr.io/ixxet/uas-api:sha-83a8e192f6b0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
