@@ -27,14 +27,12 @@ spec:
               mountPath: /etc/nginx/auth/.htpasswd
               subPath: htpasswd
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: http
             initialDelaySeconds: 3
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: http
             initialDelaySeconds: 10
             periodSeconds: 20
