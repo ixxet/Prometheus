@@ -4,7 +4,7 @@ metadata:
   name: athena
   namespace: athena
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: athena
@@ -17,7 +17,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: athena
-          image: ghcr.io/ixxet/athena:main
+          image: ghcr.io/ixxet/athena:0.0.1@sha256:90fe45eb56426ea638a8db52c552fc3796ae6a39c2cab22fce26d645eabb35f7
           imagePullPolicy: IfNotPresent
           args:
             - serve
