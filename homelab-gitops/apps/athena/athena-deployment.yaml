@@ -17,7 +17,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: athena
-          image: ghcr.io/ixxet/athena:0.0.1@sha256:90fe45eb56426ea638a8db52c552fc3796ae6a39c2cab22fce26d645eabb35f7
+          image: ghcr.io/ixxet/athena:0.1.0@sha256:817094ad756d3212f1e3d00a4fd6716e4be782edf0a7eb7fcf4db9e8234c7ee6
           imagePullPolicy: IfNotPresent
           args:
             - serve
