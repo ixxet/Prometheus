@@ -49,6 +49,10 @@ Live now:
 - The place where future storage tiers and NUC split-out work can be expressed
   cleanly once the base platform proves itself.
 
+Runbook:
+
+- [docs/runbooks/cluster-access.md](docs/runbooks/cluster-access.md)
+
 ## What it is not yet
 
 - Flux is already bootstrapped against this repo.
