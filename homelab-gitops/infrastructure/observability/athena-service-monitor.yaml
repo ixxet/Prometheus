@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: athena
+  namespace: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - athena
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: athena
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

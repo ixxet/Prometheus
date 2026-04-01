@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: athena
+  namespace: athena
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: athena
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: athena
+        app.kubernetes.io/part-of: ashton
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: athena
+          image: ghcr.io/ixxet/athena:main
+          imagePullPolicy: IfNotPresent
+          args:
+            - serve
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ATHENA_HTTP_ADDR
+              value: ":8080"
+            - name: ATHENA_ADAPTER
+              value: "mock"
+            - name: ATHENA_MOCK_FACILITY_ID
+              value: "ashtonbee"
+            - name: ATHENA_MOCK_ENTRIES
+              value: "12"
+            - name: ATHENA_MOCK_EXITS
+              value: "3"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi

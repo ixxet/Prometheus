@@ -20,6 +20,7 @@ resources:
   - postgres-exporter-deployment.yaml
   - postgres-exporter-service.yaml
   - postgres-exporter-service-monitor.yaml
+  - athena-service-monitor.yaml
   - vllm-service-monitor.yaml
   - summarizer-service-monitor.yaml
 generatorOptions:
