@@ -268,10 +268,12 @@ That is documented as a deliberate restart-safety fix, not a shortcut.
 
 ## Live runtime note
 
-As of 2026-03-26:
+As of 2026-04-02:
 
 - `Postgres` is running
 - `AdGuard Home` is running
+- `ATHENA` is running as the narrow mock-backed read-path slice in the
+  `athena` namespace and is pinned to the immutable `0.2.1` image
 - `Open WebUI` is serving successfully on `192.168.2.201`
 - `vLLM` is serving successfully on `192.168.2.205:8000`
 - the `vLLM` cache PVC is populated on the system SSD
@@ -290,6 +292,9 @@ As of 2026-03-26:
 - Prometheus, Grafana, metrics-server, and DCGM exporter are live in `observability`
 - Grafana is reachable at `192.168.2.202` and the dashboard set is provisioned from Git
 - Flux, Cilium, Postgres exporter, and `vLLM` scrape targets are live
+- the ATHENA ServiceMonitor exists and the live deployment still keeps
+  `ATHENA_NATS_URL` unset, so this cluster slice does not yet claim the
+  `ATHENA -> APOLLO` event boundary
 
 ## Storage stance for the first wave
 
