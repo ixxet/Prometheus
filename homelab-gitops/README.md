@@ -25,6 +25,8 @@ Authored and render-valid now:
 - `infrastructure/dns/` for AdGuard Home
 - `infrastructure/observability/` for Prometheus, Grafana, metrics-server, DCGM, scrape targets, and dashboards
 - `apps/athena/` for the narrow ASHTON physical-truth slice
+- `apps/agents/apollo/` for the narrow APOLLO visit-ingest deployment slice
+- `apps/agents/nats/` for the bounded ASHTON event broker slice
 - `apps/ai/vllm/`
 - `apps/ai/open-webui/`
 - `apps/agents/langgraph/`
@@ -258,7 +260,9 @@ That is documented as a deliberate restart-safety fix, not a shortcut.
 | `infrastructure/semantic-memory/` | `Qdrant + TEI` support services for the `v0.4.0` Mem0 layer. | Live now on the SSD-backed first-wave storage path. | It does not provide human-readable archive export by itself. |
 | `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Running, but router cutover is still intentionally deferred. | It does not update router-side DNS settings for you. |
 | `infrastructure/observability/` | Prometheus, Grafana, metrics-server, DCGM exporter, scrape targets, and provisioned dashboards. | Runs on the SSD-backed first-wave storage model and keeps Grafana LAN/Tailscale-only. | It does not expose Grafana publicly. |
-| `apps/athena/` | Narrow GitOps slice for the ASHTON ATHENA service. | Pinned to an immutable GHCR image and intentionally keeps `ATHENA_NATS_URL` unset, so the cluster slice remains the mock-backed read path unless publish rollout is widened deliberately. | It does not prove the ATHENA -> APOLLO event boundary live in-cluster by itself. |
+| `apps/athena/` | Narrow GitOps slice for the ASHTON ATHENA service. | Pinned to an immutable GHCR image and now keeps the mock-backed read path plus the identified publisher enabled through `ATHENA_NATS_URL`. | It is still not a broad adapter rollout or product surface. |
+| `apps/agents/apollo/` | Narrow GitOps slice for the APOLLO visit-ingest runtime. | Pinned to an immutable GHCR image, bootstraps migrations in an init container, and consumes only the identified ATHENA visit-lifecycle subjects. | It does not widen APOLLO into auth UI, workouts, recommendations, or matchmaking in-cluster. |
+| `apps/agents/nats/` | Bounded broker slice for the live ATHENA -> APOLLO event path. | Kept intentionally small with only client and monitor ports exposed inside the cluster. | It is not a general messaging platform rollout. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
@@ -272,8 +276,14 @@ As of 2026-04-02:
 
 - `Postgres` is running
 - `AdGuard Home` is running
-- `ATHENA` is running as the narrow mock-backed read-path slice in the
-  `athena` namespace and is pinned to the immutable `0.2.1` image
+- `ATHENA` is running in the `athena` namespace on the immutable `0.2.1`
+  image and now keeps both the mock-backed read path and the identified publish
+  path live
+- `NATS` is running internally in the `agents` namespace for the bounded
+  `ATHENA -> APOLLO` event path
+- `APOLLO` is running internally in the `agents` namespace, applies its own
+  schema migrations on startup, and consumes identified visit-lifecycle events
+  from NATS
 - `Open WebUI` is serving successfully on `192.168.2.201`
 - `vLLM` is serving successfully on `192.168.2.205:8000`
 - the `vLLM` cache PVC is populated on the system SSD
@@ -292,9 +302,19 @@ As of 2026-04-02:
 - Prometheus, Grafana, metrics-server, and DCGM exporter are live in `observability`
 - Grafana is reachable at `192.168.2.202` and the dashboard set is provisioned from Git
 - Flux, Cilium, Postgres exporter, and `vLLM` scrape targets are live
-- the ATHENA ServiceMonitor exists and the live deployment still keeps
-  `ATHENA_NATS_URL` unset, so this cluster slice does not yet claim the
-  `ATHENA -> APOLLO` event boundary
+- the ATHENA ServiceMonitor exists and the live deployment still serves the
+  original health/count/metrics read path
+- one live identified arrival has now been proven end to end in-cluster:
+  ATHENA published `mock-in-001`, NATS carried it, and APOLLO persisted the
+  visit in Postgres
+- replay of that same live identified arrival is deterministic and stays
+  non-mutating in APOLLO
+
+Operator runbook:
+
+- use [docs/runbooks/ashton-event-boundary.md](../docs/runbooks/ashton-event-boundary.md)
+  for render, reconcile, live verification, and rollback notes for the bounded
+  live `ATHENA -> NATS -> APOLLO` path
 
 ## Storage stance for the first wave
 
