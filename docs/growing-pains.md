@@ -858,6 +858,61 @@ Rule:
   must be reviewed during hardening even when live rollout verification is still
   deferred
 
+### 33. Application secrets should carry fully encoded connection strings
+
+Symptom:
+
+- the first live APOLLO rollout failed even though Postgres itself was healthy
+- the APOLLO pod exited with `cannot parse postgres://... invalid port` during
+  startup
+
+Cause:
+
+- the initial manifest tried to reconstruct `APOLLO_DATABASE_URL` from separate
+  env parts
+- the live Postgres password contains reserved URL characters, so string
+  interpolation produced an invalid DSN
+
+Fix:
+
+- moved the live APOLLO database connection to a secret-backed full URL
+- URL-encoded the password once in the secret material instead of rebuilding it
+  inside the pod
+
+Rule:
+
+- connection strings with reserved characters should be stored as complete
+  operator-owned secrets, not rebuilt from partial env pieces in manifests
+
+### 34. Flux wait can keep a fixed app revision stuck behind stale dependency health
+
+Symptom:
+
+- a corrected `apps` revision existed in Git, but the live cluster stayed on
+  the earlier broken APOLLO rollout for several minutes
+- later fixes did not land immediately even after the source revision advanced
+
+Cause:
+
+- the top-level `apps` `Kustomization` uses `wait: true`
+- while the earlier revision was still timing out on app health, Flux kept
+  reconciling that stale failure state before it would apply the newer fixed
+  revision
+
+Fix:
+
+- reconciled the dependency chain explicitly, then reconciled `apps` again
+  against the new source revision
+- recorded the behavior in the GitOps runbook instead of treating it as an
+  unexplained lag
+
+Rule:
+
+- when a waited app rollout fails, do not assume a newer Git commit is already
+  live just because the source fetched it
+- inspect the `Kustomization` status and dependency readiness before claiming a
+  fix has landed
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending
