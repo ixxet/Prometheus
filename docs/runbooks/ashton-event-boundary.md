@@ -6,6 +6,17 @@ This runbook covers the bounded live cluster proof for:
 
 It does not widen into a general APOLLO product rollout.
 
+## Operator defaults
+
+Use the same kubeconfig and local repo paths that were used for the validated
+Milestone 1.5 proof:
+
+```bash
+export KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig
+export PROMETHEUS_REPO=/Users/zizo/Personal-Projects/Computers/Prometheus
+export ASHTON_ROOT=/Users/zizo/Personal-Projects/ASHTON
+```
+
 ## Scope
 
 The live cluster slice is intentionally narrow:
@@ -27,6 +38,32 @@ kustomize build /Users/zizo/Personal-Projects/Computers/Prometheus/homelab-gitop
 kubectl kustomize /Users/zizo/Personal-Projects/Computers/Prometheus/homelab-gitops/apps/athena
 kustomize build /Users/zizo/Personal-Projects/Computers/Prometheus/homelab-gitops/apps/agents
 kubectl kustomize /Users/zizo/Personal-Projects/Computers/Prometheus/homelab-gitops/apps
+```
+
+## Known-good validation sequence
+
+This is the exact operator order used for the validated live proof.
+
+```bash
+kustomize build "$PROMETHEUS_REPO/homelab-gitops/apps/athena"
+kubectl kustomize "$PROMETHEUS_REPO/homelab-gitops/apps/athena"
+kustomize build "$PROMETHEUS_REPO/homelab-gitops/apps/agents"
+kubectl kustomize "$PROMETHEUS_REPO/homelab-gitops/apps"
+
+flux reconcile source git flux-system -n flux-system
+flux reconcile kustomization infra-postgres -n flux-system --with-source
+flux reconcile kustomization apps -n flux-system --with-source
+
+kubectl rollout status -n athena deployment/athena --timeout=180s
+kubectl rollout status -n agents deployment/nats --timeout=180s
+kubectl rollout status -n agents deployment/apollo --timeout=180s
+
+kubectl get deploy,pods,svc -n athena
+kubectl get deploy,pods,svc -n agents | rg 'apollo|nats|postgres'
+kubectl get deploy -n athena athena -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}{range .spec.template.spec.containers[0].env[*]}{.name}={.value}{"\n"}{end}'
+kubectl get deploy -n agents apollo -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}{range .spec.template.spec.containers[0].env[*]}{.name}={.value}{"\n"}{end}'
+kubectl logs -n athena deployment/athena --tail=100
+kubectl logs -n agents deployment/apollo --tail=120
 ```
 
 ## Reconcile
@@ -71,6 +108,13 @@ curl -sS http://127.0.0.1:18222/varz
 curl -sS http://127.0.0.1:18222/connz
 ```
 
+The validated responses were:
+
+- `GET /api/v1/health` on ATHENA returned `200`
+- `GET /api/v1/presence/count?facility_id=ashtonbee` on ATHENA returned `200`
+- `GET /api/v1/health` on APOLLO returned `200` with `consumer_enabled=true`
+- `NATS /varz` showed `in_msgs=2` and `out_msgs=2` after the live arrival and replay
+
 ## Validation fixture
 
 The bounded live proof uses one known claimed tag:
@@ -92,6 +136,13 @@ ON CONFLICT (tag_hash) DO NOTHING;
 SQL
 ```
 
+Optional pre-check:
+
+```bash
+kubectl exec -n agents postgres-0 -- env PGPASSWORD='<postgres-password>' \
+  psql -U langgraph -d langgraph -c "SELECT count(*) AS users FROM apollo.users; SELECT count(*) AS claimed_tags FROM apollo.claimed_tags; SELECT count(*) AS visits FROM apollo.visits;"
+```
+
 ## Live boundary proof
 
 The ATHENA deployment already publishes one identified arrival on startup.
@@ -101,6 +152,8 @@ Replay can be proven explicitly from the live pod:
 KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n athena deploy/athena -- /usr/local/bin/athena presence publish-identified --format json
 KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents deploy/apollo -- /usr/local/bin/apollo visit list --student-id tracer2-student-001 --format json
 KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- env PGPASSWORD='<postgres-password>' psql -U langgraph -d langgraph -c "SELECT facility_key, source_event_id, departure_source_event_id, arrived_at, departed_at FROM apollo.visits ORDER BY arrived_at DESC;"
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- env PGPASSWORD='<postgres-password>' psql -U langgraph -d langgraph -c "SELECT count(*) AS visits, count(*) FILTER (WHERE source_event_id='mock-in-001') AS mock_in_001_rows, count(*) FILTER (WHERE departed_at IS NULL) AS open_visits FROM apollo.visits;"
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- env PGPASSWORD='<postgres-password>' psql -U langgraph -d langgraph -c "SELECT count(*) AS workouts FROM apollo.workouts;"
 ```
 
 Expected evidence:
@@ -108,7 +161,8 @@ Expected evidence:
 - ATHENA logs `identified arrival published event_id=mock-in-001`
 - APOLLO logs `identified presence handled event_id=mock-in-001 outcome=created`
 - replay logs `identified presence handled event_id=mock-in-001 outcome=duplicate`
-- `apollo.workouts` remains unchanged for this proof
+- exactly one visit row exists for `source_event_id=mock-in-001`
+- `apollo.workouts` remains `0` for this proof
 
 ## Rollback
 
