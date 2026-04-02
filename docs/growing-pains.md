@@ -828,6 +828,36 @@ Lesson:
 - health probes must validate process and listener health, not user-facing authorization behavior
 - protected surfaces often need different operator checks than open services
 
+### 32. GitOps inventory can drift even when immutable pinning is still honest
+
+Symptom:
+
+- the ATHENA app manifest in `homelab-gitops/apps/athena/` still pinned
+  `ghcr.io/ixxet/athena:0.1.0`
+- the app inventory docs did not mention the ATHENA slice at all
+- the service repos had already moved on to the Tracer 2-era `0.2.1` runtime
+
+Cause:
+
+- the initial ATHENA GitOps slice was activated early and then largely left
+  alone while later tracer work stayed local-first
+- immutable pinning prevented silent image drift, but it did not prevent stale
+  repo intent or stale inventory docs
+
+Fix:
+
+- advanced the ATHENA manifest pin to the tested `0.2.1` immutable digest
+- documented `apps/athena/` in the GitOps inventory as a narrow read-path
+  deployment with the publish worker still intentionally disabled by config
+
+Rule:
+
+- immutable pinning proves what image is selected, not whether the selected
+  image still matches the platform milestone truth
+- if an app remains in the GitOps repo, its inventory docs and pinned checkpoint
+  must be reviewed during hardening even when live rollout verification is still
+  deferred
+
 ## Current open pain points
 
 - AdGuard rewrites are in place, but router DNS cutover is still pending

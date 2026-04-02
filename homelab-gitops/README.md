@@ -1,6 +1,6 @@
 # Homelab GitOps
 
-Last updated: 2026-03-31 (America/Toronto)
+Last updated: 2026-04-02 (America/Toronto)
 
 ## Status
 
@@ -24,6 +24,7 @@ Authored and render-valid now:
 - `infrastructure/semantic-memory/` for staged `Qdrant + TEI` support services
 - `infrastructure/dns/` for AdGuard Home
 - `infrastructure/observability/` for Prometheus, Grafana, metrics-server, DCGM, scrape targets, and dashboards
+- `apps/athena/` for the narrow ASHTON physical-truth slice
 - `apps/ai/vllm/`
 - `apps/ai/open-webui/`
 - `apps/agents/langgraph/`
@@ -257,6 +258,7 @@ That is documented as a deliberate restart-safety fix, not a shortcut.
 | `infrastructure/semantic-memory/` | `Qdrant + TEI` support services for the `v0.4.0` Mem0 layer. | Live now on the SSD-backed first-wave storage path. | It does not provide human-readable archive export by itself. |
 | `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Running, but router cutover is still intentionally deferred. | It does not update router-side DNS settings for you. |
 | `infrastructure/observability/` | Prometheus, Grafana, metrics-server, DCGM exporter, scrape targets, and provisioned dashboards. | Runs on the SSD-backed first-wave storage model and keeps Grafana LAN/Tailscale-only. | It does not expose Grafana publicly. |
+| `apps/athena/` | Narrow GitOps slice for the ASHTON ATHENA service. | Pinned to an immutable GHCR image and intentionally keeps `ATHENA_NATS_URL` unset, so the cluster slice remains the mock-backed read path unless publish rollout is widened deliberately. | It does not prove the ATHENA -> APOLLO event boundary live in-cluster by itself. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
