@@ -22,23 +22,11 @@ spec:
             - migrate
             - up
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-auth
-                  key: username
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-auth
-                  key: password
-            - name: POSTGRES_DATABASE
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-auth
-                  key: database
             - name: APOLLO_DATABASE_URL
-              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.agents.svc.cluster.local/$(POSTGRES_DATABASE)?sslmode=disable
+              valueFrom:
+                secretKeyRef:
+                  name: apollo-runtime
+                  key: database-url
       containers:
         - name: apollo
           image: ghcr.io/ixxet/apollo:sha-bf3119b@sha256:ed3f3681b65a889ee563e8e0917fa3caba17cbceddb26a89393882ee287a3748
@@ -49,23 +37,11 @@ spec:
             - name: http
               containerPort: 8081
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-auth
-                  key: username
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-auth
-                  key: password
-            - name: POSTGRES_DATABASE
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-auth
-                  key: database
             - name: APOLLO_DATABASE_URL
-              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.agents.svc.cluster.local/$(POSTGRES_DATABASE)?sslmode=disable
+              valueFrom:
+                secretKeyRef:
+                  name: apollo-runtime
+                  key: database-url
             - name: APOLLO_HTTP_ADDR
               value: ":8081"
             - name: APOLLO_NATS_URL
