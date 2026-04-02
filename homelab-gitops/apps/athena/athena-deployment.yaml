@@ -29,12 +29,18 @@ spec:
               value: ":8080"
             - name: ATHENA_ADAPTER
               value: "mock"
+            - name: ATHENA_NATS_URL
+              value: "nats://nats.agents.svc.cluster.local:4222"
+            - name: ATHENA_IDENTIFIED_PUBLISH_INTERVAL
+              value: "24h"
             - name: ATHENA_MOCK_FACILITY_ID
               value: "ashtonbee"
             - name: ATHENA_MOCK_ENTRIES
               value: "12"
             - name: ATHENA_MOCK_EXITS
               value: "3"
+            - name: ATHENA_MOCK_IDENTIFIED_TAG_HASHES
+              value: "tag_tracer2_001"
           readinessProbe:
             httpGet:
               path: /api/v1/health
