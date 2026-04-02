@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apollo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: apollo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: apollo
+        app.kubernetes.io/part-of: ashton
+    spec:
+      enableServiceLinks: false
+      initContainers:
+        - name: apollo-migrate
+          image: ghcr.io/ixxet/apollo:sha-bf3119b@sha256:ed3f3681b65a889ee563e8e0917fa3caba17cbceddb26a89393882ee287a3748
+          imagePullPolicy: Always
+          args:
+            - migrate
+            - up
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: password
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: database
+            - name: APOLLO_DATABASE_URL
+              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.agents.svc.cluster.local/$(POSTGRES_DATABASE)?sslmode=disable
+      containers:
+        - name: apollo
+          image: ghcr.io/ixxet/apollo:sha-bf3119b@sha256:ed3f3681b65a889ee563e8e0917fa3caba17cbceddb26a89393882ee287a3748
+          imagePullPolicy: Always
+          args:
+            - serve
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: password
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: database
+            - name: APOLLO_DATABASE_URL
+              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.agents.svc.cluster.local/$(POSTGRES_DATABASE)?sslmode=disable
+            - name: APOLLO_HTTP_ADDR
+              value: ":8081"
+            - name: APOLLO_NATS_URL
+              value: nats://nats.agents.svc.cluster.local:4222
+            - name: APOLLO_SESSION_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: apollo-runtime
+                  key: session-cookie-secret
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
