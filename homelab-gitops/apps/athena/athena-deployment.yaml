@@ -17,7 +17,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: athena
-          image: ghcr.io/ixxet/athena:0.2.1@sha256:b9aafb3e4ec8e88b1a1929f12ff9c7afe9286e8ab4eeb969a1b022097065cf29
+          image: ghcr.io/ixxet/athena:0.4.0@sha256:8fcf9b9cff28a3c417771d350cfb9d02ecb865507aa48f7c3ac9cc7d4b7cdc19
           imagePullPolicy: IfNotPresent
           args:
             - serve
@@ -40,6 +40,8 @@ spec:
             - name: ATHENA_MOCK_EXITS
               value: "3"
             - name: ATHENA_MOCK_IDENTIFIED_TAG_HASHES
+              value: "tag_tracer2_001"
+            - name: ATHENA_MOCK_IDENTIFIED_EXIT_TAG_HASHES
               value: "tag_tracer2_001"
           readinessProbe:
             httpGet:
