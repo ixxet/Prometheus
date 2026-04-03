@@ -6,6 +6,8 @@ This runbook covers the bounded live cluster proof for:
 
 It does not widen into a general APOLLO product rollout.
 
+Preflight deployable status checklist: [ASHTON Deployable Check Status (Milestone 1.6)](ashton-deployable-check-status.md)
+
 ## Operator defaults
 
 Use the same kubeconfig and local repo paths that were used for the validated
@@ -16,6 +18,11 @@ export KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/
 export PROMETHEUS_REPO=/Users/zizo/Personal-Projects/Computers/Prometheus
 export ASHTON_ROOT=/Users/zizo/Personal-Projects/ASHTON
 ```
+
+If `kubectl config current-context` fails or `flux check` falls back to
+`http://localhost:8080`, the shell is missing a usable kubeconfig. Treat that
+as an operator-context failure, not as cluster proof, until the explicit Talos
+kubeconfig is exported.
 
 ## Scope
 

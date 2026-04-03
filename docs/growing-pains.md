@@ -995,6 +995,34 @@ already do on modest, real-world home hardware.
 - Exposed the summarizer to external reviewers without exposing raw `vLLM` by
   putting a basic-auth proxy and a temporary Cloudflare quick tunnel in front of the app.
 
+### 31. A missing kubeconfig can make a healthy cluster look dead
+
+What happened:
+
+- the operator shell had no exported `KUBECONFIG`
+- `kubectl config current-context` failed with `current-context is not set`
+- `flux check` fell back to `http://localhost:8080`
+
+Effect:
+
+- Milestone 1.6 deployment preflight looked blocked from the shell
+- it was easy to misread that as a cluster or image-pinning failure even though
+  the Talos kubeconfig existed and the cluster API was healthy
+
+Fix:
+
+- used the explicit Talos kubeconfig at
+  `/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig`
+- documented that export in the ASHTON event-boundary and deployable-check
+  runbooks
+- treated kube-context verification as the first deployment-truth gate
+
+Lesson:
+
+- shell-local kubeconfig state is separate from cluster truth
+- do not call a deployment blocker "cluster down" until the operator context is
+  proven first
+
 ## Success Stories
 
 - This cluster now serves a local model from owned hardware through `vLLM`,
