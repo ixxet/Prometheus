@@ -12,6 +12,13 @@ of that stable base. The next meaningful steps are storage maturity, later
 app expansion, and a controlled naming cutover once the tower returns to its
 permanent LAN.
 
+For ASHTON, the live deployment truth is still intentionally narrow:
+
+- `ATHENA` remains mock-backed in cluster
+- the bounded `ATHENA -> NATS -> APOLLO` departure-close boundary is now proven
+- this repo still does not claim broad APOLLO product deployment or
+  source-backed ATHENA ingress deployment
+
 Authored and render-valid now:
 
 - `clusters/talos-tower/infrastructure.yaml`

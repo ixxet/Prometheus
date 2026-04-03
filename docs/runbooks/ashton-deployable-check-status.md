@@ -29,12 +29,12 @@ block at the bottom before claiming current deployability.
 
 ## Current Snapshot
 
-Snapshot time (UTC): `2026-04-03T22:26:14Z`
+Snapshot time (UTC): `2026-04-03T22:59:16Z`
 
 ### Git/Revision Truth
 
-- Prometheus repo: clean, `main`, `dd648fe55cc4f467f07c6394a8c09282913e7844`
-- Flux revision in cluster: `main@sha1:dd648fe5`
+- Prometheus repo: clean, `main`, `70c92a6b919371183e403eb208a5119b685974de`
+- Flux revision in cluster: `main@sha1:70c92a6b`
 
 ### Flux Health
 
@@ -52,22 +52,23 @@ Snapshot time (UTC): `2026-04-03T22:26:14Z`
 
 - Namespace `athena`:
   - `deployment/athena` available (`1/1`)
-  - `pod/athena-b8cdf7b78-l5n6z` running (2 restarts observed)
+  - `pod/athena-767dc9597-mxvgr` running
 - Namespace `agents`:
   - `deployment/apollo` available (`1/1`)
   - `deployment/nats` available (`1/1`)
-  - `pod/apollo-6cd6d457-tbrsx` running (2 restarts observed)
+  - `pod/apollo-6cd6d457-tbrsx` running
   - `pod/nats-55bfc5dfbd-8xbgt` running
 
 ### Runtime Wiring Proof
 
 - ATHENA deployment image is digest-pinned:
-  - `ghcr.io/ixxet/athena:0.2.1@sha256:b9aafb3e4ec8e88b1a1929f12ff9c7afe9286e8ab4eeb969a1b022097065cf29`
+  - `ghcr.io/ixxet/athena:0.4.0@sha256:8fcf9b9cff28a3c417771d350cfb9d02ecb865507aa48f7c3ac9cc7d4b7cdc19`
 - APOLLO deployment image is digest-pinned:
   - `ghcr.io/ixxet/apollo:sha-bf3119b@sha256:ed3f3681b65a889ee563e8e0917fa3caba17cbceddb26a89393882ee287a3748`
 - ATHENA env includes:
   - `ATHENA_ADAPTER=mock`
   - `ATHENA_NATS_URL=nats://nats.agents.svc.cluster.local:4222`
+  - `ATHENA_MOCK_IDENTIFIED_EXIT_TAG_HASHES=tag_tracer2_001`
 - APOLLO env includes:
   - `APOLLO_NATS_URL=nats://nats.agents.svc.cluster.local:4222`
   - `APOLLO_DATABASE_URL` from secret key `database-url` in secret `apollo-runtime`
@@ -77,7 +78,7 @@ Snapshot time (UTC): `2026-04-03T22:26:14Z`
 
 - ATHENA:
   - `/api/v1/health` -> `200 {"service":"athena","status":"ok","adapter":"mock"}`
-  - `/api/v1/presence/count?facility_id=ashtonbee` -> `200 ... "current_count":9 ...`
+  - `/api/v1/presence/count?facility=ashtonbee` -> `200 ... "current_count":9 ...`
 - APOLLO:
   - `/api/v1/health` -> `200 {"service":"apollo","status":"ok","consumer_enabled":true}`
 - NATS monitor:
@@ -156,7 +157,7 @@ KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubecon
 # Runtime health
 KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl -n athena port-forward svc/athena 18082:80
 curl -i http://127.0.0.1:18082/api/v1/health
-curl -i 'http://127.0.0.1:18082/api/v1/presence/count?facility_id=ashtonbee'
+curl -i 'http://127.0.0.1:18082/api/v1/presence/count?facility=ashtonbee'
 
 KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl -n agents port-forward svc/apollo 18084:80
 curl -i http://127.0.0.1:18084/api/v1/health

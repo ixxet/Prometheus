@@ -11,7 +11,7 @@ Preflight deployable status checklist: [ASHTON Deployable Check Status (Mileston
 ## Operator defaults
 
 Use the same kubeconfig and local repo paths that were used for the validated
-Milestone 1.5 proof:
+Milestone 1.6 proof:
 
 ```bash
 export KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig
@@ -30,11 +30,11 @@ The live cluster slice is intentionally narrow:
 
 - `athena` publishes identified visit-lifecycle events from the mock adapter
 - `nats` carries the live subject bytes
-- `apollo` consumes those bytes and persists visit history in Postgres
+- `apollo` consumes those bytes and closes the matching open visit in Postgres
 
 ## Current live images
 
-- `ATHENA`: `ghcr.io/ixxet/athena:0.2.1@sha256:b9aafb3e4ec8e88b1a1929f12ff9c7afe9286e8ab4eeb969a1b022097065cf29`
+- `ATHENA`: `ghcr.io/ixxet/athena:0.4.0@sha256:8fcf9b9cff28a3c417771d350cfb9d02ecb865507aa48f7c3ac9cc7d4b7cdc19`
 - `APOLLO`: `ghcr.io/ixxet/apollo:sha-bf3119b@sha256:ed3f3681b65a889ee563e8e0917fa3caba17cbceddb26a89393882ee287a3748`
 - `NATS`: `docker.io/library/nats:2.11.4-alpine@sha256:b8d6a01568a7837d5186f948a3ebfae1bdf5a602268273b50704655982596b22`
 
@@ -118,16 +118,18 @@ curl -sS http://127.0.0.1:18222/connz
 The validated responses were:
 
 - `GET /api/v1/health` on ATHENA returned `200`
-- `GET /api/v1/presence/count?facility_id=ashtonbee` on ATHENA returned `200`
+- `GET /api/v1/presence/count?facility=ashtonbee` on ATHENA returned `200`
 - `GET /api/v1/health` on APOLLO returned `200` with `consumer_enabled=true`
-- `NATS /varz` showed `in_msgs=2` and `out_msgs=2` after the live arrival and replay
+- `NATS /varz` moved during the live departure publish and replay sequence
 
 ## Validation fixture
 
-The bounded live proof uses one known claimed tag:
+The bounded live proof uses one known claimed tag and one deterministic open
+visit fixture:
 
 - student: `tracer2-student-001`
 - tag hash: `tag_tracer2_001`
+- open visit source event: `mock-in-001`
 
 Seed it only if the row does not exist already:
 
@@ -140,42 +142,67 @@ ON CONFLICT (student_id) DO NOTHING;
 INSERT INTO apollo.claimed_tags (id, user_id, tag_hash, label, is_active)
 VALUES ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'tag_tracer2_001', 'Tracer 2 Mock Tag', TRUE)
 ON CONFLICT (tag_hash) DO NOTHING;
+
+INSERT INTO apollo.visits (id, user_id, facility_key, source_event_id, arrived_at, metadata)
+VALUES ('983c2888-282d-416c-92d6-2595a776bb7e', '11111111-1111-1111-1111-111111111111', 'ashtonbee', 'mock-in-001', '2026-04-02T18:14:35.288509Z', '{}'::jsonb)
+ON CONFLICT (source_event_id) DO NOTHING;
 SQL
 ```
 
 Optional pre-check:
 
 ```bash
-kubectl exec -n agents postgres-0 -- env PGPASSWORD='<postgres-password>' \
-  psql -U langgraph -d langgraph -c "SELECT count(*) AS users FROM apollo.users; SELECT count(*) AS claimed_tags FROM apollo.claimed_tags; SELECT count(*) AS visits FROM apollo.visits;"
+kubectl exec -n agents postgres-0 -- \
+  psql -U langgraph -d langgraph -c "SELECT u.student_id, v.source_event_id, v.departed_at FROM apollo.visits v JOIN apollo.users u ON u.id=v.user_id WHERE u.student_id='tracer2-student-001';"
 ```
 
 ## Live boundary proof
 
-The ATHENA deployment already publishes one identified arrival on startup.
-Replay can be proven explicitly from the live pod:
+Capture boundary state, publish one departure, then replay the same event id:
 
 ```bash
-KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n athena deploy/athena -- /usr/local/bin/athena presence publish-identified --format json
-KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents deploy/apollo -- /usr/local/bin/apollo visit list --student-id tracer2-student-001 --format json
-KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- env PGPASSWORD='<postgres-password>' psql -U langgraph -d langgraph -c "SELECT facility_key, source_event_id, departure_source_event_id, arrived_at, departed_at FROM apollo.visits ORDER BY arrived_at DESC;"
-KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- env PGPASSWORD='<postgres-password>' psql -U langgraph -d langgraph -c "SELECT count(*) AS visits, count(*) FILTER (WHERE source_event_id='mock-in-001') AS mock_in_001_rows, count(*) FILTER (WHERE departed_at IS NULL) AS open_visits FROM apollo.visits;"
-KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- env PGPASSWORD='<postgres-password>' psql -U langgraph -d langgraph -c "SELECT count(*) AS workouts FROM apollo.workouts;"
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- \
+  psql -U langgraph -d langgraph -c "SELECT v.id, v.source_event_id, v.departure_source_event_id, v.arrived_at, v.departed_at FROM apollo.visits v JOIN apollo.users u ON u.id=v.user_id WHERE u.student_id='tracer2-student-001' ORDER BY v.arrived_at DESC;"
+
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl -n agents port-forward svc/nats 18222:8222
+curl -sS http://127.0.0.1:18222/varz
+
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n athena deploy/athena -- \
+  /usr/local/bin/athena presence publish-identified-departures --format json
+
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl logs -n athena deployment/athena --since=5m | rg 'identified presence published|mock-out-001'
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl logs -n agents deployment/apollo --since=5m | rg 'identified departure handled|mock-out-001'
+
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- \
+  psql -U langgraph -d langgraph -c "SELECT v.id, v.source_event_id, v.departure_source_event_id, v.arrived_at, v.departed_at FROM apollo.visits v JOIN apollo.users u ON u.id=v.user_id WHERE u.student_id='tracer2-student-001' ORDER BY v.arrived_at DESC; SELECT count(*) AS workouts FROM apollo.workouts;"
+
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n athena deploy/athena -- \
+  /usr/local/bin/athena presence publish-identified-departures --format json
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n athena deploy/athena -- \
+  /usr/local/bin/athena presence publish-identified-departures --format json
+
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl logs -n agents deployment/apollo --since=5m | rg 'identified departure handled|mock-out-001'
+curl -sS http://127.0.0.1:18222/varz
+
+KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl exec -n agents postgres-0 -- \
+  psql -U langgraph -d langgraph -c "SELECT v.id, v.source_event_id, v.departure_source_event_id, v.arrived_at, v.departed_at FROM apollo.visits v JOIN apollo.users u ON u.id=v.user_id WHERE u.student_id='tracer2-student-001' ORDER BY v.arrived_at DESC; SELECT count(*) AS workouts FROM apollo.workouts;"
 ```
 
 Expected evidence:
 
-- ATHENA logs `identified arrival published event_id=mock-in-001`
-- APOLLO logs `identified presence handled event_id=mock-in-001 outcome=created`
-- replay logs `identified presence handled event_id=mock-in-001 outcome=duplicate`
+- ATHENA publishes `mock-out-001` on subject `athena.identified_presence.departed`
+- APOLLO logs `identified departure handled event_id=mock-out-001 outcome=closed`
+- replay logs `identified departure handled event_id=mock-out-001 outcome=duplicate`
 - exactly one visit row exists for `source_event_id=mock-in-001`
+- that same row is closed with `departure_source_event_id='mock-out-001'`
 - `apollo.workouts` remains `0` for this proof
 
 ## Rollback
 
 If this bounded live slice needs to be backed out:
 
-1. Revert the Git commit that added `apps/agents/nats/`, `apps/agents/apollo/`, or the ATHENA publish env in `apps/athena/athena-deployment.yaml`.
+1. Revert the Git commit that changed the ATHENA image pin or added the ATHENA
+   identified-exit env in `apps/athena/athena-deployment.yaml`.
 2. Push the revert to `main`.
 3. Reconcile Flux again:
 

@@ -995,7 +995,7 @@ already do on modest, real-world home hardware.
 - Exposed the summarizer to external reviewers without exposing raw `vLLM` by
   putting a basic-auth proxy and a temporary Cloudflare quick tunnel in front of the app.
 
-### 31. A missing kubeconfig can make a healthy cluster look dead
+### 35. A missing kubeconfig can make a healthy cluster look dead
 
 What happened:
 
@@ -1022,6 +1022,35 @@ Lesson:
 - shell-local kubeconfig state is separate from cluster truth
 - do not call a deployment blocker "cluster down" until the operator context is
   proven first
+
+### 36. Live departure proof needed explicit exit config and a newer ATHENA image
+
+What happened:
+
+- the cluster still ran `ghcr.io/ixxet/athena:0.2.1`
+- that live image exposed identified-arrival publish only
+- the deployment also set `ATHENA_MOCK_IDENTIFIED_TAG_HASHES` but not
+  `ATHENA_MOCK_IDENTIFIED_EXIT_TAG_HASHES`
+
+Effect:
+
+- the live Milestone 1.6 departure-close proof could not be earned from the
+  existing deployment, even though APOLLO was already subscribed to the
+  departure subject and an open visit fixture existed
+
+Fix:
+
+- pinned ATHENA to `0.4.0@sha256:8fcf9b9cff28a3c417771d350cfb9d02ecb865507aa48f7c3ac9cc7d4b7cdc19`
+- added `ATHENA_MOCK_IDENTIFIED_EXIT_TAG_HASHES=tag_tracer2_001`
+- reran Flux reconcile, rollout verification, live publish, replay, and DB
+  side-effect checks
+
+Lesson:
+
+- live deployment truth can lag repo truth even when the code path already
+  exists locally
+- identified exits are not implied by identified entries; the exit path needs
+  its own explicit runtime config
 
 ## Success Stories
 
