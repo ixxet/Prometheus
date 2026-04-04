@@ -125,6 +125,12 @@ No-go if any of the above is false.
 ## Reusable Command Block
 
 ```bash
+# Operator context
+export KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig
+kubectl config current-context
+kubectl cluster-info
+flux check
+
 # Repo truth
 git -C /Users/zizo/Personal-Projects/Computers/Prometheus status --short
 git -C /Users/zizo/Personal-Projects/Computers/Prometheus branch --show-current

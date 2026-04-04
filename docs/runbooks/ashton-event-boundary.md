@@ -105,7 +105,7 @@ KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubecon
 ```bash
 KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl -n athena port-forward svc/athena 18082:80
 curl -i http://127.0.0.1:18082/api/v1/health
-curl -i 'http://127.0.0.1:18082/api/v1/presence/count?facility_id=ashtonbee'
+curl -i 'http://127.0.0.1:18082/api/v1/presence/count?facility=ashtonbee'
 
 KUBECONFIG=/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig kubectl -n agents port-forward svc/apollo 18084:80
 curl -i http://127.0.0.1:18084/api/v1/health
