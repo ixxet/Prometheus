@@ -16,9 +16,36 @@ path without pretending both GPU backends can run at the same time on one RTX
 - `llama.cpp` does officially support Gemma 4 GGUF and exposes an
   OpenAI-compatible `llama-server`
 
-The staged backend uses the official Hugging Face `llama.cpp` example model:
+The staged backend now expects the original manually chosen GGUF artifact:
 
-- `ggml-org/gemma-4-26b-a4b-it-GGUF:Q4_K_M`
+- source repo: `bartowski/google_gemma-4-26B-A4B-it-GGUF`
+- file: `google_gemma-4-26B-A4B-it-Q6_K.gguf`
+- expected size: `22862570624` bytes
+
+That restores the exact artifact that was deleted after the failed `vLLM`
+experiment.
+
+## Preserved staging contract
+
+The original Gemma 4 staging contract is still preserved here:
+
+- model source: `bartowski/google_gemma-4-26B-A4B-it-GGUF`
+- file: `google_gemma-4-26B-A4B-it-Q6_K.gguf`
+- tokenizer: `google/gemma-4-26B-A4B-it`
+- target context: `16384`
+
+The following flags were part of the earlier `vLLM`-specific attempt and remain
+documented for that reason, but `llama-server` does not use these exact parser
+or cache flags:
+
+- `--kv-cache-dtype fp8`
+- `--moe-backend marlin`
+- `--enforce-eager`
+- `--gpu-memory-utilization 0.95`
+- `--tensor-parallel-size 1`
+- `--enable-auto-tool-choice`
+- `--tool-call-parser gemma4`
+- `--reasoning-parser gemma4`
 
 ## Important constraint
 
@@ -39,6 +66,54 @@ So this backend is switchable, not concurrent.
 - Service: `http://llama-gemma4.ai.svc.cluster.local:8000`
 - Runtime image:
   - `ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:ea34541236b965382cf3a80736ade74afb97fcd8c1950b68fcf9c9c3f17aaf49`
+
+## Pre-stage the GGUF onto disk
+
+Use a one-off downloader pod mounted to `llama-gemma4-cache`:
+
+```bash
+kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig \
+  -n ai apply -f - <<'EOF'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: llama-gemma4-cache-download
+  namespace: ai
+spec:
+  restartPolicy: Never
+  containers:
+    - name: downloader
+      image: busybox:1.36
+      command:
+        - sh
+        - -ec
+        - |
+          set -eu
+          mkdir -p /cache/gguf
+          target=/cache/gguf/google_gemma-4-26B-A4B-it-Q6_K.gguf
+          expected_size=22862570624
+          current_size="$(stat -c '%s' "${target}" 2>/dev/null || echo 0)"
+          if [ "${current_size}" != "${expected_size}" ] || [ -e "${target}.aria2" ]; then
+            rm -f "${target}" "${target}.part" "${target}.aria2"
+            wget -O "${target}.part" "https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF/resolve/main/google_gemma-4-26B-A4B-it-Q6_K.gguf"
+            mv "${target}.part" "${target}"
+          fi
+      volumeMounts:
+        - name: cache
+          mountPath: /cache
+  volumes:
+    - name: cache
+      persistentVolumeClaim:
+        claimName: llama-gemma4-cache
+EOF
+```
+
+Watch progress:
+
+```bash
+kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig \
+  -n ai logs -f pod/llama-gemma4-cache-download
+```
 
 ## Switch from `vLLM` to `llama-server` temporarily
 
@@ -82,8 +157,8 @@ Then from another terminal:
 curl http://127.0.0.1:18086/v1/models
 ```
 
-The first activation will take the longest because the GGUF needs to download
-into the dedicated static cache PV at
+If the cache pod has already completed successfully, the first activation only
+has to load the local GGUF from the dedicated static cache PV at
 `/var/mnt/local-path-provisioner/llama-gemma4-cache` on the Talos node.
 
 ## Return to the stable backend

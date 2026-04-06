@@ -31,6 +31,9 @@ UI tweaks.
 - The current fallback for Gemma 4 GGUF is a switchable `llama-server` test
   backend, not a second always-on GPU backend. On this one-node, one-GPU
   cluster, the test path has to scale `vLLM` down first.
+- Staged model artifacts should also be treated as deliberate work, not
+  disposable scratch space. If a large test model took hours to fetch, keep it
+  unless space pressure or an explicit operator decision says otherwise.
 
 ## Why model upgrades need discipline
 

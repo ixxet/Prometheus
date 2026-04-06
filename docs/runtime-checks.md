@@ -60,7 +60,7 @@ MIMIR, where the systemd timer is now installed and active:
 | vLLM logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --tail=200` | API server reaches steady state and no fatal KV-cache error appears |
 | vLLM previous crash | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --previous --tail=200` | old crash reason is understood before changing manifests |
 | vLLM service via port-forward | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai port-forward svc/vllm 18000:8000` then `curl http://127.0.0.1:18000/v1/models` | JSON response once ready |
-| Llama-server staging check | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai get deploy,svc,pvc | rg 'llama-gemma4|llama-gemma4-cache'` | deployment exists at `0/0`, service exists, PVC is `Bound` |
+| Llama-server staging check | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai get deploy,svc,pvc,pods | rg 'llama-gemma4|llama-gemma4-cache|llama-gemma4-cache-download'` | deployment exists at `0/0`, service exists, PVC is `Bound`, and the one-off download pod is either `Completed` or currently downloading |
 | Llama-server activation path | follow `docs/runbooks/llama-server-gemma4.md` | Gemma backend is only activated after `vLLM` is scaled down |
 
 ## Agents namespace checks
