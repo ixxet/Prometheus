@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-gemma4
+  namespace: ai
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llama-gemma4
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: llama-gemma4
+        app.kubernetes.io/part-of: prometheus-ai
+    spec:
+      enableServiceLinks: false
+      runtimeClassName: nvidia
+      containers:
+        - name: llama-server
+          image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:ea34541236b965382cf3a80736ade74afb97fcd8c1950b68fcf9c9c3f17aaf49
+          command:
+            - llama-server
+          args:
+            - -hf
+            - ggml-org/gemma-4-26b-a4b-it-GGUF:Q4_K_M
+            - -c
+            - "32768"
+            - -ngl
+            - "999"
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+          env:
+            - name: HF_HOME
+              value: /cache/huggingface
+            - name: XDG_CACHE_HOME
+              value: /cache
+            - name: HF_HUB_ENABLE_HF_TRANSFER
+              value: "0"
+            - name: HF_HUB_DISABLE_XET
+              value: "1"
+          ports:
+            - name: http
+              containerPort: 8000
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: cache
+              mountPath: /cache
+          resources:
+            requests:
+              cpu: 2000m
+              memory: 12Gi
+              nvidia.com/gpu: 1
+            limits:
+              memory: 24Gi
+              nvidia.com/gpu: 1
+      volumes:
+        - name: cache
+          persistentVolumeClaim:
+            claimName: llama-gemma4-cache
