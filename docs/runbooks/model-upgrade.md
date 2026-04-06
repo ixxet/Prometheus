@@ -11,6 +11,18 @@ UI tweaks.
 
 - `mistralai/Mistral-7B-Instruct-v0.3`
 
+## Gemma 4 staging notes
+
+- The current upstream Gemma 4 recipe expects the dedicated
+  `vllm/vllm-openai:gemma4` runtime image and `transformers==5.5.0`.
+- The repo now includes a custom `services/vllm-gemma4/` image path so that
+  `transformers` stays pinned on the Gemma 4-compatible line.
+- `vLLM` documents `GGUF` as experimental and potentially incompatible with
+  other features. Treat a `GGUF` Gemma rollout as a higher-risk change than a
+  normal model swap.
+- If the target GGUF repo is private or gated, the `ai` namespace also needs a
+  real `hf-token` secret before rollout.
+
 ## Why model upgrades need discipline
 
 - model size affects disk cache usage
