@@ -13,13 +13,32 @@ OPEN_WEBUI_URL="${OPEN_WEBUI_URL:-http://192.168.2.201/}"
 VLLM_MODELS_URL="${VLLM_MODELS_URL:-http://192.168.2.205:8000/v1/models}"
 ADGUARD_URL="${ADGUARD_URL:-http://192.168.2.200/}"
 GRAFANA_URL="${GRAFANA_URL:-http://192.168.2.202/login}"
+SUMMARIZER_URL="${SUMMARIZER_URL:-http://192.168.2.203/api/health}"
 LANGGRAPH_NAMESPACE="${LANGGRAPH_NAMESPACE:-agents}"
 LANGGRAPH_SERVICE="${LANGGRAPH_SERVICE:-langgraph}"
 LANGGRAPH_LOCAL_PORT="${LANGGRAPH_LOCAL_PORT:-18081}"
 LANGGRAPH_REMOTE_PORT="${LANGGRAPH_REMOTE_PORT:-8000}"
 LANGGRAPH_LOCAL_URL="${LANGGRAPH_LOCAL_URL:-http://127.0.0.1:${LANGGRAPH_LOCAL_PORT}/healthz}"
+ATHENA_NAMESPACE="${ATHENA_NAMESPACE:-athena}"
+ATHENA_SERVICE="${ATHENA_SERVICE:-athena}"
+ATHENA_LOCAL_PORT="${ATHENA_LOCAL_PORT:-18083}"
+ATHENA_REMOTE_PORT="${ATHENA_REMOTE_PORT:-80}"
+ATHENA_LOCAL_URL="${ATHENA_LOCAL_URL:-http://127.0.0.1:${ATHENA_LOCAL_PORT}/api/v1/health}"
+APOLLO_NAMESPACE="${APOLLO_NAMESPACE:-agents}"
+APOLLO_SERVICE="${APOLLO_SERVICE:-apollo}"
+APOLLO_LOCAL_PORT="${APOLLO_LOCAL_PORT:-18084}"
+APOLLO_REMOTE_PORT="${APOLLO_REMOTE_PORT:-80}"
+APOLLO_LOCAL_URL="${APOLLO_LOCAL_URL:-http://127.0.0.1:${APOLLO_LOCAL_PORT}/api/v1/health}"
+NATS_NAMESPACE="${NATS_NAMESPACE:-agents}"
+NATS_SERVICE="${NATS_SERVICE:-nats}"
+NATS_LOCAL_PORT="${NATS_LOCAL_PORT:-18222}"
+NATS_REMOTE_PORT="${NATS_REMOTE_PORT:-8222}"
+NATS_LOCAL_URL="${NATS_LOCAL_URL:-http://127.0.0.1:${NATS_LOCAL_PORT}/varz}"
 PORT_FORWARD_LOG="${PORT_FORWARD_LOG:-${TMPDIR:-/tmp}/prometheus-langgraph-port-forward.log}"
-CORE_POD_PATTERN="${CORE_POD_PATTERN:-adguard|open-webui|vllm|langgraph|qdrant|tei|postgres|grafana|prometheus|metrics-server|dcgm-exporter}"
+ATHENA_PORT_FORWARD_LOG="${ATHENA_PORT_FORWARD_LOG:-${TMPDIR:-/tmp}/prometheus-athena-port-forward.log}"
+APOLLO_PORT_FORWARD_LOG="${APOLLO_PORT_FORWARD_LOG:-${TMPDIR:-/tmp}/prometheus-apollo-port-forward.log}"
+NATS_PORT_FORWARD_LOG="${NATS_PORT_FORWARD_LOG:-${TMPDIR:-/tmp}/prometheus-nats-port-forward.log}"
+CORE_POD_PATTERN="${CORE_POD_PATTERN:-adguard|open-webui|vllm|langgraph|qdrant|tei|postgres|grafana|prometheus|metrics-server|dcgm-exporter|summarizer|athena|apollo|nats}"
 WAIT_SECONDS="${WAIT_SECONDS:-600}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-10}"
 
@@ -60,6 +79,14 @@ wait_for() {
 
     sleep "${SLEEP_SECONDS}"
   done
+}
+
+start_port_forward() {
+  local log_file="$1"
+  shift
+
+  "${KUBECTL_BIN}" "$@" >"${log_file}" 2>&1 &
+  echo $!
 }
 
 require_cmd "${KUBECTL_BIN}"
@@ -136,14 +163,37 @@ wait_for "grafana http listener" \
 curl -fsSI "${GRAFANA_URL}" | sed -n '1,5p'
 
 echo
+wait_for "summarizer http health" \
+  curl -fsS "${SUMMARIZER_URL}"
+curl -fsS "${SUMMARIZER_URL}"
+
+echo
 echo "== LangGraph health =="
-"${KUBECTL_BIN}" -n "${LANGGRAPH_NAMESPACE}" port-forward "svc/${LANGGRAPH_SERVICE}" "${LANGGRAPH_LOCAL_PORT}:${LANGGRAPH_REMOTE_PORT}" >"${PORT_FORWARD_LOG}" 2>&1 &
-PF_PID=$!
-trap 'kill ${PF_PID} >/dev/null 2>&1 || true' EXIT
+PF_PID="$(start_port_forward "${PORT_FORWARD_LOG}" -n "${LANGGRAPH_NAMESPACE}" port-forward "svc/${LANGGRAPH_SERVICE}" "${LANGGRAPH_LOCAL_PORT}:${LANGGRAPH_REMOTE_PORT}")"
+ATHENA_PF_PID="$(start_port_forward "${ATHENA_PORT_FORWARD_LOG}" -n "${ATHENA_NAMESPACE}" port-forward "svc/${ATHENA_SERVICE}" "${ATHENA_LOCAL_PORT}:${ATHENA_REMOTE_PORT}")"
+APOLLO_PF_PID="$(start_port_forward "${APOLLO_PORT_FORWARD_LOG}" -n "${APOLLO_NAMESPACE}" port-forward "svc/${APOLLO_SERVICE}" "${APOLLO_LOCAL_PORT}:${APOLLO_REMOTE_PORT}")"
+NATS_PF_PID="$(start_port_forward "${NATS_PORT_FORWARD_LOG}" -n "${NATS_NAMESPACE}" port-forward "svc/${NATS_SERVICE}" "${NATS_LOCAL_PORT}:${NATS_REMOTE_PORT}")"
+trap 'kill ${PF_PID} ${ATHENA_PF_PID} ${APOLLO_PF_PID} ${NATS_PF_PID} >/dev/null 2>&1 || true' EXIT
 
 wait_for "langgraph health" \
   curl -fsS "${LANGGRAPH_LOCAL_URL}"
 curl -fsS "${LANGGRAPH_LOCAL_URL}"
+
+echo
+echo "== ATHENA / APOLLO / NATS health =="
+wait_for "athena health" \
+  curl -fsS "${ATHENA_LOCAL_URL}"
+curl -fsS "${ATHENA_LOCAL_URL}"
+
+echo
+wait_for "apollo health" \
+  curl -fsS "${APOLLO_LOCAL_URL}"
+curl -fsS "${APOLLO_LOCAL_URL}"
+
+echo
+wait_for "nats varz" \
+  curl -fsS "${NATS_LOCAL_URL}"
+curl -fsS "${NATS_LOCAL_URL}" | sed -n '1,12p'
 
 echo
 echo "Post-return verification passed."
