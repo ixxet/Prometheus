@@ -69,7 +69,18 @@ So this backend is switchable, not concurrent.
 
 ## Pre-stage the GGUF onto disk
 
-Use a one-off downloader pod mounted to `llama-gemma4-cache`:
+Use a one-off downloader pod mounted to `llama-gemma4-cache`.
+
+Important:
+
+- this downloader resumes from an existing `.part` file instead of restarting
+  from zero
+- do not delete staged or partial Gemma GGUF artifacts casually on a slow WAN
+  link
+- only remove them deliberately when reclaiming space or replacing the staged
+  model
+
+Apply the resumable downloader pod:
 
 ```bash
 kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig \
@@ -81,23 +92,49 @@ metadata:
   namespace: ai
 spec:
   restartPolicy: Never
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
   containers:
     - name: downloader
-      image: busybox:1.36
+      image: curlimages/curl:8.12.1
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
       command:
         - sh
         - -ec
         - |
           set -eu
           mkdir -p /cache/gguf
-          target=/cache/gguf/google_gemma-4-26B-A4B-it-Q6_K.gguf
+          final=/cache/gguf/google_gemma-4-26B-A4B-it-Q6_K.gguf
+          part="${final}.part"
+          url="https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF/resolve/main/google_gemma-4-26B-A4B-it-Q6_K.gguf"
           expected_size=22862570624
-          current_size="$(stat -c '%s' "${target}" 2>/dev/null || echo 0)"
-          if [ "${current_size}" != "${expected_size}" ] || [ -e "${target}.aria2" ]; then
-            rm -f "${target}" "${target}.part" "${target}.aria2"
-            wget -O "${target}.part" "https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF/resolve/main/google_gemma-4-26B-A4B-it-Q6_K.gguf"
-            mv "${target}.part" "${target}"
+
+          final_size="$(stat -c '%s' "${final}" 2>/dev/null || echo 0)"
+          if [ "${final_size}" = "${expected_size}" ]; then
+            echo "Gemma GGUF already staged at expected size"
+            exit 0
           fi
+
+          if [ -f "${final}" ] && [ ! -f "${part}" ]; then
+            mv "${final}" "${part}"
+          fi
+
+          current_size="$(stat -c '%s' "${part}" 2>/dev/null || echo 0)"
+          echo "Resuming Gemma GGUF download from ${current_size} bytes"
+          curl -L --fail --retry 20 --retry-all-errors --retry-delay 5 -C - -o "${part}" "${url}"
+
+          downloaded_size="$(stat -c '%s' "${part}" 2>/dev/null || echo 0)"
+          if [ "${downloaded_size}" != "${expected_size}" ]; then
+            echo "Downloaded size ${downloaded_size} does not match expected ${expected_size}" >&2
+            exit 1
+          fi
+
+          mv "${part}" "${final}"
+          echo "Gemma GGUF staged successfully at ${final}"
       volumeMounts:
         - name: cache
           mountPath: /cache

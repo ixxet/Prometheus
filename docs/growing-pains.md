@@ -1141,6 +1141,38 @@ Lesson:
 - a model path is only real after the serving engine has loaded it and the
   dependent clients have been re-verified
 
+### 39. Slow-link model artifacts should be treated like cached assets, not throwaway scratch files
+
+What happened:
+
+- the first staged Gemma 4 `Q6_K` GGUF was deleted immediately after the failed
+  `vLLM` attempt
+- the WAN link to re-stage that file is slow enough that another full download
+  costs hours
+- the next plan still wanted the exact same artifact for the switchable
+  `llama-server` path
+
+Effect:
+
+- the platform was stable again, but the experimental path lost its most
+  expensive prerequisite
+- the next test window had to spend time and bandwidth recreating a file that
+  had already been paid for once
+
+Fix:
+
+- moved the Gemma test path onto its own dedicated cache PV/PVC
+- changed the staging guidance to use a resumable downloader against the same
+  cached `.part` file
+- documented that staged or partial large-model artifacts should only be
+  deleted deliberately when reclaiming space or replacing the staged model
+
+Lesson:
+
+- on a slow WAN link, model artifacts are closer to local inventory than
+  temporary scratch files
+- failed runtime experiments should not automatically trigger cache cleanup
+
 - This cluster now serves a local model from owned hardware through `vLLM`,
   exposes it on the LAN with Cilium `LoadBalancer` IPs, and does it on an
   immutable Talos node rather than a hand-tuned snowflake server.
