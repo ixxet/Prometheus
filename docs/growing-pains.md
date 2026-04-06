@@ -1,6 +1,6 @@
 # Growing Pains
 
-Last updated: 2026-04-05 (America/Toronto)
+Last updated: 2026-04-06 (America/Toronto)
 
 ## Why this file exists
 
@@ -1084,6 +1084,35 @@ Lesson:
   path explicitly
 
 ## Success Stories
+
+### 38. A staged GGUF model still was not a supported model
+
+What happened:
+
+- the Gemma 4 `Q6_K` GGUF finished downloading into the shared `vllm` cache PVC
+- the dedicated `vllm/vllm-openai:gemma4` runtime image also pulled cleanly
+- the deployment pinned `transformers==5.5.0`, set the tokenizer explicitly,
+  and used the requested single-GPU flags for the RTX 3090
+
+Effect:
+
+- the rollout looked ready from the outside
+- the `vllm` pod still crashed before serving because the GGUF config load
+  failed with `ValueError: GGUF model with architecture gemma4 is not supported yet.`
+
+Fix:
+
+- verified the actual failure from the container logs instead of inferring from
+  pod state
+- reverted the live deployment and dependent clients back to the previous
+  Mistral backend
+- kept the Gemma 4 image path and runbook notes in the repo for later retesting
+
+Lesson:
+
+- "downloaded" is not the same checkpoint as "supported"
+- a model path is only real after the serving engine has loaded it and the
+  dependent clients have been re-verified
 
 - This cluster now serves a local model from owned hardware through `vLLM`,
   exposes it on the LAN with Cilium `LoadBalancer` IPs, and does it on an

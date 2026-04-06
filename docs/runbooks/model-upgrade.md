@@ -1,6 +1,6 @@
 # Model Upgrade Runbook
 
-Last updated: 2026-03-26 (America/Toronto)
+Last updated: 2026-04-06 (America/Toronto)
 
 ## Purpose
 
@@ -22,6 +22,12 @@ UI tweaks.
   normal model swap.
 - If the target GGUF repo is private or gated, the `ai` namespace also needs a
   real `hf-token` secret before rollout.
+- The attempted `bartowski/google_gemma-4-26B-A4B-it-GGUF` `Q6_K` rollout did
+  finish staging on disk, but the live server still failed with
+  `ValueError: GGUF model with architecture gemma4 is not supported yet.`
+- Do not delete the known-good model cache until the replacement model is
+  serving and verified through `vLLM`, Open WebUI, LangGraph, and the
+  summarizer.
 
 ## Why model upgrades need discipline
 
