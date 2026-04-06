@@ -1,6 +1,6 @@
 # Growing Pains
 
-Last updated: 2026-03-31 (America/Toronto)
+Last updated: 2026-04-05 (America/Toronto)
 
 ## Why this file exists
 
@@ -1051,6 +1051,37 @@ Lesson:
   exists locally
 - identified exits are not implied by identified entries; the exit path needs
   its own explicit runtime config
+
+### 37. Generic restart checks were not enough for the ATHENA path
+
+What happened:
+
+- the existing post-return verification script proved the core platform was
+  healthy
+- it did not explicitly assert the bounded `ATHENA -> NATS -> APOLLO` slice
+- that left a gap between "cluster is back" and "the app path that was rough
+  last time is back"
+
+Effect:
+
+- a restart could look successful while the ATHENA-specific path still needed
+  manual verification
+- operator confidence depended too much on memory and ad hoc terminal checks
+
+Fix:
+
+- extended the return-check script to verify:
+  - summarizer health on its LAN endpoint
+  - ATHENA `/api/v1/health`
+  - APOLLO `/api/v1/health`
+  - NATS `/varz`
+- updated the Windows dual-boot, runtime-check, and MIMIR timer docs to match
+
+Lesson:
+
+- platform health is not the same thing as workload health
+- if a bounded app path matters, the restart verification needs to check that
+  path explicitly
 
 ## Success Stories
 

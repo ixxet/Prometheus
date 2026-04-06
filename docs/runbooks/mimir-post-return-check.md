@@ -1,6 +1,6 @@
 # MIMIR Post-Return Check Runbook
 
-Last updated: 2026-03-27 (America/Toronto)
+Last updated: 2026-04-05 (America/Toronto)
 
 ## Purpose
 
@@ -25,6 +25,13 @@ Host side on MIMIR:
 
 That means the automation path is now both versioned in Git and active on
 MIMIR.
+
+Important maintenance rule:
+
+- when `scripts/verify-after-talos-return.sh` changes in Git, recopy the script
+  to `/opt/prometheus-ops/` on MIMIR and rerun the one-shot service once
+- do not assume the helper host is using the latest repo-side checks until that
+  sync step is done
 
 ## Repo assets
 
@@ -66,11 +73,28 @@ Key values:
 - `VLLM_MODELS_URL=http://192.168.2.205:8000/v1/models`
 - `ADGUARD_URL=http://192.168.2.200/`
 - `GRAFANA_URL=http://192.168.2.202/login`
+- `SUMMARIZER_URL=http://192.168.2.203/api/health`
+- `ATHENA_NAMESPACE=athena`
+- `ATHENA_SERVICE=athena`
+- `ATHENA_LOCAL_URL=http://127.0.0.1:18083/api/v1/health`
+- `APOLLO_NAMESPACE=agents`
+- `APOLLO_SERVICE=apollo`
+- `APOLLO_LOCAL_URL=http://127.0.0.1:18084/api/v1/health`
+- `NATS_NAMESPACE=agents`
+- `NATS_SERVICE=nats`
+- `NATS_LOCAL_URL=http://127.0.0.1:18222/varz`
 
 `TALOS_HEALTH_MODE=auto` prefers `talosctl health` when the helper host can run
 `talosctl` natively. If the helper host cannot execute `talosctl`, the script
 falls back to a direct TCP reachability probe of the Talos API on
 `NODE_IP:TALOS_API_PORT`.
+
+The return check now covers the bounded ATHENA path explicitly:
+
+- ATHENA health
+- APOLLO health
+- NATS monitor reachability
+- summarizer health in addition to the earlier core platform checks
 
 ## Verified activation path
 
@@ -84,6 +108,20 @@ falls back to a direct TCP reachability probe of the Talos API on
 8. Check the log file under `/home/boi/.local/state/prometheus-ops/`.
 9. Run `sudo systemctl enable --now prometheus-after-talos-return.timer`.
 10. Confirm the timer with `systemctl list-timers | grep prometheus-after-talos-return`.
+
+## Refresh path after script changes
+
+If the repo-side verification script gains new checks, refresh MIMIR with:
+
+```bash
+scp scripts/verify-after-talos-return.sh boi@<mimir>:/tmp/verify-after-talos-return.sh
+ssh boi@<mimir> 'sudo install -m 0755 /tmp/verify-after-talos-return.sh /opt/prometheus-ops/verify-after-talos-return.sh && sudo systemctl start prometheus-after-talos-return.service'
+```
+
+Success signal:
+
+- the service exits `0/SUCCESS`
+- the log file shows the new checks running
 
 ## Current live status
 

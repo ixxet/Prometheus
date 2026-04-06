@@ -1,6 +1,6 @@
 # Windows Dual-Boot And Talos Return Runbook
 
-Last updated: 2026-03-27 (America/Toronto)
+Last updated: 2026-04-05 (America/Toronto)
 
 ## Purpose
 
@@ -81,11 +81,19 @@ This is expected downtime, not corruption.
   - `postgres`
   - `qdrant`
   - `tei-embeddings`
+  - `summarizer`
+  - `athena`
+  - `apollo`
+  - `nats`
 - LAN endpoints:
   - `http://192.168.2.200`
   - `http://192.168.2.201`
   - `http://192.168.2.205:8000/v1/models`
+  - `http://192.168.2.203/api/health`
 - LangGraph `/healthz` through a temporary port-forward
+- ATHENA `/api/v1/health` through a temporary port-forward
+- APOLLO `/api/v1/health` through a temporary port-forward
+- NATS `/varz` through a temporary port-forward
 
 ## What can take longer after return
 

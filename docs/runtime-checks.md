@@ -1,6 +1,6 @@
 # Runtime Checks And Quick Runbook
 
-Last updated: 2026-03-31 (America/Toronto)
+Last updated: 2026-04-05 (America/Toronto)
 
 ## What this is for
 
@@ -36,7 +36,7 @@ MIMIR, where the systemd timer is now installed and active:
 
 | Goal | Command | Success signal |
 | --- | --- | --- |
-| Full post-return verification | `/Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh` | Talos, Kubernetes, Flux, metrics API, core pods, LAN endpoints, Grafana, and LangGraph health all pass |
+| Full post-return verification | `/Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh` | Talos, Kubernetes, Flux, metrics API, core pods, LAN endpoints, Grafana, LangGraph, ATHENA, APOLLO, NATS, and the summarizer all pass |
 | Talos health | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 health` | health checks pass |
 | Kubernetes nodes | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get nodes -o wide` | node is `Ready` |
 | Flux state | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n flux-system get kustomizations` | infra entries `True`; `apps` `True` on the current revision |
@@ -71,6 +71,16 @@ MIMIR, where the systemd timer is now installed and active:
 | Semantic-memory smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` and `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n semantic-memory port-forward svc/qdrant 16333:6333` then use `docs/runbooks/semantic-memory-activation.md` | a preference written in one thread is recalled in a fresh thread |
 | Archive export smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use `docs/runbooks/archive-export-validation.md` | a completed run writes a Markdown file into MIMIR's `Agents/` vault path |
 | First real workflow smoke test | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/langgraph 18081:8000` then use `docs/runbooks/first-agent-workflow.md` | approval, Postgres state, Mem0 recall, and MIMIR archive export all succeed in one path |
+
+## ATHENA / APOLLO / NATS checks
+
+| Goal | Command | Success signal |
+| --- | --- | --- |
+| ATHENA status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get deploy,pods,svc -n athena` | `deployment/athena` available and pod `1/1` |
+| APOLLO / NATS status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get deploy,pods,svc -n agents | rg 'apollo|nats|postgres'` | `apollo` and `nats` available with running pods |
+| ATHENA health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n athena port-forward svc/athena 18083:80` then `curl http://127.0.0.1:18083/api/v1/health` | returns `{"service":"athena","status":"ok","adapter":"mock"}` |
+| APOLLO health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/apollo 18084:80` then `curl http://127.0.0.1:18084/api/v1/health` | returns `{"service":"apollo","status":"ok","consumer_enabled":true}` |
+| NATS monitor | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/nats 18222:8222` then `curl http://127.0.0.1:18222/varz` | JSON returns with `http_port: 8222` and non-error status |
 
 ## Observability checks
 
@@ -166,3 +176,14 @@ The practical workflow is:
 7. if archive export is the concern, verify `langgraph-archive` is `Bound`,
    confirm the deployment still mounts `/exports/obsidian`, and rerun the
    archive-export smoke test
+
+## If the ATHENA path regresses after a restart
+
+1. check `kubectl -n athena get deploy,pods,svc`
+2. check `kubectl -n agents get deploy,pods,svc | rg 'apollo|nats|postgres'`
+3. verify `curl http://127.0.0.1:18083/api/v1/health` through an ATHENA port-forward
+4. verify `curl http://127.0.0.1:18084/api/v1/health` through an APOLLO port-forward
+5. verify `curl http://127.0.0.1:18222/varz` through a NATS port-forward
+6. check `kubectl logs -n athena deployment/athena --tail=100`
+7. check `kubectl logs -n agents deployment/apollo --tail=120`
+8. if the bounded event path still looks wrong, rerun the proof in `docs/runbooks/ashton-event-boundary.md`
