@@ -8,7 +8,7 @@ data:
   DATABASE_HOST: postgres.agents.svc.cluster.local
   DATABASE_PORT: "5432"
   OPENAI_API_BASE_URL: http://vllm.ai.svc.cluster.local:8000/v1
-  OPENAI_MODEL: google/gemma-4-26B-A4B-it
+  OPENAI_MODEL: mistralai/Mistral-7B-Instruct-v0.3
   OPENAI_API_KEY: local-not-required
   LANGGRAPH_SYSTEM_PROMPT: >-
     You are the Prometheus local agent runtime. Be concise, factual, and safe.

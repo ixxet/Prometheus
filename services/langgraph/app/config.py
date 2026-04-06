@@ -54,7 +54,7 @@ def load_settings() -> Settings:
         ),
         openai_model=os.environ.get(
             "OPENAI_MODEL",
-            "google/gemma-4-26B-A4B-it",
+            "mistralai/Mistral-7B-Instruct-v0.3",
         ),
         openai_api_key=os.environ.get("OPENAI_API_KEY", "local-not-required"),
         system_prompt=os.environ.get(

@@ -18,52 +18,27 @@ spec:
     spec:
       enableServiceLinks: false
       runtimeClassName: nvidia
-      initContainers:
-        - name: fetch-gemma-gguf
-          image: busybox:1.36
-          command:
-            - sh
-            - -ec
-            - |
-              set -eu
-              mkdir -p /var/cache/huggingface/gguf
-              target=/var/cache/huggingface/gguf/google_gemma-4-26B-A4B-it-Q6_K.gguf
-              expected_size=22862570624
-              current_size="$(stat -c '%s' "${target}" 2>/dev/null || echo 0)"
-              if [ "${current_size}" != "${expected_size}" ] || [ -e "${target}.aria2" ]; then
-                rm -f "${target}" "${target}.part" "${target}.aria2"
-                wget -O "${target}.part" "https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF/resolve/main/google_gemma-4-26B-A4B-it-Q6_K.gguf"
-                mv "${target}.part" "${target}"
-              fi
-          volumeMounts:
-            - name: cache
-              mountPath: /var/cache/huggingface
       containers:
         - name: vllm
-          image: vllm/vllm-openai:gemma4
+          image: vllm/vllm-openai:v0.7.3
           command:
-            - sh
-            - -lc
-          args:
-            - >
-              python3 -m pip install --no-cache-dir --upgrade 'transformers==5.5.0' &&
-              python3 -c "import transformers; assert transformers.__version__ == '5.5.0', transformers.__version__; print('Pinned transformers', transformers.__version__)" &&
-              exec vllm serve /var/cache/huggingface/gguf/google_gemma-4-26B-A4B-it-Q6_K.gguf
-              --host 0.0.0.0
-              --port 8000
-              --served-model-name google/gemma-4-26B-A4B-it
-              --tokenizer google/gemma-4-26B-A4B-it
-              --hf-config-path google/gemma-4-26B-A4B-it
-              --gpu-memory-utilization 0.95
-              --max-model-len 16384
-              --kv-cache-dtype fp8
-              --moe-backend marlin
-              --enforce-eager
-              --tensor-parallel-size 1
-              --enable-auto-tool-choice
-              --tool-call-parser gemma4
-              --reasoning-parser gemma4
-              --download-dir /var/cache/huggingface
+            - vllm
+            - serve
+            - mistralai/Mistral-7B-Instruct-v0.3
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+            - --tokenizer-mode
+            - mistral
+            - --dtype
+            - bfloat16
+            - --gpu-memory-utilization
+            - "0.85"
+            - --max-model-len
+            - "24576"
+            - --download-dir
+            - /var/cache/huggingface
           env:
             - name: HF_HOME
               value: /var/cache/huggingface
