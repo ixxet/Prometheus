@@ -33,7 +33,7 @@ spec:
             - name: VLLM_API_KEY
               value: EMPTY
             - name: VLLM_MODEL
-              value: mistralai/Mistral-7B-Instruct-v0.3
+              value: google/gemma-4-26B-A4B-it
           readinessProbe:
             httpGet:
               path: /api/health
