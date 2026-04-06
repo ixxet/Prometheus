@@ -83,7 +83,8 @@ curl http://127.0.0.1:18086/v1/models
 ```
 
 The first activation will take the longest because the GGUF needs to download
-into the dedicated PVC.
+into the dedicated static cache PV at
+`/var/mnt/local-path-provisioner/llama-gemma4-cache` on the Talos node.
 
 ## Return to the stable backend
 

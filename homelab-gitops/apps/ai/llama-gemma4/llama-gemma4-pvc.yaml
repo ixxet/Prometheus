@@ -9,4 +9,5 @@ spec:
   resources:
     requests:
       storage: 30Gi
-  storageClassName: local-path
+  storageClassName: llama-gemma4-static
+  volumeName: llama-gemma4-cache-pv
