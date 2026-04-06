@@ -28,7 +28,10 @@ spec:
               set -eu
               mkdir -p /var/cache/huggingface/gguf
               target=/var/cache/huggingface/gguf/google_gemma-4-26B-A4B-it-Q6_K.gguf
-              if [ ! -s "${target}" ]; then
+              expected_size=22862570624
+              current_size="$(stat -c '%s' "${target}" 2>/dev/null || echo 0)"
+              if [ "${current_size}" != "${expected_size}" ]; then
+                rm -f "${target}" "${target}.part"
                 wget -O "${target}.part" "https://huggingface.co/bartowski/google_gemma-4-26B-A4B-it-GGUF/resolve/main/google_gemma-4-26B-A4B-it-Q6_K.gguf"
                 mv "${target}.part" "${target}"
               fi
