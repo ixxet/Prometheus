@@ -25,10 +25,10 @@ spec:
           command:
             - llama-server
           args:
-            - -hf
-            - ggml-org/gemma-4-26b-a4b-it-GGUF:Q4_K_M
+            - -m
+            - /cache/gguf/google_gemma-4-26B-A4B-it-Q6_K.gguf
             - -c
-            - "32768"
+            - "16384"
             - -ngl
             - "999"
             - --host
