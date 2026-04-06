@@ -1083,6 +1083,33 @@ Lesson:
 - if a bounded app path matters, the restart verification needs to check that
   path explicitly
 
+### 38. "Parallel" GPU backends were not real on a one-GPU Talos node
+
+What happened:
+
+- `vLLM` is already the stable GPU workload on the RTX 3090
+- a second GPU backend looked easy to stage on paper
+- Kubernetes still allocates the GPU as a whole device, not as a polite
+  fractional share between two heavy inference servers
+
+Effect:
+
+- a truly parallel `vLLM + llama-server` story would have been fake
+- any attempt to run both honestly would either deadlock at scheduling time or
+  create uncontrolled contention
+
+Fix:
+
+- kept `vLLM` as the stable live backend
+- staged the Gemma 4 `llama-server` path at `replicas: 0`
+- documented a deliberate switch procedure instead of pretending concurrency
+  exists
+
+Lesson:
+
+- on a single GPU, "parallel backend" usually means "switchable backend"
+- the honest platform design is better than a clever lie
+
 ## Success Stories
 
 ### 38. A staged GGUF model still was not a supported model

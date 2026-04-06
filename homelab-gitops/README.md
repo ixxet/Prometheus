@@ -1,6 +1,6 @@
 # Homelab GitOps
 
-Last updated: 2026-04-02 (America/Toronto)
+Last updated: 2026-04-06 (America/Toronto)
 
 ## Status
 
@@ -35,6 +35,7 @@ Authored and render-valid now:
 - `apps/agents/apollo/` for the narrow APOLLO visit-ingest deployment slice
 - `apps/agents/nats/` for the bounded ASHTON event broker slice
 - `apps/ai/vllm/`
+- `apps/ai/llama-gemma4/` as a switchable Gemma 4 GGUF test backend for one-GPU experiments
 - `apps/ai/open-webui/`
 - `apps/agents/langgraph/`
 - `apps/summarizer/` for the proof-of-concept app deployment
@@ -271,6 +272,7 @@ That is documented as a deliberate restart-safety fix, not a shortcut.
 | `apps/agents/apollo/` | Narrow GitOps slice for the APOLLO visit-ingest runtime. | Pinned to an immutable GHCR image, bootstraps migrations in an init container, and consumes only the identified ATHENA visit-lifecycle subjects. | It does not widen APOLLO into auth UI, workouts, recommendations, or matchmaking in-cluster. |
 | `apps/agents/nats/` | Bounded broker slice for the live ATHENA -> APOLLO event path. | Kept intentionally small with only client and monitor ports exposed inside the cluster. | It is not a general messaging platform rollout. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
+| `apps/ai/llama-gemma4/` | Switchable `llama-server` Gemma 4 GGUF test backend. | Deliberately staged at `replicas: 0` because the same node cannot honestly run it alongside `vLLM`. | It is not part of the stable always-on path. |
 | `apps/ai/open-webui/` | Human-facing web UI pointed directly at the vLLM OpenAI-compatible endpoint. | Depends on storage and on vLLM existing as the first backend. | It is not a gateway or orchestrator. |
 | `apps/ai/ollama/` | Earlier local-LLM path kept in-repo for reference. | Parked after the vLLM-first pivot; do not treat it as the default next step. | It is not part of the current activation plan. |
 | `apps/agents/langgraph/` | GitOps layer for the LangGraph runtime plus the off-tower archive PVC. | Uses the existing Postgres secret, the live Mem0 path, the MIMIR-backed archive export, and an immutable image tag. | It is live now; the next work is workflow polish, not a second runtime. |

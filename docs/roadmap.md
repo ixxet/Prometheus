@@ -1,6 +1,6 @@
 # Prometheus Roadmap From `v0.3.0` To `v1.0.0`
 
-Last updated: 2026-03-31 (America/Toronto)
+Last updated: 2026-04-06 (America/Toronto)
 
 ## Why this document exists
 
@@ -18,6 +18,7 @@ what "done" means for each milestone.
 - Agent stack is `self-hosted OSS LangGraph + Postgres + self-hosted Mem0 + external Obsidian vault sink`
 - `Open WebUI` remains a human chat UI; it is not the orchestrator
 - `vLLM` remains the only model backend for the first agent platform
+- `llama-server` is allowed only as a switchable Gemma GGUF test path; it does not replace the stable `vLLM` backend by default
 - `Ollama`, `LiteLLM`, `Graphiti/Zep`, and `Letta` stay out of the active path
 - Public template extraction waits until the live instance proves itself
 
@@ -215,6 +216,30 @@ Status: in progress on 2026-03-31. The summarizer app is live in its own namespa
 - [x] the app can reach private `vllm` internally
 - [x] the app exposes `/metrics` and is scraped by Prometheus
 - [x] the reviewer-facing path goes through an auth proxy and quick tunnel, not raw `vllm`
+
+## Switchable Gemma Test Backend
+
+Goal: keep a real Gemma 4 GGUF experiment path in the repo without pretending
+the single-GPU tower can run two GPU backends at once.
+
+### Implementation
+
+- stage `llama-server` Gemma 4 manifests under `apps/ai/llama-gemma4/`
+- keep the deployment at `replicas: 0` by default
+- use a dedicated PVC so Gemma cache experiments do not overwrite the stable
+  `vLLM` cache path
+- document the temporary switch procedure:
+  - suspend Flux `apps`
+  - scale `vLLM` down
+  - scale `llama-gemma4` up
+  - verify `/v1/models`
+  - restore `vLLM`
+
+### Acceptance
+
+- [x] a switchable Gemma 4 GGUF backend exists in GitOps
+- [x] the staged backend does not disrupt the stable `vLLM` service by default
+- [x] the one-GPU constraint is documented explicitly instead of being hand-waved
 
 ## `v0.6.0+` Platform Expansion
 

@@ -82,6 +82,7 @@ flowchart LR
 | **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live on `192.168.2.200`, separate from the router, and still not the default DHCP resolver |
 | **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
+| **AI -- GGUF Test Backend** | llama.cpp / llama-server | Switchable Gemma 4 GGUF test backend staged for one-GPU experiments without replacing `vLLM` | Staged at `replicas: 0` |
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
 | **AI -- Orchestrator** | LangGraph | Self-hosted OSS runtime for tool loops, retries, HITL resume, and thread execution | Live |
 | **AI -- Execution Store** | Postgres | Durable checkpoint and application state store | Live |
@@ -118,6 +119,9 @@ cutover remains intentionally deferred while the tower is off its permanent
 LAN. Windows/Talos dual-boot is treated as a real operating
 constraint, the return-verification path is now host-neutral, and the MIMIR
 automation path is live with a tested manual run and an enabled timer.
+`llama-server` is now also staged as a switchable Gemma 4 GGUF backend, but it
+stays scaled to zero because the single RTX 3090 cannot host it alongside the
+stable `vLLM` deployment.
 
 ## Release Milestones
 
@@ -150,6 +154,7 @@ automation path is live with a tested manual run and an enabled timer.
 | AdGuard Home | Stable | Serving on `http://192.168.2.200`; rewrites are configured, a real MIMIR client resolves `home.arpa` correctly when pointed at AdGuard, and any future router-side handoff only means DHCP advertises `192.168.2.200` as DNS |
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
+| Llama-server Gemma 4 | Staged | Internal-only Gemma 4 GGUF test backend is authored at `replicas: 0` so the one-GPU node stays honest |
 | LangGraph | Stable | Internal-only runtime is live on the Mem0-enabled image; create, run, resume, restart-persistence, and semantic-memory smoke checks have passed |
 | Mem0 / Obsidian | Stable | Mem0 is live with Qdrant + TEI backing; LangGraph now exports Markdown run artifacts to the off-tower MIMIR vault path |
 | Observability | Stable | Prometheus, Grafana, metrics-server, DCGM exporter, Flux scrape-targets, Postgres exporter, and `vLLM` metrics are live |
@@ -176,6 +181,7 @@ automation path is live with a tested manual run and an enabled timer.
 - [x] Open WebUI is running and reachable on `192.168.2.201`
 - [x] `vLLM` is serving on `192.168.2.205:8000`
 - [x] `vLLM` model cache on the PVC is populated
+- [x] A switchable `llama-server` Gemma 4 test backend is staged in GitOps without displacing the stable `vLLM` path
 - [x] LangGraph is running internally in the `agents` namespace
 - [x] LangGraph thread, run, approval, and restart persistence checks have passed
 - [x] LangGraph health now reports `semantic_memory_provider: mem0` and `archive_sink: filesystem_markdown`
@@ -207,6 +213,7 @@ automation path is live with a tested manual run and an enabled timer.
 - [x] Flux entrypoints under `homelab-gitops/clusters/talos-tower/`
 - [x] GitOps definitions for Cilium, network, NVIDIA, Postgres, storage, and DNS
 - [x] vLLM manifests corrected for single-GPU rollout and slow-link model downloads
+- [x] `llama-server` Gemma 4 test manifests are staged separately so GGUF experiments do not mutate the stable `vLLM` backend by default
 - [x] Open WebUI manifests pointed directly at vLLM
 - [x] LangGraph scaffolds with explicit Postgres and future semantic-memory assumptions
 - [x] Self-hosted LangGraph service source under `services/langgraph/`

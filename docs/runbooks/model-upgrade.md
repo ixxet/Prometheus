@@ -28,6 +28,9 @@ UI tweaks.
 - Do not delete the known-good model cache until the replacement model is
   serving and verified through `vLLM`, Open WebUI, LangGraph, and the
   summarizer.
+- The current fallback for Gemma 4 GGUF is a switchable `llama-server` test
+  backend, not a second always-on GPU backend. On this one-node, one-GPU
+  cluster, the test path has to scale `vLLM` down first.
 
 ## Why model upgrades need discipline
 

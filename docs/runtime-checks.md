@@ -1,6 +1,6 @@
 # Runtime Checks And Quick Runbook
 
-Last updated: 2026-04-05 (America/Toronto)
+Last updated: 2026-04-06 (America/Toronto)
 
 ## What this is for
 
@@ -24,6 +24,7 @@ MIMIR, where the systemd timer is now installed and active:
 | AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200` | serving the admin UI and direct-query rewrites; router cutover deferred |
 | Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
 | vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
+| Llama-server Gemma 4 | `ai` | `ClusterIP` | in-cluster only | staged at `replicas: 0`; activate only by temporarily scaling `vLLM` down |
 | Grafana | `observability` | `LoadBalancer` | `192.168.2.202` | serving `/login` |
 | Summarizer | `summarizer` | `LoadBalancer` | `192.168.2.203` | serving `/api/health` and `/metrics` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
@@ -59,6 +60,8 @@ MIMIR, where the systemd timer is now installed and active:
 | vLLM logs | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --tail=200` | API server reaches steady state and no fatal KV-cache error appears |
 | vLLM previous crash | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai logs deploy/vllm --previous --tail=200` | old crash reason is understood before changing manifests |
 | vLLM service via port-forward | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai port-forward svc/vllm 18000:8000` then `curl http://127.0.0.1:18000/v1/models` | JSON response once ready |
+| Llama-server staging check | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n ai get deploy,svc,pvc | rg 'llama-gemma4|llama-gemma4-cache'` | deployment exists at `0/0`, service exists, PVC is `Bound` |
+| Llama-server activation path | follow `docs/runbooks/llama-server-gemma4.md` | Gemma backend is only activated after `vLLM` is scaled down |
 
 ## Agents namespace checks
 
