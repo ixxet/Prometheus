@@ -25,3 +25,21 @@ Use this runbook before calling a GitOps change "live verified."
   activation. GitOps changes were pushed, but live cluster verification could
   not be completed from the local shell. This is a local environment issue, not
   a repo issue.
+
+## 2026-04-06 Growing Pains
+
+- GHCR laptop publish auth and Kubernetes image pull auth were separate truths.
+  A package-capable local token was enough to push `ghcr.io/ixxet/athena`, but
+  the cluster still could not pull until `imagePullSecrets` were wired through
+  the workload ServiceAccount.
+
+- Local SOPS decryption is not available on this machine. That means encrypted
+  Secret manifests can be rendered and committed here, but `kubectl diff` over
+  encrypted payloads is not a truthful local validation step. In this repo, the
+  honest preflight is:
+  `kustomize build` locally plus Flux decryption in cluster.
+
+- Flux dependency readiness can block unrelated-looking rollouts. During the
+  ATHENA edge deployment pass, `apps` stayed pending until `infra-storage` and
+  then `infra-postgres` were reconciled again, even though the ATHENA manifests
+  themselves were already correct.
