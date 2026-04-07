@@ -15,9 +15,10 @@ spec:
         app.kubernetes.io/part-of: ashton
     spec:
       enableServiceLinks: false
+      serviceAccountName: athena
       containers:
         - name: athena
-          image: ghcr.io/ixxet/athena:0.4.0@sha256:8fcf9b9cff28a3c417771d350cfb9d02ecb865507aa48f7c3ac9cc7d4b7cdc19
+          image: ghcr.io/ixxet/athena:v0.4.1@sha256:87685d3ad4e86bd9593ad39326c7ecb1210b631e6056f3c54f618322b5fddb6f
           imagePullPolicy: IfNotPresent
           args:
             - serve
@@ -27,22 +28,22 @@ spec:
           env:
             - name: ATHENA_HTTP_ADDR
               value: ":8080"
-            - name: ATHENA_ADAPTER
-              value: "mock"
             - name: ATHENA_NATS_URL
               value: "nats://nats.agents.svc.cluster.local:4222"
             - name: ATHENA_IDENTIFIED_PUBLISH_INTERVAL
               value: "24h"
-            - name: ATHENA_MOCK_FACILITY_ID
-              value: "ashtonbee"
-            - name: ATHENA_MOCK_ENTRIES
-              value: "12"
-            - name: ATHENA_MOCK_EXITS
-              value: "3"
-            - name: ATHENA_MOCK_IDENTIFIED_TAG_HASHES
-              value: "tag_tracer2_001"
-            - name: ATHENA_MOCK_IDENTIFIED_EXIT_TAG_HASHES
-              value: "tag_tracer2_001"
+            - name: ATHENA_EDGE_OCCUPANCY_PROJECTION
+              value: "true"
+            - name: ATHENA_EDGE_HASH_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: athena-edge-runtime
+                  key: ATHENA_EDGE_HASH_SALT
+            - name: ATHENA_EDGE_TOKENS
+              valueFrom:
+                secretKeyRef:
+                  name: athena-edge-runtime
+                  key: ATHENA_EDGE_TOKENS
           readinessProbe:
             httpGet:
               path: /api/v1/health
