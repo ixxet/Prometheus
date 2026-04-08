@@ -15,6 +15,13 @@ MIMIR, where the systemd timer is now installed and active:
 /Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh
 ```
 
+For ASHTON-specific truth:
+
+- use `docs/runbooks/ashton-event-boundary.md` for the historical Milestone 1.6
+  departure-close proof
+- use `homelab-gitops/docs/runbooks/athena-edge-deployment.md` for the bounded
+  ATHENA edge-ingress deployment proof
+
 ## Current service map
 
 | Service | Namespace | Type | Address | Expected state |
@@ -81,7 +88,7 @@ MIMIR, where the systemd timer is now installed and active:
 | --- | --- | --- |
 | ATHENA status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get deploy,pods,svc -n athena` | `deployment/athena` available and pod `1/1` |
 | APOLLO / NATS status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get deploy,pods,svc -n agents | rg 'apollo|nats|postgres'` | `apollo` and `nats` available with running pods |
-| ATHENA health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n athena port-forward svc/athena 18083:80` then `curl http://127.0.0.1:18083/api/v1/health` | returns `{"service":"athena","status":"ok","adapter":"mock"}` |
+| ATHENA health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n athena port-forward svc/athena 18083:80` then `curl http://127.0.0.1:18083/api/v1/health` | returns `{"service":"athena","status":"ok","adapter":"edge-projection"}` |
 | APOLLO health | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/apollo 18084:80` then `curl http://127.0.0.1:18084/api/v1/health` | returns `{"service":"apollo","status":"ok","consumer_enabled":true}` |
 | NATS monitor | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents port-forward svc/nats 18222:8222` then `curl http://127.0.0.1:18222/varz` | JSON returns with `http_port: 8222` and non-error status |
 

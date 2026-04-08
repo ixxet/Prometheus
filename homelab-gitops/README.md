@@ -1,6 +1,6 @@
 # Homelab GitOps
 
-Last updated: 2026-04-06 (America/Toronto)
+Last updated: 2026-04-08 (America/Toronto)
 
 ## Status
 
@@ -14,10 +14,19 @@ permanent LAN.
 
 For ASHTON, the live deployment truth is still intentionally narrow:
 
-- `ATHENA` remains mock-backed in cluster
+- `ATHENA` now has a bounded live `v0.4.1` edge-projection deployment in cluster
 - the bounded `ATHENA -> NATS -> APOLLO` departure-close boundary is now proven
-- this repo still does not claim broad APOLLO product deployment or
-  source-backed ATHENA ingress deployment
+- this repo still does not claim broad APOLLO product deployment, durable ATHENA
+  history, or any HERMES / gateway deployment slice
+
+Recorded ASHTON proof references:
+
+- historical Milestone 1.6 deployable check:
+  `docs/runbooks/ashton-deployable-check-status.md`
+- historical Milestone 1.6 boundary proof:
+  `docs/runbooks/ashton-event-boundary.md`
+- bounded ATHENA edge deployment closeout:
+  `homelab-gitops/docs/runbooks/athena-edge-deployment.md`
 
 Authored and render-valid now:
 
@@ -268,7 +277,7 @@ That is documented as a deliberate restart-safety fix, not a shortcut.
 | `infrastructure/semantic-memory/` | `Qdrant + TEI` support services for the `v0.4.0` Mem0 layer. | Live now on the SSD-backed first-wave storage path. | It does not provide human-readable archive export by itself. |
 | `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Running, but router cutover is still intentionally deferred. | It does not update router-side DNS settings for you. |
 | `infrastructure/observability/` | Prometheus, Grafana, metrics-server, DCGM exporter, scrape targets, and provisioned dashboards. | Runs on the SSD-backed first-wave storage model and keeps Grafana LAN/Tailscale-only. | It does not expose Grafana publicly. |
-| `apps/athena/` | Narrow GitOps slice for the ASHTON ATHENA service. | Pinned to an immutable GHCR image and now keeps the mock-backed read path plus the identified publisher enabled through `ATHENA_NATS_URL`. | It is still not a broad adapter rollout or product surface. |
+| `apps/athena/` | Narrow GitOps slice for the ASHTON ATHENA service. | Pinned to an immutable GHCR image and now carries the bounded `v0.4.1` edge-projection slice, the edge proxy, and the identified publisher path through `ATHENA_NATS_URL`. | It is still not a broad adapter rollout or product surface. |
 | `apps/agents/apollo/` | Narrow GitOps slice for the APOLLO visit-ingest runtime. | Pinned to an immutable GHCR image, bootstraps migrations in an init container, and consumes only the identified ATHENA visit-lifecycle subjects. | It does not widen APOLLO into auth UI, workouts, recommendations, or matchmaking in-cluster. |
 | `apps/agents/nats/` | Bounded broker slice for the live ATHENA -> APOLLO event path. | Kept intentionally small with only client and monitor ports exposed inside the cluster. | It is not a general messaging platform rollout. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
@@ -281,13 +290,14 @@ That is documented as a deliberate restart-safety fix, not a shortcut.
 
 ## Live runtime note
 
-As of 2026-04-02:
+This section is repo-head runtime intent, not a substitute for rerunning the
+linked proving runbooks before claiming current live truth.
 
 - `Postgres` is running
 - `AdGuard Home` is running
-- `ATHENA` is running in the `athena` namespace on the immutable `0.2.1`
-  image and now keeps both the mock-backed read path and the identified publish
-  path live
+- `ATHENA` is authored in the `athena` namespace on immutable `v0.4.1`
+  edge-projection image, with the bounded external surface reduced to
+  `POST /api/v1/edge/tap` and `GET /api/v1/health` through the edge proxy
 - `NATS` is running internally in the `agents` namespace for the bounded
   `ATHENA -> APOLLO` event path
 - `APOLLO` is running internally in the `agents` namespace, applies its own
@@ -312,7 +322,7 @@ As of 2026-04-02:
 - Grafana is reachable at `192.168.2.202` and the dashboard set is provisioned from Git
 - Flux, Cilium, Postgres exporter, and `vLLM` scrape targets are live
 - the ATHENA ServiceMonitor exists and the live deployment still serves the
-  original health/count/metrics read path
+  internal health/count/metrics verification path behind the edge proxy
 - one live identified arrival has now been proven end to end in-cluster:
   ATHENA published `mock-in-001`, NATS carried it, and APOLLO persisted the
   visit in Postgres

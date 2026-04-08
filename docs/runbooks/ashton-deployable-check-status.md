@@ -1,9 +1,14 @@
-# ASHTON Deployable Check Status (Milestone 1.6)
+# ASHTON Deployable Check Status (Milestone 1.6 Historical Snapshot)
 
-This runbook is the pre-hardening deployment gate for the ASHTON Milestone 1.6
-boundary:
+This runbook records the pre-hardening deployable check that supported the
+ASHTON Milestone 1.6 boundary:
 
 - `ATHENA -> NATS -> APOLLO` live departure-close proof
+
+This file is historical validation for Milestone 1.6. It is not the current
+ATHENA edge-ingress deployment ledger. For the later bounded `athena v0.4.1`
+edge deployment truth, use
+`homelab-gitops/docs/runbooks/athena-edge-deployment.md`.
 
 Use this checklist before starting hardening execution. If any blocking gate is
 red, do not claim deployment truth.
@@ -15,11 +20,11 @@ block at the bottom before claiming current deployability.
 
 | Gate | What must be true | Status now | Blocking? | Evidence |
 | --- | --- | --- | --- | --- |
-| Prometheus GitOps repo state | repo on `main`, no local drift for release run | PASS | No | `HEAD=dd648fe55cc4f467f07c6394a8c09282913e7844`, clean |
+| Prometheus GitOps repo state | repo on `main`, no local drift for release run | PASS | No | clean on the recorded revision; see snapshot below |
 | Cluster reachability | kube context reachable and node ready | PASS | No | single control-plane node `Ready` |
-| Flux source | `flux-system` source reconciles to expected revision | PASS | No | `main@sha1:dd648fe5` |
+| Flux source | `flux-system` source reconciles to expected revision | PASS | No | reconciled to one known recorded revision; see snapshot below |
 | Flux infra chain | infra kustomizations healthy (`infra-cilium`, `infra-network`, `infra-storage`, `infra-postgres`, `infra-dns`, `infra-observability`, `infra-nvidia`) | PASS | No | all `READY=True` after reconcile |
-| Flux apps | `apps` kustomization healthy at same revision | PASS | No | `apps READY=True` at `main@sha1:dd648fe5` |
+| Flux apps | `apps` kustomization healthy at same revision | PASS | No | `apps READY=True` at the same recorded revision |
 | Core workloads | `athena`, `apollo`, `nats` deployments available | PASS | No | rollout status successful for all three |
 | Service wiring | ATHENA has `ATHENA_NATS_URL`; APOLLO has `APOLLO_NATS_URL`; APOLLO secret refs resolve | PASS | No | deploy envs + secret key refs verified |
 | Runtime health | ATHENA and APOLLO health endpoints return `200` | PASS | No | `/api/v1/health` checks succeeded |

@@ -19,6 +19,17 @@ This runbook does **not** claim:
 - named-tunnel production exposure
 - HERMES/admin/operator override workflows
 
+## Recorded Closeout Context
+
+This document records the bounded ATHENA edge closeout and should be used
+together with the current manifests before claiming fresh live truth.
+
+- release line closed here: `Prometheus v0.0.3`
+- recorded release revision: `9afd7cb720f134f9c671c8a74f32af4fd36c088c`
+- current repo head at audit time: `cdf4e004db20aa4166fd08087ce85845124da0f9`
+- current manifest still points `apps/athena/athena-deployment.yaml` at
+  `athena v0.4.1`
+
 ## Deployed Resources
 
 The ATHENA app slice currently includes:
@@ -107,3 +118,4 @@ Truth still deferred:
 - occupancy snapshot persistence
 - broader ingress rollout
 - named-tunnel or domain-managed exposure
+- any HERMES or gateway deployment slice

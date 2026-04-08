@@ -1,6 +1,6 @@
 # Tower Bootstrap Artifacts
 
-Last updated: 2026-03-24 (America/Toronto)
+Last updated: 2026-04-08 (America/Toronto)
 
 ## Scope
 
@@ -8,6 +8,10 @@ This directory contains the files used to install and bootstrap the Talos tower.
 It records what was actually applied, what was generated, and which artifacts are
 sensitive. This is not a generic template directory; some values are tightly bound
 to the current hardware.
+
+This directory is now historical bootstrap context, not the live day-to-day
+operator credential location. The current Talos admin artifacts used by the
+runbooks live under `/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/`.
 
 ## Current outcome
 
@@ -17,7 +21,7 @@ to the current hardware.
 - API VIP `192.168.2.46` is active.
 - The node currently holds DHCP address `192.168.2.49`.
 - Cilium, `LoadBalancer` IPAM, L2 announcements, and NVIDIA GPU scheduling are all live.
-- The next GitOps layer is authored under `../homelab-gitops`, but Flux is not managing it yet.
+- Flux now manages the live GitOps layer under `../homelab-gitops`; do not read this file as the current deployment-status ledger.
 - Disposable bootstrap test workloads were removed after validation.
 
 ## File inventory
@@ -60,12 +64,12 @@ credentials, but they should still be reviewed before reuse.
 - Network bootstrap: the node stayed `NotReady` until Cilium came up, which was expected.
 - GPU scheduling: the device plugin image pull took time, but completed and exposed `nvidia.com/gpu=1`.
 
-## Remaining bootstrap gaps
+## Historical bootstrap gaps at handoff
 
 - Convert the current DHCP state into the intended `.45` reservation.
 - Add Talos `UserVolumeConfig` resources for the non-system disks.
-- Bootstrap Flux against `homelab-gitops` only after storage and secrets are ready.
-- Deploy AdGuard Home and the rest of the staged infrastructure layer.
+- Flux bootstrapping against `homelab-gitops` was completed later and is now live.
+- AdGuard Home and the first staged infrastructure layer were deployed later and are now live.
 
 ## Validation notes
 

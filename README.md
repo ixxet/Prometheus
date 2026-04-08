@@ -123,6 +123,12 @@ automation path is live with a tested manual run and an enabled timer.
 stays scaled to zero because the single RTX 3090 cannot host it alongside the
 stable `vLLM` deployment.
 
+Current live proof references:
+
+- fast operator verification: [docs/runtime-checks.md](docs/runtime-checks.md)
+- bounded ASHTON departure-close proof: [docs/runbooks/ashton-deployable-check-status.md](docs/runbooks/ashton-deployable-check-status.md) and [docs/runbooks/ashton-event-boundary.md](docs/runbooks/ashton-event-boundary.md)
+- bounded ATHENA edge ingress proof: [homelab-gitops/docs/runbooks/athena-edge-deployment.md](homelab-gitops/docs/runbooks/athena-edge-deployment.md)
+
 ## Release Milestones
 
 - [x] ~~`v0.1.0`~~ Initial public/project baseline with bootstrap artifacts and

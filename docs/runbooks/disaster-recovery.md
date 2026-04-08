@@ -12,12 +12,13 @@ not complete yet, but it gives the operator a starting path under pressure.
 - single control-plane node
 - first-wave state still lives on the Talos system SSD
 - no dedicated backup pipeline yet for Postgres or app PVCs
-- recovery is currently centered on repo truth plus bootstrap artifacts
+- recovery is currently centered on repo truth plus bootstrap artifacts, with
+  the live Talos admin configs kept outside the repo
 
 ## Core artifacts to preserve
 
 - this repo
-- `tower-bootstrap/`
+- `tower-bootstrap/` in this repo as the historical bootstrap record
 - Talos config and kubeconfig under `/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/`
 - SOPS age private key outside the repo
 - router DNS settings when AdGuard cutover happens later

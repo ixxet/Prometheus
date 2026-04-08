@@ -6,6 +6,10 @@ This runbook covers the bounded live cluster proof for:
 
 It does not widen into a general APOLLO product rollout.
 
+This document is the historical Milestone 1.6 validation path. For the later
+bounded ATHENA edge-ingress deployment line, use
+`../../homelab-gitops/docs/runbooks/athena-edge-deployment.md`.
+
 Preflight deployable status checklist: [ASHTON Deployable Check Status (Milestone 1.6)](ashton-deployable-check-status.md)
 
 ## Operator defaults
@@ -32,7 +36,7 @@ The live cluster slice is intentionally narrow:
 - `nats` carries the live subject bytes
 - `apollo` consumes those bytes and closes the matching open visit in Postgres
 
-## Current live images
+## Historical validated images for Milestone 1.6
 
 - `ATHENA`: `ghcr.io/ixxet/athena:0.4.0@sha256:8fcf9b9cff28a3c417771d350cfb9d02ecb865507aa48f7c3ac9cc7d4b7cdc19`
 - `APOLLO`: `ghcr.io/ixxet/apollo:sha-bf3119b@sha256:ed3f3681b65a889ee563e8e0917fa3caba17cbceddb26a89393882ee287a3748`
@@ -121,6 +125,9 @@ The validated responses were:
 - `GET /api/v1/presence/count?facility=ashtonbee` on ATHENA returned `200`
 - `GET /api/v1/health` on APOLLO returned `200` with `consumer_enabled=true`
 - `NATS /varz` moved during the live departure publish and replay sequence
+
+For the current bounded ATHENA edge line, re-run the dedicated edge deployment
+runbook instead of reusing this historical mock-backed validation verbatim.
 
 ## Validation fixture
 
