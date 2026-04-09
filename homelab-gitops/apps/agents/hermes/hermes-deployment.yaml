@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hermes
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hermes
+        app.kubernetes.io/part-of: ashton
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      serviceAccountName: hermes
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: hermes
+          image: ghcr.io/ixxet/hermes:sha-b637575@sha256:3c1af71781e49836be2af8e9f9e95ead1ec6e7cc5547507af0d7442e1a1d0d21
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -lc
+            - |
+              trap 'exit 0' TERM INT
+              while true; do
+                sleep 3600
+              done
+          env:
+            - name: TZ
+              value: "America/Toronto"
+            - name: HERMES_ATHENA_BASE_URL
+              value: "http://athena.athena.svc.cluster.local"
+            - name: HERMES_HTTP_TIMEOUT
+              value: "5s"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
