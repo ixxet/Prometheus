@@ -19,6 +19,7 @@ secrets.*.yaml
 *.sqlite
 *.tar.gz
 *.snap
+ops/state-snapshots/
 
 # macOS
 **/.DS_Store
