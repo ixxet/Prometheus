@@ -9,6 +9,8 @@ This file is historical validation for Milestone 1.6. It is not the current
 ATHENA edge-ingress deployment ledger. For the later bounded `athena v0.4.1`
 edge deployment truth, use
 `homelab-gitops/docs/runbooks/athena-edge-deployment.md`.
+For the later bounded HERMES occupancy deployment truth, use
+`docs/runbooks/hermes-occupancy-deployment.md`.
 
 Use this checklist before starting hardening execution. If any blocking gate is
 red, do not claim deployment truth.

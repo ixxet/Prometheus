@@ -17,7 +17,8 @@ This runbook does **not** claim:
 - append-only ATHENA persistence
 - broad multi-facility rollout
 - named-tunnel production exposure
-- HERMES/admin/operator override workflows
+- HERMES/admin/operator override workflows beyond the separate bounded internal
+  occupancy runner
 
 ## Recorded Closeout Context
 
@@ -118,4 +119,4 @@ Truth still deferred:
 - occupancy snapshot persistence
 - broader ingress rollout
 - named-tunnel or domain-managed exposure
-- any HERMES or gateway deployment slice
+- any public HERMES or gateway deployment slice

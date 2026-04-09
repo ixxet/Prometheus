@@ -9,6 +9,8 @@ It does not widen into a general APOLLO product rollout.
 This document is the historical Milestone 1.6 validation path. For the later
 bounded ATHENA edge-ingress deployment line, use
 `../../homelab-gitops/docs/runbooks/athena-edge-deployment.md`.
+For the later bounded HERMES occupancy deployment line, use
+`hermes-occupancy-deployment.md`.
 
 Preflight deployable status checklist: [ASHTON Deployable Check Status (Milestone 1.6)](ashton-deployable-check-status.md)
 

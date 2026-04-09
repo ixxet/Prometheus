@@ -16,8 +16,10 @@ For ASHTON, the live deployment truth is still intentionally narrow:
 
 - `ATHENA` now has a bounded live `v0.4.1` edge-projection deployment in cluster
 - the bounded `ATHENA -> NATS -> APOLLO` departure-close boundary is now proven
+- `HERMES` now has a bounded internal-only occupancy runner deployment in `agents`
 - this repo still does not claim broad APOLLO product deployment, durable ATHENA
-  history, or any HERMES / gateway deployment slice
+  history, any public HERMES / gateway deployment slice, or write-capable
+  operator authority
 
 Recorded ASHTON proof references:
 
@@ -27,6 +29,8 @@ Recorded ASHTON proof references:
   `docs/runbooks/ashton-event-boundary.md`
 - bounded ATHENA edge deployment closeout:
   `homelab-gitops/docs/runbooks/athena-edge-deployment.md`
+- bounded HERMES occupancy deployment closeout:
+  `docs/runbooks/hermes-occupancy-deployment.md`
 
 Authored and render-valid now:
 
@@ -42,6 +46,7 @@ Authored and render-valid now:
 - `infrastructure/observability/` for Prometheus, Grafana, metrics-server, DCGM, scrape targets, and dashboards
 - `apps/athena/` for the narrow ASHTON physical-truth slice
 - `apps/agents/apollo/` for the narrow APOLLO visit-ingest deployment slice
+- `apps/agents/hermes/` for the bounded internal HERMES occupancy runner
 - `apps/agents/nats/` for the bounded ASHTON event broker slice
 - `apps/ai/vllm/`
 - `apps/ai/llama-gemma4/` as a switchable Gemma 4 GGUF test backend for one-GPU experiments
