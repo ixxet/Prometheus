@@ -13,6 +13,11 @@ UI tweaks.
 
 ## Gemma 4 staging notes
 
+For the full Gemma 4 migration story, including the failed `vLLM` GGUF attempt,
+current blockers, preserved staging work, and next viable paths, see:
+
+- [gemma4-handoff.md](/Users/zizo/Personal-Projects/Computers/Prometheus/docs/runbooks/gemma4-handoff.md)
+
 - The current upstream Gemma 4 recipe expects the dedicated
   `vllm/vllm-openai:gemma4` runtime image and `transformers==5.5.0`.
 - The repo now includes a custom `services/vllm-gemma4/` image path so that
