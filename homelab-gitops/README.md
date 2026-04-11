@@ -1,6 +1,6 @@
 # Homelab GitOps
 
-Last updated: 2026-04-08 (America/Toronto)
+Last updated: 2026-04-11 (America/Toronto)
 
 ## Status
 
@@ -14,11 +14,15 @@ permanent LAN.
 
 For ASHTON, the live deployment truth is still intentionally narrow:
 
-- `ATHENA` now has a bounded live `v0.4.1` edge-projection deployment in cluster
-- the bounded `ATHENA -> NATS -> APOLLO` departure-close boundary is now proven
+- `ATHENA` now has a bounded live `v0.7.0` edge deployment in cluster
+- Postgres-backed ATHENA append-only observations and derived session facts are
+  now live against the shared `agents` Postgres service
+- bounded internal ATHENA history and analytics reads are now live in cluster
+- the bounded `ATHENA -> NATS -> APOLLO` departure-close boundary is still proven
 - `HERMES` now has a bounded internal-only occupancy runner deployment in `agents`
-- this repo still does not claim broad APOLLO product deployment, durable ATHENA
-  history, any public HERMES / gateway deployment slice, or write-capable
+- this repo still does not claim broad APOLLO product deployment, public
+  dashboards, prediction, booking/scheduling, any public HERMES / gateway
+  deployment slice, or write-capable
   operator authority
 
 Recorded ASHTON proof references:
