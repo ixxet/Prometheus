@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: athena-migrate-v0-7-0
+  name: athena-migrate-v0-7-0-r1
   namespace: athena
 spec:
   backoffLimit: 1
@@ -40,4 +40,4 @@ spec:
       volumes:
         - name: migrations
           configMap:
-            name: athena-migrate-v0-7-0
+            name: athena-migrate-v0-7-0-r1

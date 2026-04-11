@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: athena-migrate-v0-7-0
+  name: athena-migrate-v0-7-0-r1
   namespace: athena
 data:
   migrate.sh: |
@@ -18,7 +18,12 @@ data:
     );
     SQL
 
-    for file in $(find /migrations -maxdepth 1 -type f -name '*.up.sql' | sort); do
+    found=0
+    for file in /migrations/*.up.sql; do
+      if [ ! -e "$file" ]; then
+        continue
+      fi
+      found=1
       version="$(basename "$file")"
       applied="$(psql "$ATHENA_EDGE_POSTGRES_DSN" -Atqc "SELECT 1 FROM athena.schema_migrations WHERE version = '$version'")"
       if [ "$applied" = "1" ]; then
@@ -33,6 +38,11 @@ data:
         -c "INSERT INTO athena.schema_migrations (version) VALUES ('$version')" \
         -c "COMMIT"
     done
+
+    if [ "$found" -ne 1 ]; then
+      echo "No migration files found under /migrations" >&2
+      exit 1
+    fi
   001_initial.up.sql: |
     CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
