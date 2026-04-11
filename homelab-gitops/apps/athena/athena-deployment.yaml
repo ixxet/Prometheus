@@ -18,7 +18,7 @@ spec:
       serviceAccountName: athena
       containers:
         - name: athena
-          image: ghcr.io/ixxet/athena:v0.4.1@sha256:87685d3ad4e86bd9593ad39326c7ecb1210b631e6056f3c54f618322b5fddb6f
+          image: ghcr.io/ixxet/athena:v0.7.0@sha256:a0cd23779a5dd83bc2261cb33738adc8b25eed8031463c1e01528cc8426cada3
           imagePullPolicy: IfNotPresent
           args:
             - serve
@@ -36,6 +36,11 @@ spec:
               value: "24h"
             - name: ATHENA_EDGE_OCCUPANCY_PROJECTION
               value: "true"
+            - name: ATHENA_EDGE_POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: athena-edge-runtime
+                  key: ATHENA_EDGE_POSTGRES_DSN
             - name: ATHENA_EDGE_HASH_SALT
               valueFrom:
                 secretKeyRef:
