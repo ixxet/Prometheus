@@ -9,7 +9,9 @@ TALOSCTL_BIN="${TALOSCTL_BIN:-talosctl}"
 KUBECTL_BIN="${KUBECTL_BIN:-kubectl}"
 TALOSCONFIG_PATH="${TALOSCONFIG_PATH:-/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig}"
 KUBECONFIG_PATH="${KUBECONFIG_PATH:-/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig}"
-NODE_IP="${NODE_IP:-192.168.2.49}"
+NODE_IP="${NODE_IP:-192.168.50.197}"
+TALOS_ENDPOINT="${TALOS_ENDPOINT:-${NODE_IP}}"
+K8S_ENDPOINT="${K8S_ENDPOINT:-https://${NODE_IP}:6443}"
 OUTPUT_BASE="${OUTPUT_BASE:-${REPO_ROOT}/ops/state-snapshots}"
 SNAPSHOT_ID="${SNAPSHOT_ID:-$(date +%Y%m%dT%H%M%S%z)}"
 OUTDIR="${OUTDIR:-${OUTPUT_BASE}/${SNAPSHOT_ID}}"
@@ -64,7 +66,7 @@ This snapshot captures the pre-move runtime state before the tower leaves its
 current network. It is a local operator record, not a GitOps source of truth.
 
 Important:
-- the old 192.168.2.x service IPs may not work after relocation
+- captured service IPs may no longer work after relocation or a future LAN rebase
 - current Cloudflare quick tunnel URLs may change after a restart
 - MIMIR subnet-route based management only applies while Prometheus is on the
   original LAN
@@ -72,9 +74,9 @@ EOF
 
 capture_cmd "talos-version.txt" "${TALOSCTL_BIN}" version --client
 capture_cmd "kubectl-version.txt" "${KUBECTL_BIN}" version --client
-capture_cmd "talos-health.txt" "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -n "${NODE_IP}" health
-capture_cmd "talos-image-ls.txt" "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -n "${NODE_IP}" image ls
-capture_cmd "talos-service-state.txt" "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -n "${NODE_IP}" service
+capture_cmd "talos-health.txt" "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -e "${TALOS_ENDPOINT}" -n "${NODE_IP}" --k8s-endpoint "${K8S_ENDPOINT}" health
+capture_cmd "talos-image-ls.txt" "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -e "${TALOS_ENDPOINT}" -n "${NODE_IP}" image ls
+capture_cmd "talos-service-state.txt" "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -e "${TALOS_ENDPOINT}" -n "${NODE_IP}" service
 capture_cmd "kubectl-nodes.txt" "${KUBECTL_BIN}" get nodes -o wide
 capture_cmd "kubectl-kustomizations.txt" "${KUBECTL_BIN}" get kustomizations -A
 capture_cmd "kubectl-pods.txt" "${KUBECTL_BIN}" get pods -A -o wide

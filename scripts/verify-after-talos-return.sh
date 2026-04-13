@@ -6,14 +6,16 @@ TALOSCTL_BIN="${TALOSCTL_BIN:-talosctl}"
 KUBECTL_BIN="${KUBECTL_BIN:-kubectl}"
 TALOSCONFIG_PATH="${TALOSCONFIG_PATH:-/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig}"
 KUBECONFIG_PATH="${KUBECONFIG_PATH:-/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig}"
-NODE_IP="${NODE_IP:-192.168.2.49}"
+NODE_IP="${NODE_IP:-192.168.50.197}"
+TALOS_ENDPOINT="${TALOS_ENDPOINT:-${NODE_IP}}"
+K8S_ENDPOINT="${K8S_ENDPOINT:-https://${NODE_IP}:6443}"
 TALOS_API_PORT="${TALOS_API_PORT:-50000}"
 TALOS_HEALTH_MODE="${TALOS_HEALTH_MODE:-auto}"
-OPEN_WEBUI_URL="${OPEN_WEBUI_URL:-http://192.168.2.201/}"
-VLLM_MODELS_URL="${VLLM_MODELS_URL:-http://192.168.2.205:8000/v1/models}"
-ADGUARD_URL="${ADGUARD_URL:-http://192.168.2.200/}"
-GRAFANA_URL="${GRAFANA_URL:-http://192.168.2.202/login}"
-SUMMARIZER_URL="${SUMMARIZER_URL:-http://192.168.2.203/api/health}"
+OPEN_WEBUI_URL="${OPEN_WEBUI_URL:-http://192.168.50.201/}"
+VLLM_MODELS_URL="${VLLM_MODELS_URL:-http://192.168.50.205:8000/v1/models}"
+ADGUARD_URL="${ADGUARD_URL:-http://192.168.50.200/}"
+GRAFANA_URL="${GRAFANA_URL:-http://192.168.50.202/login}"
+SUMMARIZER_URL="${SUMMARIZER_URL:-http://192.168.50.203/api/health}"
 LANGGRAPH_NAMESPACE="${LANGGRAPH_NAMESPACE:-agents}"
 LANGGRAPH_SERVICE="${LANGGRAPH_SERVICE:-langgraph}"
 LANGGRAPH_LOCAL_PORT="${LANGGRAPH_LOCAL_PORT:-18081}"
@@ -98,8 +100,8 @@ export KUBECONFIG="${KUBECONFIG_PATH}"
 if talosctl_usable; then
   echo "== Talos node health =="
   wait_for "talos health" \
-    "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -n "${NODE_IP}" health
-  "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -n "${NODE_IP}" health
+    "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -e "${TALOS_ENDPOINT}" -n "${NODE_IP}" --k8s-endpoint "${K8S_ENDPOINT}" health
+  "${TALOSCTL_BIN}" --talosconfig "${TALOSCONFIG_PATH}" -e "${TALOS_ENDPOINT}" -n "${NODE_IP}" --k8s-endpoint "${K8S_ENDPOINT}" health
 else
   require_cmd python3
   echo "== Talos API reachability =="
