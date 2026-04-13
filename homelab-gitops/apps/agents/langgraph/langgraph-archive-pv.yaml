@@ -11,5 +11,5 @@ spec:
   mountOptions:
     - nfsvers=4.1
   nfs:
-    server: 192.168.2.40
+    server: 192.168.50.171
     path: /prometheus-vault

@@ -124,8 +124,9 @@ stays scaled to zero because the single RTX 3090 cannot host it alongside the
 stable `vLLM` deployment. The current home-base LAN is now `192.168.50.0/24`
 with MIMIR at `192.168.50.171` and Prometheus at `192.168.50.197`. MIMIR is
 now advertising `192.168.50.0/24` into Tailscale. One relocation issue remains:
-`LangGraph` is currently blocked by an archive NFS mount that still points at
-the old site (`192.168.2.40:/prometheus-vault`).
+Git now points the LangGraph archive PV at the new MIMIR address, but the live
+NFS export on MIMIR is still off and the existing PV has to be recreated
+because Kubernetes does not allow patching an NFS PV source in place.
 
 Current live proof references:
 
@@ -165,19 +166,19 @@ Current live proof references:
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | Llama-server Gemma 4 | Staged | Internal-only Gemma 4 GGUF test backend is authored at `replicas: 0` so the one-GPU node stays honest |
-| LangGraph | Degraded | Runtime image and GHCR auth are healthy, but the archive PV still points at the old NFS host `192.168.2.40`, so the relocated pod cannot mount its archive volume |
+| LangGraph | Degraded | Runtime image and GHCR auth are healthy, and Git now points the archive PV at `192.168.50.171`, but the live NFS export is still off on MIMIR and the immutable PV has to be recreated before the pod can mount `/exports/obsidian` again |
 | Mem0 / Obsidian | Stable | Mem0 is live with Qdrant + TEI backing; LangGraph now exports Markdown run artifacts to the off-tower MIMIR vault path |
 | Observability | Stable | Prometheus, Grafana, metrics-server, DCGM exporter, Flux scrape-targets, Postgres exporter, and `vLLM` metrics are live |
 | Summarizer proof of concept | Stable | Deployed at `http://192.168.2.203`, scraping `/metrics`, and externally reachable through an auth-gated quick tunnel |
 | MIMIR return automation | Stable | Host-neutral script is installed on MIMIR, the manual service run passed, and the systemd timer is enabled |
-| Tailscale remote ops | Stable | MIMIR remains the subnet router and now advertises `192.168.50.0/24`; verify client-side route acceptance after subnet changes |
+| Tailscale remote ops | Degraded | MIMIR remains the subnet router and advertises `192.168.50.0/24`, but this Mac still has no installed route for that subnet yet, so direct API access is still falling back to the wrong local gateway |
 
 ### Already real in the live cluster
 
 - [x] Talos OS installed on the dedicated `LITEONIT LCS-256L9S-11` SSD only
 - [x] Single-node Kubernetes control plane is healthy
-- [x] Tower is currently booted on DHCP `192.168.2.49`
-- [x] Kubernetes API is reachable via VIP `192.168.2.46:6443`
+- [x] Tower is currently booted on DHCP `192.168.50.197`
+- [x] The current direct control-plane endpoint is `192.168.50.197:6443`
 - [x] Cilium is live with kube-proxy replacement, L2 announcements, and `LoadBalancer` IPAM
 - [x] NVIDIA kernel modules are loaded on Talos
 - [x] `RuntimeClass` `nvidia` and the pinned device plugin are running
@@ -195,7 +196,7 @@ Current live proof references:
 - [x] LangGraph is running internally in the `agents` namespace
 - [x] LangGraph thread, run, approval, and restart persistence checks have passed
 - [x] LangGraph health now reports `semantic_memory_provider: mem0` and `archive_sink: filesystem_markdown`
-- [x] Tailscale remote access works through MIMIR advertising `192.168.2.0/24`
+- [x] Tailscale remote access works through MIMIR advertising `192.168.50.0/24`
 - [x] A real Mem0-backed semantic-memory path now exists in the LangGraph source
 - [x] The live LangGraph deployment is pinned to the Mem0-capable immutable image tag
 - [x] Qdrant plus TEI support services are live under `infra-semantic-memory`

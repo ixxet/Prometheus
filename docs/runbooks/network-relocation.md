@@ -68,10 +68,11 @@ Current home-base facts as of 2026-04-13:
 
 Current example:
 
-- `LangGraph` is currently blocked on the relocated LAN because its archive PV still
-  mounts `192.168.2.40:/prometheus-vault`
-- on `192.168.50.0/24`, that old NFS path has no route and the pod stays in
-  `ContainerCreating`
+- Git now points the LangGraph archive PV at `192.168.50.171:/prometheus-vault`
+- the live pod is still blocked until MIMIR re-exports `/srv/obsidian` on the
+  new LAN and the immutable `langgraph-archive-pv` object is recreated
+- until that happens, kubelet keeps retrying the old live PV target and the pod
+  stays in `ContainerCreating`
 
 ## What MIMIR and Tailscale still can and cannot do
 
@@ -95,6 +96,14 @@ Reason:
 If MIMIR moves with Prometheus and remains on the same LAN, that subnet-router
 model still works. What breaks is the "MIMIR can route to Prometheus from
 somewhere else forever" assumption.
+
+Current client-side hangup:
+
+- from this Mac, `route -n get 192.168.50.197` still resolves through
+  `192.168.2.1` on `en0`
+- there is no installed Tailscale subnet route for `192.168.50.0/24` yet
+- the advertised route exists on MIMIR, but client-side approval/acceptance
+  still has to happen before direct API access from this Mac works again
 
 ## Before unplugging the tower
 

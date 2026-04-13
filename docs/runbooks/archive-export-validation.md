@@ -14,9 +14,12 @@ This runbook proves the `v0.4.0` archive claim end to end:
 ## External sink shape
 
 - Host: MIMIR
-- LAN IP: `192.168.2.40`
+- LAN IP: `192.168.50.171`
 - Export root: `/srv/obsidian/prometheus-vault`
 - LangGraph export directory inside that root: `Agents/`
+- Required live NFS export shape on MIMIR:
+  - `/srv/obsidian 192.168.50.0/24(rw,sync,fsid=0,crossmnt,no_subtree_check)`
+  - `/srv/obsidian/prometheus-vault 192.168.50.0/24(rw,sync,no_subtree_check)`
 - Repo responsibility:
   - the NFS-backed PV/PVC
   - LangGraph archive-sink config
@@ -129,3 +132,26 @@ ssh -i /Users/zizo/.ssh/mimir_ed25519 boi@100.109.171.72 \
   - PV path should be `/prometheus-vault`
   - MIMIR pseudo-root export should be `/srv/obsidian`
   - MIMIR sub-export should be `/srv/obsidian/prometheus-vault`
+
+6. if the LAN changed and LangGraph is still trying to mount the old host,
+   repair the export and recreate the immutable PV:
+
+On MIMIR:
+
+```bash
+sudo tee /etc/exports >/dev/null <<'EOF'
+/srv/obsidian 192.168.50.0/24(rw,sync,fsid=0,crossmnt,no_subtree_check)
+/srv/obsidian/prometheus-vault 192.168.50.0/24(rw,sync,no_subtree_check)
+EOF
+sudo exportfs -ra
+sudo systemctl enable --now nfs-server
+exportfs -v
+```
+
+On the operator Mac:
+
+```bash
+kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig delete pv langgraph-archive-pv
+kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig apply -f /Users/zizo/Personal-Projects/Computers/Prometheus/homelab-gitops/apps/agents/langgraph/langgraph-archive-pv.yaml
+kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n agents delete pod -l app.kubernetes.io/name=langgraph
+```
