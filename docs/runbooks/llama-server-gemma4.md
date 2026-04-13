@@ -1,6 +1,6 @@
 # Llama-Server Gemma 4 Test Backend
 
-Last updated: 2026-04-06 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Purpose
 
@@ -220,6 +220,6 @@ flux --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/
 Re-verify the stable path:
 
 ```bash
-curl http://192.168.2.205:8000/v1/models
-curl http://192.168.2.203/api/health
+curl http://192.168.50.205:8000/v1/models
+curl http://192.168.50.203/api/health
 ```

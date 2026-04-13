@@ -312,8 +312,8 @@ linked proving runbooks before claiming current live truth.
 - `APOLLO` is running internally in the `agents` namespace, applies its own
   schema migrations on startup, and consumes identified visit-lifecycle events
   from NATS
-- `Open WebUI` is serving successfully on `192.168.2.201`
-- `vLLM` is serving successfully on `192.168.2.205:8000`
+- `Open WebUI` is serving successfully on `192.168.50.201`
+- `vLLM` is serving successfully on `192.168.50.205:8000`
 - the `vLLM` cache PVC is populated on the system SSD
 - `LangGraph` is running internally in the `agents` namespace
 - LangGraph thread, approval/resume, and restart persistence checks have passed
@@ -325,10 +325,10 @@ linked proving runbooks before claiming current live truth.
 - the first real agent workflow has now been rehearsed live end to end through
   LangGraph, Mem0, and the off-tower MIMIR archive sink
 - the `apps` `Kustomization` is healthy again
-- AdGuard completed first-run setup and now serves the admin UI on `192.168.2.200`
-- AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.2.200`
+- AdGuard completed first-run setup and now serves the admin UI on `192.168.50.200`
+- AdGuard answers the first-wave `home.arpa` rewrites directly on `192.168.50.200`
 - Prometheus, Grafana, metrics-server, and DCGM exporter are live in `observability`
-- Grafana is reachable at `192.168.2.202` and the dashboard set is provisioned from Git
+- Grafana is reachable at `192.168.50.202` and the dashboard set is provisioned from Git
 - Flux, Cilium, Postgres exporter, and `vLLM` scrape targets are live
 - the ATHENA ServiceMonitor exists and the live deployment still serves the
   internal health/count/metrics verification path behind the edge proxy
@@ -380,7 +380,7 @@ Future direction remains unchanged:
 | `clusters/talos-tower/infrastructure.yaml` | Reconcile Cilium, network, NVIDIA, storage, Postgres, and DNS in the right order. | Must remain aligned with the live dependency graph. | It must not imply that later app layers are already healthy. |
 | `clusters/talos-tower/apps.yaml` | Reconcile application workloads after infrastructure is ready. | The next runtime jump is LangGraph, not another model server. | It must not bypass future SOPS secret handling. |
 | `.sops.yaml` | Define how YAML secrets are encrypted for the repo. | Needs the real `age` public key first. | It does not store the private key. |
-| `infrastructure/network/ip-pool.yaml` | Declare the `192.168.2.200-220` service pool. | LAN range must remain conflict-free. | It does not expose services by itself. |
+| `infrastructure/network/ip-pool.yaml` | Declare the `192.168.50.200-220` service pool. | LAN range must remain conflict-free. | It does not expose services by itself. |
 | `infrastructure/network/l2-policy.yaml` | Announce service IPs on the real LAN NIC. | Interface name must match the live node. | It does not allocate IPs by itself. |
 | `infrastructure/postgres/postgres-statefulset.yaml` | Preserve the first-wave execution store in Git. | Needs a small but real PVC before activation. | It does not replace semantic memory or human-readable archives. |
 | `apps/ai/vllm/*` | Deploy the first GPU serving backend and small on-node cache. | Keep model size conservative while storage stays on the system SSD. | Must not pretend larger storage tiers already exist. |

@@ -1,6 +1,6 @@
 # Summarizer Validation Runbook
 
-Last updated: 2026-03-31 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Purpose
 
@@ -14,7 +14,7 @@ Interaction structure:
 flowchart LR
   users["Reviewers / classmates"] --> tunnel["Cloudflare quick tunnel\nHTTPS public URL"]
   tunnel --> proxy["summarizer-proxy\nNGINX basic auth"]
-  proxy --> app["summarizer app\nLoadBalancer 192.168.2.203"]
+  proxy --> app["summarizer app\nLoadBalancer 192.168.50.203"]
   app --> vllm["vLLM\ninternal OpenAI-compatible API"]
   app --> metrics["/metrics"]
   metrics --> prom["Prometheus"]
@@ -32,8 +32,8 @@ Standalone Mermaid source:
 
 ```bash
 kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n summarizer get deploy,svc,pods -o wide
-curl http://192.168.2.203/api/health
-curl http://192.168.2.203/metrics | sed -n '1,20p'
+curl http://192.168.50.203/api/health
+curl http://192.168.50.203/metrics | sed -n '1,20p'
 ```
 
 Expected:

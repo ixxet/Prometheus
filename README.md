@@ -44,7 +44,7 @@ flowchart LR
   user["LAN Clients\nMacBook, phone, TV, browsers"]
   repo["Prometheus GitOps Repo\nprivate GitHub source of truth"]
   subgraph tower["5950X Tower\nTalos control plane + GPU worker"]
-    k8s["Kubernetes + Talos API\nVIP 192.168.2.46"]
+    k8s["Kubernetes + Talos API\nAPI 192.168.50.197"]
     cilium["Cilium\nL2 announcements + LB IPAM"]
     gpu["RTX 3090\nvLLM first-wave backend"]
     flux["Flux\nlive in cluster"]
@@ -79,7 +79,7 @@ flowchart LR
 | **GPU Runtime** | NVIDIA Device Plugin | v0.17.0 -- RTX 3090, 24 GB VRAM | Live |
 | **GitOps** | Flux | Bootstrapped and reconciling this repo | Live |
 | **Secrets** | SOPS + age | Encrypted secrets in git, cluster decryption wired | Live |
-| **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live on `192.168.2.200`, separate from the router, and still not the default DHCP resolver |
+| **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live on `192.168.50.200`, separate from the router, and still not the default DHCP resolver |
 | **Remote Access** | Tailscale via MIMIR | Subnet router for the current home-base LAN; currently `192.168.50.0/24` | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
 | **AI -- GGUF Test Backend** | llama.cpp / llama-server | Switchable Gemma 4 GGUF test backend staged for one-GPU experiments without replacing `vLLM` | Staged at `replicas: 0` |
@@ -94,7 +94,7 @@ flowchart LR
 | **AI -- Deferred Memory** | Graphiti / Zep | Temporal graph memory for point-in-time queries | Deferred |
 | **AI -- Deferred Agent Platform** | Letta | Alternative agent platform, not chosen here | Deferred |
 | **Observability** | Prometheus + Grafana + metrics-server + DCGM exporter | In-cluster metrics, dashboards, alerting, and `kubectl top`; dashboards provisioned from Git | Live |
-| **Proof of Concept App** | User-Adaptive Summarization | Summarizer app deployed from its own repo, pinned to GHCR by commit-derived image tag, and backed by private `vLLM` | Live on `192.168.2.203` with temporary Cloudflare tunnel access |
+| **Proof of Concept App** | User-Adaptive Summarization | Summarizer app deployed from its own repo, pinned to GHCR by commit-derived image tag, and backed by private `vLLM` | Live on `192.168.50.203` with temporary Cloudflare tunnel access |
 | **Media** | Arr Stack + Jellyfin | Sonarr, Radarr, Prowlarr, qBittorrent | Migration later |
 | **Photos** | Immich | Existing MIMIR-side service; no Talos migration planned until a real GPU/storage reason exists | Staying on MIMIR for now |
 
@@ -163,14 +163,14 @@ Current live proof references:
 | Flux + SOPS | Stable | Repo is bootstrapped and decrypting secrets in-cluster |
 | Storage | Stable | `local-path-provisioner` uses `/var/mnt/local-path-provisioner` on the OS SSD |
 | Postgres | Stable | Running in-cluster on SSD-backed PVC storage |
-| AdGuard Home | Stable | Serving on `http://192.168.2.200`; rewrites are configured, a real MIMIR client resolves `home.arpa` correctly when pointed at AdGuard, and any future router-side handoff only means DHCP advertises `192.168.2.200` as DNS |
-| Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
-| vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
+| AdGuard Home | Stable | Serving on `http://192.168.50.200`; rewrites are configured, a real MIMIR client resolves `home.arpa` correctly when pointed at AdGuard, and any future router-side handoff only means DHCP advertises `192.168.50.200` as DNS |
+| Open WebUI | Stable | Serving successfully on `http://192.168.50.201`; backend path to vLLM resolves in-cluster |
+| vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.50.205:8000/v1` |
 | Llama-server Gemma 4 | Staged | Internal-only Gemma 4 GGUF test backend is authored at `replicas: 0` so the one-GPU node stays honest |
 | LangGraph | Stable | Runtime image, GHCR auth, Postgres, Mem0, and the MIMIR archive mount are all healthy again on the current LAN |
 | Mem0 / Obsidian | Stable | Mem0 is live with Qdrant + TEI backing; LangGraph now exports Markdown run artifacts to the off-tower MIMIR vault path |
 | Observability | Stable | Prometheus, Grafana, metrics-server, DCGM exporter, Flux scrape-targets, Postgres exporter, and `vLLM` metrics are live |
-| Summarizer proof of concept | Stable | Deployed at `http://192.168.2.203`, scraping `/metrics`, and externally reachable through an auth-gated quick tunnel |
+| Summarizer proof of concept | Stable | Deployed at `http://192.168.50.203`, scraping `/metrics`, and externally reachable through an auth-gated quick tunnel |
 | MIMIR return automation | Stable | Host-neutral script is installed on MIMIR, the manual service run passed, and the systemd timer is enabled |
 | Tailscale remote ops | Stable | MIMIR remains the subnet router, advertises `192.168.50.0/24`, and this Mac now installs that subnet route on `utun` correctly |
 
@@ -190,8 +190,8 @@ Current live proof references:
 - [x] AdGuard Home is running in-cluster
 - [x] AdGuard rewrites exist for `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa`
 - [x] A real client on MIMIR resolves `k8s.home.arpa`, `adguard.home.arpa`, `openwebui.home.arpa`, and `vllm.home.arpa` correctly when pointed directly at AdGuard
-- [x] Open WebUI is running and reachable on `192.168.2.201`
-- [x] `vLLM` is serving on `192.168.2.205:8000`
+- [x] Open WebUI is running and reachable on `192.168.50.201`
+- [x] `vLLM` is serving on `192.168.50.205:8000`
 - [x] `vLLM` model cache on the PVC is populated
 - [x] A switchable `llama-server` Gemma 4 test backend is staged in GitOps without displacing the stable `vLLM` path
 - [x] LangGraph is running internally in the `agents` namespace
@@ -205,7 +205,7 @@ Current live proof references:
 - [x] Cross-thread semantic-memory write and recall have been validated against the live cluster
 - [x] LangGraph exports Markdown run artifacts to `/srv/obsidian/prometheus-vault/Agents` on MIMIR
 - [x] Prometheus, Grafana, metrics-server, and DCGM exporter are running in the `observability` namespace
-- [x] Grafana is reachable on `http://192.168.2.202`
+- [x] Grafana is reachable on `http://192.168.50.202`
 - [x] Grafana dashboards are provisioned from Git rather than created manually in the UI
 - [x] `kubectl top nodes` and `kubectl top pods -A` now work
 - [x] Flux, Cilium, Postgres exporter, and `vLLM` scrape surfaces are authored and live
@@ -218,7 +218,7 @@ Current live proof references:
 - [ ] Router DNS is not yet cut over to AdGuard Home
 - [ ] Clients are not yet pointed at AdGuard by default, so `home.arpa` naming is still in test-only mode
 - [ ] The quick tunnel is intentionally temporary; a more durable external access path belongs in a later phase
-- [ ] The node is still on DHCP `.49`; router reservation back to `.45` is still pending
+- [ ] The node is still on a DHCP address; a durable reservation or static endpoint plan is still pending
 - [x] The MIMIR systemd timer for the return-check path is installed, enabled, and tested once on the NUC
 
 ### Real in the repo and aligned with the cluster

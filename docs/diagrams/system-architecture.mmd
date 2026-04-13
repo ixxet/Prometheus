@@ -2,7 +2,7 @@ flowchart LR
   user["LAN Clients\nMacBook, phone, TV, browsers"]
   repo["Prometheus GitOps Repo\nprivate GitHub source of truth"]
   subgraph tower["5950X Tower\nTalos control plane + GPU worker"]
-    k8s["Kubernetes + Talos API\nVIP 192.168.2.46"]
+    k8s["Kubernetes + Talos API\nAPI 192.168.50.197"]
     cilium["Cilium\nL2 announcements + LB IPAM"]
     gpu["RTX 3090\nvLLM first-wave backend"]
     flux["Flux\nlive in cluster"]

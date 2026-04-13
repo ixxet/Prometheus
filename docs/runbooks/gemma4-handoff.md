@@ -1,6 +1,6 @@
 # Gemma 4 Migration Handoff
 
-Last updated: 2026-04-10 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Purpose
 
@@ -132,7 +132,7 @@ Live service references:
 
 | Service | Value |
 |---|---|
-| stable `vLLM` endpoint | `http://192.168.2.205:8000/v1/models` |
+| stable `vLLM` endpoint | `http://192.168.50.205:8000/v1/models` |
 | staged Gemma service | `http://llama-gemma4.ai.svc.cluster.local:8000` |
 
 ## Current Blockers

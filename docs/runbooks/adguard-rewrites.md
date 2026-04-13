@@ -1,6 +1,6 @@
 # AdGuard Rewrites Runbook
 
-Last updated: 2026-03-26 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Purpose
 
@@ -11,14 +11,14 @@ AdGuard Home before router DNS cutover.
 
 - AdGuard is not the sole DNS authority for the network
 - router cutover is intentionally deferred
-- the current goal is direct-query validation against `192.168.2.200`
+- the current goal is direct-query validation against `192.168.50.200`
 
 ## Configured rewrites
 
-- `k8s.home.arpa -> 192.168.2.46`
-- `adguard.home.arpa -> 192.168.2.200`
-- `openwebui.home.arpa -> 192.168.2.201`
-- `vllm.home.arpa -> 192.168.2.205`
+- `k8s.home.arpa -> 192.168.50.197`
+- `adguard.home.arpa -> 192.168.50.200`
+- `openwebui.home.arpa -> 192.168.50.201`
+- `vllm.home.arpa -> 192.168.50.205`
 
 ## Upstream resolver choice
 
@@ -35,22 +35,22 @@ network. The current test configuration uses plain upstream resolvers:
 ```bash
 for name in k8s.home.arpa adguard.home.arpa openwebui.home.arpa vllm.home.arpa; do
   echo \"== $name ==\"
-  dig +short @192.168.2.200 $name
+  dig +short @192.168.50.200 $name
   echo
 done
 ```
 
 Expected:
 
-- `k8s.home.arpa -> 192.168.2.46`
-- `adguard.home.arpa -> 192.168.2.200`
-- `openwebui.home.arpa -> 192.168.2.201`
-- `vllm.home.arpa -> 192.168.2.205`
+- `k8s.home.arpa -> 192.168.50.197`
+- `adguard.home.arpa -> 192.168.50.200`
+- `openwebui.home.arpa -> 192.168.50.201`
+- `vllm.home.arpa -> 192.168.50.205`
 
 Public resolution should also work:
 
 ```bash
-dig +short @192.168.2.200 github.com
+dig +short @192.168.50.200 github.com
 ```
 
 ## Real-client validation
@@ -60,23 +60,23 @@ client using AdGuard as its resolver.
 
 Validated on 2026-03-26:
 
-- client: MIMIR (`192.168.2.40`)
+- client: MIMIR (`192.168.50.171`)
 - method:
   - temporarily disable Tailscale `CorpDNS`
-  - point `/etc/resolv.conf` at `192.168.2.200`
+  - point `/etc/resolv.conf` at `192.168.50.200`
   - resolve and fetch by name
   - restore Tailscale DNS management immediately after the test
 
 Observed results:
 
-- `openwebui.home.arpa -> 192.168.2.201`
-- `vllm.home.arpa -> 192.168.2.205`
-- `adguard.home.arpa -> 192.168.2.200`
-- `k8s.home.arpa -> 192.168.2.46`
+- `openwebui.home.arpa -> 192.168.50.201`
+- `vllm.home.arpa -> 192.168.50.205`
+- `adguard.home.arpa -> 192.168.50.200`
+- `k8s.home.arpa -> 192.168.50.197`
 - `curl -I http://openwebui.home.arpa/` returned `200 OK`
 - `curl http://vllm.home.arpa:8000/v1/models` returned the live model list
 - `curl -I http://adguard.home.arpa/` returned `302 Found`
-- `curl -sk https://k8s.home.arpa:6443/readyz` returned `401 Unauthorized`, which is the expected unauthenticated response and proves the name resolved to the API VIP
+- `curl -sk https://k8s.home.arpa:6443/readyz` returned `401 Unauthorized`, which is the expected unauthenticated response and proves the name resolved to the API endpoint
 
 ## What this does not mean yet
 

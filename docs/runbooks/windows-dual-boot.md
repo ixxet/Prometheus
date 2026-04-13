@@ -1,6 +1,6 @@
 # Windows Dual-Boot And Talos Return Runbook
 
-Last updated: 2026-04-05 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Purpose
 
@@ -16,11 +16,11 @@ Important boundary:
 
 ## Current assumptions
 
-- Talos node IP: `192.168.2.49`
-- Kubernetes API VIP: `192.168.2.46`
-- AdGuard: `192.168.2.200`
-- Open WebUI: `192.168.2.201`
-- vLLM: `192.168.2.205:8000`
+- Talos node IP: `192.168.50.197`
+- Kubernetes API endpoint: `192.168.50.197`
+- AdGuard: `192.168.50.200`
+- Open WebUI: `192.168.50.201`
+- vLLM: `192.168.50.205:8000`
 - Talos config:
   - `/Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig`
 - kubeconfig:
@@ -32,7 +32,8 @@ Use a clean Talos shutdown:
 
 ```bash
 talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig \
-  -n 192.168.2.49 shutdown
+  -e 192.168.50.197 \
+  -n 192.168.50.197 shutdown
 ```
 
 Then boot Windows from BIOS or the boot menu.
@@ -86,10 +87,10 @@ This is expected downtime, not corruption.
   - `apollo`
   - `nats`
 - LAN endpoints:
-  - `http://192.168.2.200`
-  - `http://192.168.2.201`
-  - `http://192.168.2.205:8000/v1/models`
-  - `http://192.168.2.203/api/health`
+  - `http://192.168.50.200`
+  - `http://192.168.50.201`
+  - `http://192.168.50.205:8000/v1/models`
+  - `http://192.168.50.203/api/health`
 - LangGraph `/healthz` through a temporary port-forward
 - ATHENA `/api/v1/health` through a temporary port-forward
 - APOLLO `/api/v1/health` through a temporary port-forward

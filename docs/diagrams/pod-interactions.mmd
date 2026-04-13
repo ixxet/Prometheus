@@ -1,9 +1,9 @@
 flowchart LR
   browser["Browser or LAN client"] --> owui_svc["Service: open-webui
-192.168.2.201"]
+192.168.50.201"]
   owui_svc --> owui_pod["Pod: open-webui"]
   owui_pod --> vllm_svc["Service: vllm
-192.168.2.205:8000"]
+192.168.50.205:8000"]
   vllm_svc --> vllm_pod["Pod: vllm"]
   vllm_pod --> gpu["RTX 3090"]
   vllm_pod --> hf["Hugging Face

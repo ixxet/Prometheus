@@ -1,6 +1,6 @@
 # DNS Break-Glass And Fallback Runbook
 
-Last updated: 2026-03-26 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Purpose
 
@@ -17,27 +17,27 @@ The break-glass path is IP-based, not DNS-based.
 
 If `home.arpa` resolution fails, the following should still be usable:
 
-- current discovered main gateway/admin path: `http://192.168.2.1`
+- current discovered main gateway/admin path: `http://192.168.50.1`
 - Tailscale to MIMIR: `100.109.171.72`
-- MIMIR LAN IP: `192.168.2.40`
-- Talos API: `192.168.2.49:50000`
-- Kubernetes API VIP: `192.168.2.46:6443`
-- AdGuard Home: `http://192.168.2.200`
-- Open WebUI: `http://192.168.2.201`
-- vLLM: `http://192.168.2.205:8000/v1/models`
+- MIMIR LAN IP: `192.168.50.171`
+- Talos API: `192.168.50.197:50000`
+- Kubernetes API endpoint: `192.168.50.197:6443`
+- AdGuard Home: `http://192.168.50.200`
+- Open WebUI: `http://192.168.50.201`
+- vLLM: `http://192.168.50.205:8000/v1/models`
 
 ## What DNS cutover does not break
 
 - Tailscale subnet routing through MIMIR
 - raw IP access to the Talos node
-- raw IP access to the Kubernetes API VIP
+- raw IP access to the Kubernetes API endpoint
 - raw IP access to the `LoadBalancer` services
 - in-cluster Kubernetes DNS such as `*.svc.cluster.local`
 
 ## What can break
 
 - client resolution of `*.home.arpa`
-- client public DNS if the router starts handing out `192.168.2.200` and the
+- client public DNS if the router starts handing out `192.168.50.200` and the
   tower is offline
 - client name-based access after a network move if the rewrite targets are not
   updated
@@ -54,15 +54,15 @@ ssh -i /Users/zizo/.ssh/mimir_ed25519 boi@100.109.171.72
 2. Confirm the home subnet route still works:
 
 ```bash
-curl -I http://192.168.2.200
-curl -I http://192.168.2.201
-curl http://192.168.2.205:8000/v1/models
+curl -I http://192.168.50.200
+curl -I http://192.168.50.201
+curl http://192.168.50.205:8000/v1/models
 ```
 
 3. Confirm control-plane access by raw IP:
 
 ```bash
-talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 health
+talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -e 192.168.50.197 -n 192.168.50.197 --k8s-endpoint https://192.168.50.197:6443 health
 kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get nodes -o wide
 ```
 
@@ -85,13 +85,13 @@ Record these before changing anything:
 
 Short term:
 
-- keep AdGuard as a separate DNS service on `192.168.2.200`
+- keep AdGuard as a separate DNS service on `192.168.50.200`
 - keep MIMIR as the remote-access backdoor
 - keep a raw-IP operator path documented
 
 Safer staged rollout:
 
-- test one client manually against `192.168.2.200`
+- test one client manually against `192.168.50.200`
 - if available, test a secondary router or isolated segment before the main
   router
 - only then consider changing the main DHCP DNS handoff

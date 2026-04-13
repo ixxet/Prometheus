@@ -1,6 +1,6 @@
 # Observability Validation Runbook
 
-Last updated: 2026-03-27 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Purpose
 
@@ -9,7 +9,7 @@ Grafana state.
 
 ## Expected live endpoints
 
-- Grafana: `http://192.168.2.202`
+- Grafana: `http://192.168.50.202`
 - Prometheus: internal-only in `observability`
 - Alertmanager: internal-only in `observability`
 
@@ -41,7 +41,7 @@ Success signal:
 ## Grafana reachability
 
 ```bash
-curl -I http://192.168.2.202
+curl -I http://192.168.50.202
 ```
 
 Success signal:
@@ -83,7 +83,7 @@ kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstr
 Query the dashboard index:
 
 ```bash
-curl -s -u 'admin:<password>' http://192.168.2.202/api/search | jq -r '.[] | [.uid, .title] | @tsv'
+curl -s -u 'admin:<password>' http://192.168.50.202/api/search | jq -r '.[] | [.uid, .title] | @tsv'
 ```
 
 Expected custom UIDs:

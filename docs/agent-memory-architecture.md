@@ -1,6 +1,6 @@
 # Agent And Memory Architecture
 
-Last updated: 2026-03-26 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Why this document exists
 
@@ -109,10 +109,10 @@ Standalone Mermaid source:
 ```mermaid
 flowchart LR
   client["LAN client or browser"] --> owui_svc["Open WebUI Service
-192.168.2.201"]
+192.168.50.201"]
   owui_svc --> owui_pod["open-webui pod"]
   owui_pod --> vllm_svc["vLLM Service
-192.168.2.205"]
+192.168.50.205"]
   vllm_svc --> vllm_pod["vLLM pod"]
   vllm_pod --> hf["Hugging Face model download"]
   vllm_pod --> gpu["RTX 3090"]

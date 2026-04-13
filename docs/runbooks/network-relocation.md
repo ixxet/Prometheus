@@ -54,13 +54,13 @@ Current home-base facts as of 2026-04-13:
 ## What can break immediately
 
 - Talos node IP if it was learned via DHCP
-- Kubernetes API VIP reachability from the old LAN
+- Kubernetes API endpoint reachability from the old LAN
 - Cilium `LoadBalancer` service IPs:
-  - `192.168.2.200` AdGuard
-  - `192.168.2.201` Open WebUI
-  - `192.168.2.202` Grafana
-  - `192.168.2.203` summarizer
-  - `192.168.2.205` `vLLM`
+  - `192.168.50.200` AdGuard
+  - `192.168.50.201` Open WebUI
+  - `192.168.50.202` Grafana
+  - `192.168.50.203` summarizer
+  - `192.168.50.205` `vLLM`
 - AdGuard DNS expectations
 - MIMIR subnet-route access to Prometheus
 - the current Cloudflare quick-tunnel URL if the tunnel pod restarts
@@ -84,7 +84,7 @@ What still works:
 
 What stops working after Prometheus leaves the old LAN:
 
-- MIMIR acting as the subnet-router path to Prometheus on `192.168.2.0/24`
+- MIMIR acting as the subnet-router path to Prometheus on `192.168.50.0/24`
 - the current MIMIR-hosted post-return check as the primary way to validate the
   tower
 
@@ -130,7 +130,8 @@ Important files in that snapshot:
 
 ```bash
 talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig \
-  -n 192.168.2.49 shutdown
+  -e 192.168.50.197 \
+  -n 192.168.50.197 shutdown
 ```
 
 ## After the tower lands on the new network
@@ -141,7 +142,7 @@ it.
 ### 1. Find the new node IP
 
 Use the new router, DHCP lease table, or local scanning tools. The old
-`192.168.2.49` value may no longer apply.
+`192.168.50.197` value may no longer apply.
 
 ### 2. Verify Talos and Kubernetes directly through the new node IP
 
@@ -157,14 +158,14 @@ This script:
 - generates a temporary kubeconfig from the relocated node
 - verifies Flux and core pods
 - checks app health via `kubectl port-forward`
-- does not depend on the old `192.168.2.x` service IPs
+- does not depend on any previously cached service IPs
 
 ### 2a. Kubeconfig caveat on a moved LAN
 
 The current Talos-generated kubeconfig still stamps the old Kubernetes API
 endpoint into new kubeconfig files:
 
-- current generated endpoint: `https://192.168.2.46:6443`
+- current generated endpoint: `https://192.168.50.197:6443`
 
 Short-term operator fix:
 

@@ -1,6 +1,6 @@
 # Runtime Checks And Quick Runbook
 
-Last updated: 2026-04-06 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## What this is for
 
@@ -26,14 +26,14 @@ For ASHTON-specific truth:
 
 | Service | Namespace | Type | Address | Expected state |
 | --- | --- | --- | --- | --- |
-| Talos API | node | Talos API | `192.168.2.49:50000` | reachable from the control station |
-| Kubernetes API | cluster | VIP | `192.168.2.46:6443` | reachable |
-| AdGuard Home | `dns` | `LoadBalancer` | `192.168.2.200` | serving the admin UI and direct-query rewrites; router cutover deferred |
-| Open WebUI | `ai` | `LoadBalancer` | `192.168.2.201` | serving `200 OK` |
-| vLLM | `ai` | `LoadBalancer` | `192.168.2.205:8000` | serving `/v1/models` |
+| Talos API | node | Talos API | `192.168.50.197:50000` | reachable from the control station |
+| Kubernetes API | cluster | direct endpoint | `192.168.50.197:6443` | reachable |
+| AdGuard Home | `dns` | `LoadBalancer` | `192.168.50.200` | serving the admin UI and direct-query rewrites; router cutover deferred |
+| Open WebUI | `ai` | `LoadBalancer` | `192.168.50.201` | serving `200 OK` |
+| vLLM | `ai` | `LoadBalancer` | `192.168.50.205:8000` | serving `/v1/models` |
 | Llama-server Gemma 4 | `ai` | `ClusterIP` | in-cluster only | staged at `replicas: 0`; activate only by temporarily scaling `vLLM` down |
-| Grafana | `observability` | `LoadBalancer` | `192.168.2.202` | serving `/login` |
-| Summarizer | `summarizer` | `LoadBalancer` | `192.168.2.203` | serving `/api/health` and `/metrics` |
+| Grafana | `observability` | `LoadBalancer` | `192.168.50.202` | serving `/login` |
+| Summarizer | `summarizer` | `LoadBalancer` | `192.168.50.203` | serving `/api/health` and `/metrics` |
 | Postgres | `agents` | `ClusterIP` | in-cluster only | running |
 | LangGraph | `agents` | `ClusterIP` | in-cluster only | serving `/healthz`, thread APIs, Mem0-backed semantic memory, and filesystem archive exports |
 | Qdrant | `semantic-memory` | `ClusterIP` | in-cluster only | `readyz` returns healthy |
@@ -45,7 +45,7 @@ For ASHTON-specific truth:
 | Goal | Command | Success signal |
 | --- | --- | --- |
 | Full post-return verification | `/Users/zizo/Personal-Projects/Computers/Prometheus/scripts/verify-after-talos-return.sh` | Talos, Kubernetes, Flux, metrics API, core pods, LAN endpoints, Grafana, LangGraph, ATHENA, APOLLO, NATS, and the summarizer all pass |
-| Talos health | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 health` | health checks pass |
+| Talos health | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -e 192.168.50.197 -n 192.168.50.197 --k8s-endpoint https://192.168.50.197:6443 health` | health checks pass |
 | Kubernetes nodes | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get nodes -o wide` | node is `Ready` |
 | Flux state | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n flux-system get kustomizations` | infra entries `True`; `apps` `True` on the current revision |
 | GPU allocatable | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig describe node talos-p0d-y77 | rg nvidia.com/gpu` | `nvidia.com/gpu: 1` |
@@ -55,8 +55,8 @@ For ASHTON-specific truth:
 | Goal | Command | Success signal |
 | --- | --- | --- |
 | PVC inventory | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get pvc -A` | PVCs are `Bound` |
-| Local-path volume path | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 ls /var/mnt/local-path-provisioner` | directory exists |
-| Mount usage | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 df` | OS SSD still has headroom |
+| Local-path volume path | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -e 192.168.50.197 -n 192.168.50.197 ls /var/mnt/local-path-provisioner` | directory exists |
+| Mount usage | `talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -e 192.168.50.197 -n 192.168.50.197 df` | OS SSD still has headroom |
 
 ## AI namespace checks
 
@@ -97,7 +97,7 @@ For ASHTON-specific truth:
 | Goal | Command | Success signal |
 | --- | --- | --- |
 | Observability pods | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n observability get pods` | Prometheus, Grafana, metrics-server, kube-state-metrics, node-exporter, and DCGM exporter are running |
-| Grafana UI | `curl -I http://192.168.2.202` | `302` to `/login` or `200 OK` |
+| Grafana UI | `curl -I http://192.168.50.202` | `302` to `/login` or `200 OK` |
 | Metrics API | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig top nodes` | node metrics return successfully |
 | Dashboard ConfigMaps | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get configmaps -n observability -l grafana_dashboard=1` | custom and upstream dashboard ConfigMaps are present |
 | Grafana-provisioned dashboards | use the commands in `docs/runbooks/observability-validation.md` | the custom dashboard UIDs show up in the Grafana API |
@@ -108,8 +108,8 @@ For ASHTON-specific truth:
 | Goal | Command | Success signal |
 | --- | --- | --- |
 | Summarizer pod status | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n summarizer get deploy,svc,pods -o wide` | `summarizer`, `summarizer-proxy`, and `summarizer-tunnel` are `1/1` |
-| Summarizer health | `curl http://192.168.2.203/api/health` | returns `{"status":"ok"}` |
-| Summarizer metrics | `curl http://192.168.2.203/metrics | sed -n '1,20p'` | Prometheus-format output returns |
+| Summarizer health | `curl http://192.168.50.203/api/health` | returns `{"status":"ok"}` |
+| Summarizer metrics | `curl http://192.168.50.203/metrics | sed -n '1,20p'` | Prometheus-format output returns |
 | Summarizer tunnel URL | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n summarizer logs deploy/summarizer-tunnel --tail=80 | rg 'https://.*trycloudflare.com'` | shows the current quick-tunnel URL |
 | Summarizer Prometheus target | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n observability port-forward svc/kube-prometheus-stack-prometheus 19090:9090` then `curl 'http://127.0.0.1:19090/api/v1/query?query=up%7Bnamespace%3D%22summarizer%22%7D'` | target returns `up == 1` |
 
@@ -125,20 +125,20 @@ For ASHTON-specific truth:
 
 | Goal | Command | Success signal |
 | --- | --- | --- |
-| AdGuard pod | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n dns get pods,svc,pvc` | pod running, PVC bound, `192.168.2.200` assigned |
-| AdGuard admin UI | `curl -I http://192.168.2.200` | `302` to `/login.html` or `200` on `/login.html` |
-| AdGuard rewrite checks | `for name in k8s.home.arpa adguard.home.arpa openwebui.home.arpa vllm.home.arpa; do dig +short @192.168.2.200 $name; done` | returns the expected `192.168.2.x` addresses |
-| AdGuard real-client check | temporarily point a real client at `192.168.2.200` and use `getent ahostsv4 openwebui.home.arpa`, `curl -I http://openwebui.home.arpa/`, and `curl http://vllm.home.arpa:8000/v1/models` | name resolution and HTTP checks pass without using `@192.168.2.200` direct-query shortcuts |
-| AdGuard public DNS check | `dig +short @192.168.2.200 github.com` | returns a public IP |
+| AdGuard pod | `kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig -n dns get pods,svc,pvc` | pod running, PVC bound, `192.168.50.200` assigned |
+| AdGuard admin UI | `curl -I http://192.168.50.200` | `302` to `/login.html` or `200` on `/login.html` |
+| AdGuard rewrite checks | `for name in k8s.home.arpa adguard.home.arpa openwebui.home.arpa vllm.home.arpa; do dig +short @192.168.50.200 $name; done` | returns the expected `192.168.50.x` addresses |
+| AdGuard real-client check | temporarily point a real client at `192.168.50.200` and use `getent ahostsv4 openwebui.home.arpa`, `curl -I http://openwebui.home.arpa/`, and `curl http://vllm.home.arpa:8000/v1/models` | name resolution and HTTP checks pass without using `@192.168.50.200` direct-query shortcuts |
+| AdGuard public DNS check | `dig +short @192.168.50.200 github.com` | returns a public IP |
 | Router cutover reminder | manual | only do this after AdGuard rewrites are configured |
 
 ## LAN endpoint checks
 
 | Goal | Command | Success signal |
 | --- | --- | --- |
-| Open WebUI on LAN | `curl -I http://192.168.2.201/` | `HTTP/1.1 200 OK` |
-| vLLM on LAN | `curl http://192.168.2.205:8000/v1/models` | JSON response once ready |
-| AdGuard on LAN | `curl -I http://192.168.2.200/` | `302` to `/login.html` or `200` after login |
+| Open WebUI on LAN | `curl -I http://192.168.50.201/` | `HTTP/1.1 200 OK` |
+| vLLM on LAN | `curl http://192.168.50.205:8000/v1/models` | JSON response once ready |
+| AdGuard on LAN | `curl -I http://192.168.50.200/` | `302` to `/login.html` or `200` after login |
 
 ## Remote access note
 
@@ -146,12 +146,12 @@ Recommended remote pattern:
 
 - run Tailscale on the Mac
 - add Tailscale to a reachable always-on node at home
-- make that node a subnet router for `192.168.2.0/24`
+- make that node a subnet router for `192.168.50.0/24`
 - then use the same `talosctl`, `kubectl`, and `curl` commands remotely
 
 Current validated path:
 
-- MIMIR advertises `192.168.2.0/24` into Tailscale
+- MIMIR advertises `192.168.50.0/24` into Tailscale
 - the control Mac can reach Talos, Kubernetes, and the service IPs remotely
 - this keeps Talos itself untouched while remote ops stay available
 
@@ -169,7 +169,7 @@ The practical workflow is:
 
 1. check `kubectl -n ai get pods`
 2. check `kubectl -n ai logs deploy/vllm --tail=200`
-3. verify `curl http://192.168.2.205:8000/v1/models`
+3. verify `curl http://192.168.50.205:8000/v1/models`
 4. only then change manifests
 
 ## If the agent layer regresses

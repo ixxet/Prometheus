@@ -1,6 +1,6 @@
 # Prometheus Roadmap From `v0.3.0` To `v1.0.0`
 
-Last updated: 2026-04-06 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Why this document exists
 
@@ -45,17 +45,16 @@ before the agent runtime lands.
 
 - complete AdGuard configuration and keep the operator path documented
 - create AdGuard rewrites for:
-  - `k8s.home.arpa -> 192.168.2.46`
-  - `adguard.home.arpa -> 192.168.2.200`
-  - `openwebui.home.arpa -> 192.168.2.201`
-  - `vllm.home.arpa -> 192.168.2.205`
+  - `k8s.home.arpa -> 192.168.50.197`
+  - `adguard.home.arpa -> 192.168.50.200`
+  - `openwebui.home.arpa -> 192.168.50.201`
+  - `vllm.home.arpa -> 192.168.50.205`
 - verify Open WebUI from the actual UI path after the `vLLM` recovery, not only
   from raw `curl` tests
 - keep remote ops through MIMIR as the supported Tailscale path; do not add
   Talos-side Tailscale yet
 - update repo docs anywhere they still imply `vLLM` is blocked or `apps` is red
-- reserve `192.168.2.45` on the router and move the tower back from DHCP `.49`
-  when there is a safe window
+- reserve the intended router lease for the tower and move it off the current transient DHCP address when there is a safe window
 
 ### Acceptance
 
@@ -63,8 +62,8 @@ before the agent runtime lands.
 - [x] `http://vllm.home.arpa:8000/v1/models` resolves and answers from a real LAN client
 - [x] `talosctl` and `kubectl` still work remotely over Tailscale after any IP cleanup path
 - [x] Open WebUI is reachable from the actual UI path, not only via raw API checks
-- [x] AdGuard remains on `192.168.2.200`
-- [x] the first-wave AdGuard rewrites are configured and answer direct queries to `192.168.2.200`
+- [x] AdGuard remains on `192.168.50.200`
+- [x] the first-wave AdGuard rewrites are configured and answer direct queries to `192.168.50.200`
 - [x] MIMIR can be pointed directly at AdGuard and resolve the first-wave `home.arpa` names as a real client
 - [x] router DNS cutover remains deferred until the tower returns to its permanent LAN
 

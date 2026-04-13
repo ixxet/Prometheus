@@ -1,6 +1,6 @@
 # MIMIR Post-Return Check Runbook
 
-Last updated: 2026-04-05 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Purpose
 
@@ -66,14 +66,16 @@ cp ops/mimir/talos-return.env.example /etc/prometheus-ops/talos-return.env
 
 Key values:
 
-- `NODE_IP=192.168.2.49`
+- `NODE_IP=192.168.50.197`
+- `TALOS_ENDPOINT=192.168.50.197`
+- `K8S_ENDPOINT=https://192.168.50.197:6443`
 - `TALOS_API_PORT=50000`
 - `TALOS_HEALTH_MODE=auto`
-- `OPEN_WEBUI_URL=http://192.168.2.201/`
-- `VLLM_MODELS_URL=http://192.168.2.205:8000/v1/models`
-- `ADGUARD_URL=http://192.168.2.200/`
-- `GRAFANA_URL=http://192.168.2.202/login`
-- `SUMMARIZER_URL=http://192.168.2.203/api/health`
+- `OPEN_WEBUI_URL=http://192.168.50.201/`
+- `VLLM_MODELS_URL=http://192.168.50.205:8000/v1/models`
+- `ADGUARD_URL=http://192.168.50.200/`
+- `GRAFANA_URL=http://192.168.50.202/login`
+- `SUMMARIZER_URL=http://192.168.50.203/api/health`
 - `ATHENA_NAMESPACE=athena`
 - `ATHENA_SERVICE=athena`
 - `ATHENA_LOCAL_URL=http://127.0.0.1:18083/api/v1/health`
@@ -85,9 +87,11 @@ Key values:
 - `NATS_LOCAL_URL=http://127.0.0.1:18222/varz`
 
 `TALOS_HEALTH_MODE=auto` prefers `talosctl health` when the helper host can run
-`talosctl` natively. If the helper host cannot execute `talosctl`, the script
-falls back to a direct TCP reachability probe of the Talos API on
-`NODE_IP:TALOS_API_PORT`.
+`talosctl` natively. The script now passes `-e "$TALOS_ENDPOINT"` explicitly so
+a stale endpoint inside `talosconfig` does not block health checks, and it uses
+`K8S_ENDPOINT` for the Kubernetes phase of `talosctl health`. If the helper
+host cannot execute `talosctl`, the script falls back to a direct TCP
+reachability probe of the Talos API on `NODE_IP:TALOS_API_PORT`.
 
 The return check now covers the bounded ATHENA path explicitly:
 

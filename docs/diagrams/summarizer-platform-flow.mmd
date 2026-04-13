@@ -1,7 +1,7 @@
 flowchart LR
   users["Reviewers / classmates"] --> tunnel["Cloudflare quick tunnel\nHTTPS public URL"]
   tunnel --> proxy["summarizer-proxy\nNGINX basic auth"]
-  proxy --> app["summarizer app\nLoadBalancer 192.168.2.203"]
+  proxy --> app["summarizer app\nLoadBalancer 192.168.50.203"]
   app --> vllm["vLLM\ninternal OpenAI-compatible API"]
   app --> metrics["/metrics"]
   metrics --> prom["Prometheus"]
