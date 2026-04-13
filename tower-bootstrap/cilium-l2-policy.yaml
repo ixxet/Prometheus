@@ -4,6 +4,6 @@ metadata:
   name: lan-l2
 spec:
   interfaces:
-    - enp5s0
+    - enp6s0
   externalIPs: true
   loadBalancerIPs: true
