@@ -20,6 +20,9 @@ This runbook proves the `v0.4.0` archive claim end to end:
 - Required live NFS export shape on MIMIR:
   - `/srv/obsidian 192.168.50.0/24(rw,sync,fsid=0,crossmnt,no_subtree_check)`
   - `/srv/obsidian/prometheus-vault 192.168.50.0/24(rw,sync,no_subtree_check)`
+- Required live firewall shape on MIMIR:
+  - allow `111/tcp` and `111/udp` from `192.168.50.0/24`
+  - allow `2049/tcp` and `2049/udp` from `192.168.50.0/24`
 - Repo responsibility:
   - the NFS-backed PV/PVC
   - LangGraph archive-sink config
@@ -132,6 +135,7 @@ ssh -i /Users/zizo/.ssh/mimir_ed25519 boi@100.109.171.72 \
   - PV path should be `/prometheus-vault`
   - MIMIR pseudo-root export should be `/srv/obsidian`
   - MIMIR sub-export should be `/srv/obsidian/prometheus-vault`
+  - MIMIR `ufw` should allow the current home LAN to reach `111` and `2049`
 
 6. if the LAN changed and LangGraph is still trying to mount the old host,
    repair the export and recreate the immutable PV:

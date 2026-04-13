@@ -123,10 +123,11 @@ automation path is live with a tested manual run and an enabled timer.
 stays scaled to zero because the single RTX 3090 cannot host it alongside the
 stable `vLLM` deployment. The current home-base LAN is now `192.168.50.0/24`
 with MIMIR at `192.168.50.171` and Prometheus at `192.168.50.197`. MIMIR is
-now advertising `192.168.50.0/24` into Tailscale. One relocation issue remains:
-Git now points the LangGraph archive PV at the new MIMIR address, but the live
-NFS export on MIMIR is still off and the existing PV has to be recreated
-because Kubernetes does not allow patching an NFS PV source in place.
+now advertising `192.168.50.0/24` into Tailscale, this Mac now accepts that
+route, and the moved-LAN LangGraph archive path has been repaired end to end:
+Git points at the new MIMIR address, the immutable PV was recreated, MIMIR NFS
+exports were re-aligned to the current LAN, and stale old-LAN firewall rules
+were removed.
 
 Current live proof references:
 
@@ -166,12 +167,12 @@ Current live proof references:
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | Llama-server Gemma 4 | Staged | Internal-only Gemma 4 GGUF test backend is authored at `replicas: 0` so the one-GPU node stays honest |
-| LangGraph | Degraded | Runtime image and GHCR auth are healthy, and Git now points the archive PV at `192.168.50.171`, but the live NFS export is still off on MIMIR and the immutable PV has to be recreated before the pod can mount `/exports/obsidian` again |
+| LangGraph | Stable | Runtime image, GHCR auth, Postgres, Mem0, and the MIMIR archive mount are all healthy again on the current LAN |
 | Mem0 / Obsidian | Stable | Mem0 is live with Qdrant + TEI backing; LangGraph now exports Markdown run artifacts to the off-tower MIMIR vault path |
 | Observability | Stable | Prometheus, Grafana, metrics-server, DCGM exporter, Flux scrape-targets, Postgres exporter, and `vLLM` metrics are live |
 | Summarizer proof of concept | Stable | Deployed at `http://192.168.2.203`, scraping `/metrics`, and externally reachable through an auth-gated quick tunnel |
 | MIMIR return automation | Stable | Host-neutral script is installed on MIMIR, the manual service run passed, and the systemd timer is enabled |
-| Tailscale remote ops | Degraded | MIMIR remains the subnet router and advertises `192.168.50.0/24`, but this Mac still has no installed route for that subnet yet, so direct API access is still falling back to the wrong local gateway |
+| Tailscale remote ops | Stable | MIMIR remains the subnet router, advertises `192.168.50.0/24`, and this Mac now installs that subnet route on `utun` correctly |
 
 ### Already real in the live cluster
 
@@ -197,6 +198,7 @@ Current live proof references:
 - [x] LangGraph thread, run, approval, and restart persistence checks have passed
 - [x] LangGraph health now reports `semantic_memory_provider: mem0` and `archive_sink: filesystem_markdown`
 - [x] Tailscale remote access works through MIMIR advertising `192.168.50.0/24`
+- [x] MIMIR NFS exports and UFW rules now reflect only the current `192.168.50.0/24` home LAN plus Tailscale remote access
 - [x] A real Mem0-backed semantic-memory path now exists in the LangGraph source
 - [x] The live LangGraph deployment is pinned to the Mem0-capable immutable image tag
 - [x] Qdrant plus TEI support services are live under `infra-semantic-memory`
