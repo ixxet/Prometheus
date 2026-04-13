@@ -4,7 +4,7 @@ metadata:
   name: open-webui
   namespace: ai
   annotations:
-    lbipam.cilium.io/ips: 192.168.2.201
+    lbipam.cilium.io/ips: 192.168.50.201
 spec:
   type: LoadBalancer
   selector:

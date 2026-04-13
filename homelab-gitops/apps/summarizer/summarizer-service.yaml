@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: summarizer
     app.kubernetes.io/part-of: user-adaptive-summarization
   annotations:
-    lbipam.cilium.io/ips: 192.168.2.203
+    lbipam.cilium.io/ips: 192.168.50.203
 spec:
   type: LoadBalancer
   selector:
