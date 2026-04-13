@@ -20,6 +20,7 @@ secrets.*.yaml
 *.tar.gz
 *.snap
 ops/state-snapshots/
+ops/local/
 
 # macOS
 **/.DS_Store

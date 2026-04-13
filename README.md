@@ -80,7 +80,7 @@ flowchart LR
 | **GitOps** | Flux | Bootstrapped and reconciling this repo | Live |
 | **Secrets** | SOPS + age | Encrypted secrets in git, cluster decryption wired | Live |
 | **DNS** | AdGuard Home | Local DNS + ad blocking with test-only `home.arpa` rewrites | Live on `192.168.2.200`, separate from the router, and still not the default DHCP resolver |
-| **Remote Access** | Tailscale via MIMIR | Subnet router for `192.168.2.0/24` into the tailnet | Live |
+| **Remote Access** | Tailscale via MIMIR | Subnet router for the current home-base LAN; currently `192.168.50.0/24` | Live |
 | **AI -- Serving Backend** | vLLM | OpenAI-compatible GPU inference backend serving `Mistral-7B-Instruct-v0.3` | Live |
 | **AI -- GGUF Test Backend** | llama.cpp / llama-server | Switchable Gemma 4 GGUF test backend staged for one-GPU experiments without replacing `vLLM` | Staged at `replicas: 0` |
 | **AI -- Web UI** | Open WebUI | Human-facing UI that talks to the vLLM OpenAI-compatible API | Live |
@@ -121,7 +121,11 @@ constraint, the return-verification path is now host-neutral, and the MIMIR
 automation path is live with a tested manual run and an enabled timer.
 `llama-server` is now also staged as a switchable Gemma 4 GGUF backend, but it
 stays scaled to zero because the single RTX 3090 cannot host it alongside the
-stable `vLLM` deployment.
+stable `vLLM` deployment. The current home-base LAN is now `192.168.50.0/24`
+with MIMIR at `192.168.50.171` and Prometheus at `192.168.50.197`. MIMIR is
+now advertising `192.168.50.0/24` into Tailscale. One relocation issue remains:
+`LangGraph` is currently blocked by an archive NFS mount that still points at
+the old site (`192.168.2.40:/prometheus-vault`).
 
 Current live proof references:
 
@@ -161,12 +165,12 @@ Current live proof references:
 | Open WebUI | Stable | Serving successfully on `http://192.168.2.201`; backend path to vLLM resolves in-cluster |
 | vLLM | Stable | Serving `Mistral-7B-Instruct-v0.3` on `http://192.168.2.205:8000/v1` |
 | Llama-server Gemma 4 | Staged | Internal-only Gemma 4 GGUF test backend is authored at `replicas: 0` so the one-GPU node stays honest |
-| LangGraph | Stable | Internal-only runtime is live on the Mem0-enabled image; create, run, resume, restart-persistence, and semantic-memory smoke checks have passed |
+| LangGraph | Degraded | Runtime image and GHCR auth are healthy, but the archive PV still points at the old NFS host `192.168.2.40`, so the relocated pod cannot mount its archive volume |
 | Mem0 / Obsidian | Stable | Mem0 is live with Qdrant + TEI backing; LangGraph now exports Markdown run artifacts to the off-tower MIMIR vault path |
 | Observability | Stable | Prometheus, Grafana, metrics-server, DCGM exporter, Flux scrape-targets, Postgres exporter, and `vLLM` metrics are live |
 | Summarizer proof of concept | Stable | Deployed at `http://192.168.2.203`, scraping `/metrics`, and externally reachable through an auth-gated quick tunnel |
 | MIMIR return automation | Stable | Host-neutral script is installed on MIMIR, the manual service run passed, and the systemd timer is enabled |
-| Tailscale remote ops | Stable | MIMIR advertises `192.168.2.0/24`, so Talos/Kubernetes/services are reachable remotely |
+| Tailscale remote ops | Stable | MIMIR remains the subnet router and now advertises `192.168.50.0/24`; verify client-side route acceptance after subnet changes |
 
 ### Already real in the live cluster
 

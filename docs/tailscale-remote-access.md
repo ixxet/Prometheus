@@ -1,6 +1,6 @@
 # Tailscale Remote Access
 
-Last updated: 2026-03-25 (America/Toronto)
+Last updated: 2026-04-13 (America/Toronto)
 
 ## Goal
 
@@ -16,16 +16,19 @@ Recommended first step:
 
 - keep the Talos node unchanged
 - install Tailscale on an always-on home Linux box, preferably the Debian NUC
-- make that box a **subnet router** for `192.168.2.0/24`
+- make that box a **subnet router** for the current home-base LAN
 
 This gives remote access to:
 
-- Talos API on `192.168.2.49:50000`
-- Kubernetes API VIP on `192.168.2.46:6443`
-- LAN `LoadBalancer` services such as:
-  - `192.168.2.200` AdGuard Home
-  - `192.168.2.201` Open WebUI
-  - `192.168.2.205:8000` vLLM
+- Talos API on the current node IP
+- Kubernetes API on the current active endpoint
+- LAN `LoadBalancer` services that still make sense on the current site
+
+Current observed home-base LAN on 2026-04-13:
+
+- `MIMIR`: `192.168.50.171`
+- `Prometheus`: `192.168.50.197`
+- current advertised MIMIR route: `192.168.50.0/24`
 
 ## Why this is the safer choice
 
@@ -64,8 +67,8 @@ On the Debian NUC:
 Current observed state on `MIMIR`:
 
 - Tailscale is already installed and connected
-- no subnet routes are currently advertised
-- changing advertised routes requires `sudo`
+- `boi` is already the configured Tailscale operator
+- the currently advertised route is `192.168.50.0/24`
 
 To finish the subnet-router setup:
 
@@ -79,7 +82,7 @@ sudo sysctl -w net.ipv4.ip_forward=1
 sudo sysctl -w net.ipv6.conf.all.forwarding=1
 echo 'net.ipv4.ip_forward=1' | sudo tee /etc/sysctl.d/99-tailscale.conf
 echo 'net.ipv6.conf.all.forwarding=1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
-sudo tailscale up --advertise-routes=192.168.2.0/24
+sudo tailscale up --advertise-routes=<current-home-subnet>
 sudo tailscale set --operator=boi
 ```
 
@@ -107,13 +110,27 @@ Once the subnet router is working, the same commands from the normal runbook
 should work remotely from the Mac:
 
 ```bash
-talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n 192.168.2.49 health
+talosctl --talosconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/talosconfig -n <current-node-ip> health
 
 kubectl --kubeconfig /Users/zizo/Personal-Projects/Computers/Talos/tower-bootstrap/kubeconfig get nodes -o wide
 
-curl -I http://192.168.2.201/
-curl http://192.168.2.205:8000/v1/models
+curl -I http://<current-openwebui-ip>/
+curl http://<current-vllm-ip>:8000/v1/models
 ```
+
+## If the home-base subnet changes
+
+When MIMIR and Prometheus move together and still share a LAN:
+
+- keep using MIMIR as the tailnet subnet router
+- update the advertised route to match the new LAN
+- verify remote access again from the Mac
+
+When Prometheus moves without MIMIR:
+
+- MIMIR can no longer route to it
+- treat that as a relocation event, not a normal remote-ops event
+- use the relocation runbook until Prometheus returns to the MIMIR LAN
 
 ## DNS and Tailscale
 
@@ -138,11 +155,9 @@ If a router-side DNS handoff goes badly, remote recovery should still use raw
 IP access through MIMIR, not `home.arpa`:
 
 - MIMIR Tailscale: `100.109.171.72`
-- Talos API: `192.168.2.49:50000`
-- Kubernetes VIP: `192.168.2.46:6443`
-- AdGuard: `192.168.2.200`
-- Open WebUI: `192.168.2.201`
-- vLLM: `192.168.2.205:8000`
+- current home-base LAN: `192.168.50.0/24`
+- MIMIR LAN IP: `192.168.50.171`
+- Prometheus node IP: `192.168.50.197`
 
 That is why DNS cutover does not remove the remote backdoor as long as MIMIR
 and the Tailscale subnet route stay healthy.
