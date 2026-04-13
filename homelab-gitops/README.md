@@ -286,7 +286,7 @@ That is documented as a deliberate restart-safety fix, not a shortcut.
 | `infrastructure/semantic-memory/` | `Qdrant + TEI` support services for the `v0.4.0` Mem0 layer. | Live now on the SSD-backed first-wave storage path. | It does not provide human-readable archive export by itself. |
 | `infrastructure/dns/` | AdGuard Home namespace, PVC, deployment, and fixed-IP `LoadBalancer` service. | Running, but router cutover is still intentionally deferred. | It does not update router-side DNS settings for you. |
 | `infrastructure/observability/` | Prometheus, Grafana, metrics-server, DCGM exporter, scrape targets, and provisioned dashboards. | Runs on the SSD-backed first-wave storage model and keeps Grafana LAN/Tailscale-only. | It does not expose Grafana publicly. |
-| `apps/athena/` | Narrow GitOps slice for the ASHTON ATHENA service. | Pinned to an immutable GHCR image and now carries the bounded `v0.4.1` edge-projection slice, the edge proxy, and the identified publisher path through `ATHENA_NATS_URL`. | It is still not a broad adapter rollout or product surface. |
+| `apps/athena/` | Narrow GitOps slice for the ASHTON ATHENA service. | Pinned to an immutable GHCR image and now carries the bounded `v0.7.0` edge-projection slice, Postgres-backed observation and session storage, bounded internal history and analytics reads, the edge proxy, and the identified publisher path through `ATHENA_NATS_URL`. | It is still not a broad adapter rollout or product surface. |
 | `apps/agents/apollo/` | Narrow GitOps slice for the APOLLO visit-ingest runtime. | Pinned to an immutable GHCR image, bootstraps migrations in an init container, and consumes only the identified ATHENA visit-lifecycle subjects. | It does not widen APOLLO into auth UI, workouts, recommendations, or matchmaking in-cluster. |
 | `apps/agents/nats/` | Bounded broker slice for the live ATHENA -> APOLLO event path. | Kept intentionally small with only client and monitor ports exposed inside the cluster. | It is not a general messaging platform rollout. |
 | `apps/ai/vllm/` | First-wave GPU serving backend with a conservative local cache footprint. | Assumes one heavy GPU workload at a time on the RTX 3090. | It does not yet include Hugging Face secret wiring or larger model tiers. |
@@ -304,9 +304,11 @@ linked proving runbooks before claiming current live truth.
 
 - `Postgres` is running
 - `AdGuard Home` is running
-- `ATHENA` is authored in the `athena` namespace on immutable `v0.4.1`
-  edge-projection image, with the bounded external surface reduced to
-  `POST /api/v1/edge/tap` and `GET /api/v1/health` through the edge proxy
+- `ATHENA` is authored in the `athena` namespace on immutable `v0.7.0`
+  edge-projection image, with Postgres-backed observation and session truth,
+  bounded internal history and analytics reads, and the bounded external
+  surface reduced to `POST /api/v1/edge/tap` and `GET /api/v1/health`
+  through the edge proxy
 - `NATS` is running internally in the `agents` namespace for the bounded
   `ATHENA -> APOLLO` event path
 - `APOLLO` is running internally in the `agents` namespace, applies its own
