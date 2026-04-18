@@ -91,6 +91,21 @@ Current exposure mechanism:
 
 This is acceptable for bounded proof, not a final production exposure design.
 
+## Current Workstation Node Map
+
+The bounded deploy currently recognizes these workstation node IDs through
+`ATHENA_EDGE_TOKENS`:
+
+| Facility | Zone | Node ID | Typical workstation |
+| --- | --- | --- | --- |
+| `ashtonbee` | `gym-floor` | `ash-gym-01` | Windows / modern Tampermonkey |
+| `ashtonbee` | `gym-floor` | `ash-gym-02` | Chromebook / legacy Tampermonkey |
+| `morningside` | `weight-room` | `ms-gym-01` | Windows / modern Tampermonkey |
+| `morningside` | `weight-room` | `ms-gym-02` | Chromebook / legacy Tampermonkey |
+
+Node identity is workstation identity only. Entry versus exit still comes from
+the TouchNet row text and must not be hardcoded into the node name.
+
 ## Proof Checklist
 
 ### Preflight
@@ -154,3 +169,18 @@ Truth still deferred:
 - any public HERMES or gateway deployment slice
 - dashboards, prediction, or AI occupancy summary
 - booking or scheduling runtime
+
+## Observability Note
+
+Prometheus already scrapes ATHENA through `ServiceMonitor/athena`, and Grafana
+now has a dedicated ATHENA dashboard packet for:
+
+- current occupancy
+- tap volume
+- pass rate
+- session counts by state
+- last-ingest freshness
+
+That dashboard is an internal observability surface over Prometheus plus the
+same Postgres-backed ATHENA storage line. It is not a public dashboard and does
+not widen the browser-facing Cloudflare edge path.

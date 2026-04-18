@@ -1,0 +1,478 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "athena-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "athena-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*)::double precision AS value\nFROM athena.edge_sessions\nWHERE state = 'open'\n  AND facility_id IN (${facility:sqlstring})\n  AND zone_id IN (${zone:sqlstring});",
+          "refId": "A"
+        }
+      ],
+      "title": "Current Occupancy",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "athena-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 300
+              },
+              {
+                "color": "red",
+                "value": 900
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "athena-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(EXTRACT(EPOCH FROM (NOW() - MAX(observed_at))), 0)::double precision AS value\nFROM athena.edge_observations\nWHERE facility_id IN (${facility:sqlstring})\n  AND zone_id IN (${zone:sqlstring})\n  AND node_id IN (${node:sqlstring});",
+          "refId": "A"
+        }
+      ],
+      "title": "Last Ingest Freshness",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "athena-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "athena-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(ROUND(100.0 * SUM(CASE WHEN result = 'pass' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1), 0)::double precision AS value\nFROM athena.edge_observations\nWHERE $__timeFilter(observed_at)\n  AND facility_id IN (${facility:sqlstring})\n  AND zone_id IN (${zone:sqlstring})\n  AND node_id IN (${node:sqlstring});",
+          "refId": "A"
+        }
+      ],
+      "title": "Pass Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "index": 0,
+                  "text": "down"
+                },
+                "1": {
+                  "index": 1,
+                  "text": "up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(up{job=\"athena\",namespace=\"athena\"})",
+          "legendFormat": "athena",
+          "refId": "A"
+        }
+      ],
+      "title": "ATHENA Scrape Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "athena-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "athena-postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT state AS metric, COUNT(*)::double precision AS value\nFROM athena.edge_sessions\nWHERE facility_id IN (${facility:sqlstring})\n  AND zone_id IN (${zone:sqlstring})\n  AND (entry_node_id IN (${node:sqlstring}) OR exit_node_id IN (${node:sqlstring}))\n  AND COALESCE(entry_at, exit_at, created_at) BETWEEN to_timestamp($__unixEpochFrom()) AND to_timestamp($__unixEpochTo())\nGROUP BY state\nORDER BY state;",
+          "refId": "A"
+        }
+      ],
+      "title": "Session Count By State",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "athena-postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 8,
+        "y": 8
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "athena-postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  $__timeGroupAlias(observed_at, '15m'),\n  result || ' ' || direction AS metric,\n  COUNT(*)::double precision AS value\nFROM athena.edge_observations\nWHERE $__timeFilter(observed_at)\n  AND facility_id IN (${facility:sqlstring})\n  AND zone_id IN (${zone:sqlstring})\n  AND node_id IN (${node:sqlstring})\nGROUP BY 1, 2\nORDER BY 1, 2;",
+          "refId": "A"
+        }
+      ],
+      "title": "Tap Volume",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "prometheus",
+    "athena",
+    "occupancy",
+    "ingress"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "athena-postgres"
+        },
+        "definition": "SELECT DISTINCT facility_id AS __text, facility_id AS __value FROM athena.edge_observations ORDER BY 1",
+        "includeAll": true,
+        "label": "Facility",
+        "multi": true,
+        "name": "facility",
+        "options": [],
+        "query": "SELECT DISTINCT facility_id AS __text, facility_id AS __value FROM athena.edge_observations ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "athena-postgres"
+        },
+        "definition": "SELECT DISTINCT zone_id AS __text, zone_id AS __value FROM athena.edge_observations WHERE facility_id IN (${facility:sqlstring}) ORDER BY 1",
+        "includeAll": true,
+        "label": "Zone",
+        "multi": true,
+        "name": "zone",
+        "options": [],
+        "query": "SELECT DISTINCT zone_id AS __text, zone_id AS __value FROM athena.edge_observations WHERE facility_id IN (${facility:sqlstring}) ORDER BY 1",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "athena-postgres"
+        },
+        "definition": "SELECT DISTINCT node_id AS __text, node_id AS __value FROM athena.edge_observations WHERE facility_id IN (${facility:sqlstring}) AND zone_id IN (${zone:sqlstring}) ORDER BY 1",
+        "includeAll": true,
+        "label": "Node",
+        "multi": true,
+        "name": "node",
+        "options": [],
+        "query": "SELECT DISTINCT node_id AS __text, node_id AS __value FROM athena.edge_observations WHERE facility_id IN (${facility:sqlstring}) AND zone_id IN (${zone:sqlstring}) ORDER BY 1",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Prometheus - ATHENA Edge Truth",
+  "uid": "prom-athena-edge-truth",
+  "version": 1
+}

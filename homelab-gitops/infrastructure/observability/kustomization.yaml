@@ -6,6 +6,7 @@ resources:
   - metrics-server-helmrepository.yaml
   - gpu-helm-charts-helmrepository.yaml
   - grafana-admin-secret.yaml
+  - grafana-athena-postgres-datasource-secret.yaml
   - kube-prometheus-stack-helmrelease.yaml
   - metrics-server-helmrelease.yaml
   - dcgm-exporter-helmrelease.yaml
@@ -65,6 +66,13 @@ configMapGenerator:
     namespace: observability
     files:
       - dashboards/network-cilium.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-athena-edge-truth
+    namespace: observability
+    files:
+      - dashboards/athena-edge-truth.json
     options:
       labels:
         grafana_dashboard: "1"
