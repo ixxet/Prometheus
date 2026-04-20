@@ -6,6 +6,8 @@ resources:
   - athena-ghcr-pull-secret.yaml
   - athena-migrate-v0-7-0-configmap.yaml
   - athena-migrate-v0-7-0-job.yaml
+  - athena-migrate-v0-8-0-configmap.yaml
+  - athena-migrate-v0-8-0-job.yaml
   - athena-deployment.yaml
   - athena-edge-runtime-secret.yaml
   - athena-service.yaml

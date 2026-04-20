@@ -1,0 +1,463 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: athena-migrate-v0-8-0-r1
+  namespace: athena
+data:
+  migrate.sh: |
+    #!/bin/sh
+    set -eu
+
+    : "${ATHENA_EDGE_POSTGRES_DSN:?ATHENA_EDGE_POSTGRES_DSN is required}"
+
+    psql "$ATHENA_EDGE_POSTGRES_DSN" -v ON_ERROR_STOP=1 <<'SQL'
+    CREATE SCHEMA IF NOT EXISTS athena;
+    CREATE TABLE IF NOT EXISTS athena.schema_migrations (
+        version TEXT PRIMARY KEY,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    SQL
+
+    found=0
+    for file in /migrations/*.up.sql; do
+      if [ ! -e "$file" ]; then
+        continue
+      fi
+      found=1
+      version="$(basename "$file")"
+      applied="$(psql "$ATHENA_EDGE_POSTGRES_DSN" -Atqc "SELECT 1 FROM athena.schema_migrations WHERE version = '$version'")"
+      if [ "$applied" = "1" ]; then
+        echo "Skipping $version; already applied"
+        continue
+      fi
+
+      echo "Applying $version"
+      psql "$ATHENA_EDGE_POSTGRES_DSN" -v ON_ERROR_STOP=1 \
+        -c "BEGIN" \
+        -f "$file" \
+        -c "INSERT INTO athena.schema_migrations (version) VALUES ('$version')" \
+        -c "COMMIT"
+    done
+
+    if [ "$found" -ne 1 ]; then
+      echo "No migration files found under /migrations" >&2
+      exit 1
+    fi
+  001_initial.up.sql: |
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+    CREATE SCHEMA IF NOT EXISTS athena;
+
+    CREATE TABLE athena.facilities (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL UNIQUE,
+        capacity INTEGER NOT NULL CHECK (capacity > 0),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE athena.presence_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        facility_id UUID NOT NULL REFERENCES athena.facilities(id),
+        zone_id TEXT,
+        external_identity_hash TEXT,
+        direction TEXT NOT NULL CHECK (direction IN ('in', 'out')),
+        source TEXT NOT NULL CHECK (source IN ('mock', 'rfid', 'tof', 'database', 'csv')),
+        recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+    );
+
+    CREATE INDEX idx_presence_events_facility_recorded_at
+        ON athena.presence_events (facility_id, recorded_at DESC);
+
+    CREATE INDEX idx_presence_events_source_recorded_at
+        ON athena.presence_events (source, recorded_at DESC);
+
+    CREATE INDEX idx_presence_events_identity_recorded_at
+        ON athena.presence_events (external_identity_hash, recorded_at DESC);
+  002_edge_observation_storage.up.sql: |
+    CREATE TABLE athena.edge_observations (
+        observation_id TEXT PRIMARY KEY,
+        event_id TEXT NOT NULL,
+        facility_id TEXT NOT NULL,
+        zone_id TEXT NOT NULL DEFAULT '',
+        node_id TEXT NOT NULL,
+        direction TEXT NOT NULL CHECK (direction IN ('in', 'out')),
+        result TEXT NOT NULL CHECK (result IN ('pass', 'fail')),
+        source TEXT NOT NULL CHECK (source IN ('mock', 'rfid', 'tof', 'database', 'csv')),
+        external_identity_hash TEXT NOT NULL,
+        observed_at TIMESTAMPTZ NOT NULL,
+        stored_at TIMESTAMPTZ NOT NULL,
+        account_type TEXT NOT NULL DEFAULT '',
+        name_present BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX idx_edge_observations_facility_observed_at
+        ON athena.edge_observations (facility_id, observed_at DESC);
+
+    CREATE INDEX idx_edge_observations_facility_zone_observed_at
+        ON athena.edge_observations (facility_id, zone_id, observed_at DESC);
+
+    CREATE INDEX idx_edge_observations_facility_node_observed_at
+        ON athena.edge_observations (facility_id, node_id, observed_at DESC);
+
+    CREATE INDEX idx_edge_observations_identity_observed_at
+        ON athena.edge_observations (external_identity_hash, observed_at DESC);
+
+    CREATE TABLE athena.edge_observation_commits (
+        observation_id TEXT PRIMARY KEY REFERENCES athena.edge_observations(observation_id) ON DELETE CASCADE,
+        event_id TEXT NOT NULL,
+        committed_at TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE INDEX idx_edge_observation_commits_committed_at
+        ON athena.edge_observation_commits (committed_at DESC);
+
+    CREATE TABLE athena.edge_sessions (
+        session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        facility_id TEXT NOT NULL,
+        zone_id TEXT NOT NULL DEFAULT '',
+        external_identity_hash TEXT NOT NULL,
+        state TEXT NOT NULL CHECK (state IN ('open', 'closed', 'unmatched_exit')),
+        entry_observation_id TEXT REFERENCES athena.edge_observations(observation_id),
+        entry_event_id TEXT,
+        entry_node_id TEXT,
+        entry_at TIMESTAMPTZ,
+        exit_observation_id TEXT REFERENCES athena.edge_observations(observation_id),
+        exit_event_id TEXT,
+        exit_node_id TEXT,
+        exit_at TIMESTAMPTZ,
+        duration_seconds BIGINT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CHECK (
+            (state = 'open'
+                AND entry_observation_id IS NOT NULL
+                AND entry_event_id IS NOT NULL
+                AND entry_node_id IS NOT NULL
+                AND entry_at IS NOT NULL
+                AND exit_observation_id IS NULL
+                AND exit_event_id IS NULL
+                AND exit_node_id IS NULL
+                AND exit_at IS NULL
+                AND duration_seconds IS NULL)
+            OR
+            (state = 'closed'
+                AND entry_observation_id IS NOT NULL
+                AND entry_event_id IS NOT NULL
+                AND entry_node_id IS NOT NULL
+                AND entry_at IS NOT NULL
+                AND exit_observation_id IS NOT NULL
+                AND exit_event_id IS NOT NULL
+                AND exit_node_id IS NOT NULL
+                AND exit_at IS NOT NULL
+                AND duration_seconds IS NOT NULL)
+            OR
+            (state = 'unmatched_exit'
+                AND entry_observation_id IS NULL
+                AND entry_event_id IS NULL
+                AND entry_node_id IS NULL
+                AND entry_at IS NULL
+                AND exit_observation_id IS NOT NULL
+                AND exit_event_id IS NOT NULL
+                AND exit_node_id IS NOT NULL
+                AND exit_at IS NOT NULL
+                AND duration_seconds IS NULL)
+        )
+    );
+
+    CREATE UNIQUE INDEX idx_edge_sessions_entry_observation
+        ON athena.edge_sessions (entry_observation_id)
+        WHERE entry_observation_id IS NOT NULL;
+
+    CREATE UNIQUE INDEX idx_edge_sessions_exit_observation
+        ON athena.edge_sessions (exit_observation_id)
+        WHERE exit_observation_id IS NOT NULL;
+
+    CREATE INDEX idx_edge_sessions_open_lookup
+        ON athena.edge_sessions (facility_id, zone_id, external_identity_hash, state, entry_at DESC);
+
+    CREATE INDEX idx_edge_sessions_window_lookup
+        ON athena.edge_sessions (facility_id, zone_id, entry_at, exit_at);
+
+    CREATE INDEX idx_edge_sessions_node_lookup
+        ON athena.edge_sessions (facility_id, entry_node_id, exit_node_id);
+  003_edge_identity_markers.up.sql: |
+    CREATE TABLE athena.edge_identity_markers (
+        facility_id TEXT NOT NULL,
+        zone_id TEXT NOT NULL DEFAULT '',
+        external_identity_hash TEXT NOT NULL,
+        observation_id TEXT NOT NULL REFERENCES athena.edge_observations(observation_id) ON DELETE CASCADE,
+        last_recorded_at TIMESTAMPTZ NOT NULL,
+        last_event_id TEXT NOT NULL,
+        direction TEXT NOT NULL CHECK (direction IN ('in', 'out')),
+        committed_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (facility_id, zone_id, external_identity_hash)
+    );
+
+    CREATE INDEX idx_edge_identity_markers_identity_order
+        ON athena.edge_identity_markers (facility_id, zone_id, external_identity_hash, last_recorded_at DESC, last_event_id DESC);
+
+    CREATE INDEX idx_edge_identity_markers_committed_at
+        ON athena.edge_identity_markers (committed_at DESC);
+  004_edge_policy_acceptance.up.sql: |
+    ALTER TABLE athena.edge_observations
+        ADD COLUMN failure_reason_code TEXT;
+
+    UPDATE athena.edge_observations
+    SET failure_reason_code = CASE
+        WHEN result = 'fail' THEN 'unclassified_fail'
+        ELSE NULL
+    END
+    WHERE failure_reason_code IS NULL;
+
+    ALTER TABLE athena.edge_observations
+        ADD CONSTRAINT chk_edge_observations_failure_reason_code
+        CHECK (
+            (result = 'pass' AND failure_reason_code IS NULL)
+            OR
+            (result = 'fail' AND failure_reason_code IN (
+                'bad_account_number',
+                'recognized_denied',
+                'unclassified_fail'
+            ))
+        );
+
+    CREATE INDEX idx_edge_observations_failure_reason_observed_at
+        ON athena.edge_observations (failure_reason_code, observed_at DESC)
+        WHERE failure_reason_code IS NOT NULL;
+
+    CREATE TABLE athena.edge_identity_subjects (
+        subject_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        facility_id TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (subject_id, facility_id)
+    );
+
+    CREATE INDEX idx_edge_identity_subjects_facility_created_at
+        ON athena.edge_identity_subjects (facility_id, created_at DESC);
+
+    CREATE TABLE athena.edge_identity_links (
+        link_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        subject_id UUID NOT NULL,
+        facility_id TEXT NOT NULL,
+        link_kind TEXT NOT NULL CHECK (link_kind IN (
+            'external_identity_hash',
+            'member_account',
+            'qr_identity'
+        )),
+        link_key TEXT NOT NULL,
+        link_source TEXT NOT NULL CHECK (link_source IN (
+            'automatic_observation',
+            'self_signup',
+            'owner_confirmed',
+            'trusted_import'
+        )),
+        account_type TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (facility_id, link_kind, link_key),
+        FOREIGN KEY (subject_id, facility_id)
+            REFERENCES athena.edge_identity_subjects (subject_id, facility_id)
+            ON DELETE CASCADE
+    );
+
+    CREATE INDEX idx_edge_identity_links_subject_created_at
+        ON athena.edge_identity_links (subject_id, created_at DESC);
+
+    CREATE TABLE athena.edge_access_policies (
+        policy_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        facility_id TEXT NOT NULL,
+        subject_id UUID,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (policy_id, facility_id),
+        FOREIGN KEY (subject_id, facility_id)
+            REFERENCES athena.edge_identity_subjects (subject_id, facility_id)
+            ON DELETE CASCADE
+    );
+
+    CREATE INDEX idx_edge_access_policies_facility_created_at
+        ON athena.edge_access_policies (facility_id, created_at DESC);
+
+    CREATE INDEX idx_edge_access_policies_subject_created_at
+        ON athena.edge_access_policies (subject_id, created_at DESC)
+        WHERE subject_id IS NOT NULL;
+
+    CREATE TABLE athena.edge_access_policy_versions (
+        policy_version_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        policy_id UUID NOT NULL REFERENCES athena.edge_access_policies (policy_id) ON DELETE CASCADE,
+        version_number INTEGER NOT NULL CHECK (version_number > 0),
+        is_enabled BOOLEAN NOT NULL,
+        policy_mode TEXT NOT NULL CHECK (policy_mode IN (
+            'always_admit',
+            'grace_until',
+            'facility_window'
+        )),
+        target_selector TEXT NOT NULL CHECK (target_selector IN (
+            'subject_only',
+            'recognized_denied_only'
+        )),
+        starts_at TIMESTAMPTZ NOT NULL,
+        ends_at TIMESTAMPTZ,
+        reason_code TEXT NOT NULL CHECK (reason_code IN (
+            'testing_rollout',
+            'alumni_exception',
+            'semester_rollover',
+            'owner_exception'
+        )),
+        created_by_actor_kind TEXT NOT NULL CHECK (created_by_actor_kind IN (
+            'owner_user',
+            'service_account',
+            'system'
+        )),
+        created_by_actor_id TEXT NOT NULL DEFAULT '',
+        created_by_surface TEXT NOT NULL CHECK (created_by_surface IN (
+            'athena_cli',
+            'migration_seed',
+            'future_admin_http'
+        )),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (policy_id, version_number),
+        CHECK (
+            NOT is_enabled
+            OR (
+                policy_mode = 'always_admit'
+                AND target_selector = 'subject_only'
+                AND ends_at IS NULL
+            )
+            OR (
+                policy_mode = 'grace_until'
+                AND target_selector = 'subject_only'
+                AND ends_at IS NOT NULL
+                AND ends_at >= starts_at
+            )
+            OR (
+                policy_mode = 'facility_window'
+                AND target_selector = 'recognized_denied_only'
+                AND ends_at IS NOT NULL
+                AND ends_at >= starts_at
+            )
+        )
+    );
+
+    CREATE INDEX idx_edge_access_policy_versions_latest
+        ON athena.edge_access_policy_versions (policy_id, version_number DESC);
+
+    CREATE INDEX idx_edge_access_policy_versions_window
+        ON athena.edge_access_policy_versions (is_enabled, starts_at, ends_at, created_at DESC);
+
+    CREATE TABLE athena.edge_presence_acceptances (
+        acceptance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        facility_id TEXT NOT NULL,
+        zone_id TEXT NOT NULL DEFAULT '',
+        subject_id UUID NOT NULL,
+        source_event_kind TEXT NOT NULL CHECK (source_event_kind IN ('edge_observation')),
+        source_event_id TEXT NOT NULL,
+        observation_id TEXT NOT NULL REFERENCES athena.edge_observations (observation_id) ON DELETE CASCADE,
+        event_id TEXT NOT NULL,
+        direction TEXT NOT NULL CHECK (direction IN ('in', 'out')),
+        accepted_at TIMESTAMPTZ NOT NULL,
+        acceptance_path TEXT NOT NULL CHECK (acceptance_path IN (
+            'touchnet_pass',
+            'always_admit',
+            'grace_until',
+            'facility_window'
+        )),
+        accepted_reason_code TEXT NOT NULL DEFAULT '',
+        policy_version_id UUID REFERENCES athena.edge_access_policy_versions (policy_version_id),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (facility_id, source_event_kind, source_event_id),
+        UNIQUE (observation_id),
+        FOREIGN KEY (subject_id, facility_id)
+            REFERENCES athena.edge_identity_subjects (subject_id, facility_id)
+            ON DELETE CASCADE,
+        CHECK (
+            (acceptance_path = 'touchnet_pass' AND policy_version_id IS NULL AND accepted_reason_code = '')
+            OR
+            (acceptance_path <> 'touchnet_pass' AND policy_version_id IS NOT NULL AND accepted_reason_code <> '')
+        )
+    );
+
+    CREATE INDEX idx_edge_presence_acceptances_facility_accepted_at
+        ON athena.edge_presence_acceptances (facility_id, accepted_at DESC);
+
+    CREATE INDEX idx_edge_presence_acceptances_facility_zone_accepted_at
+        ON athena.edge_presence_acceptances (facility_id, zone_id, accepted_at DESC);
+
+    CREATE INDEX idx_edge_presence_acceptances_subject_accepted_at
+        ON athena.edge_presence_acceptances (subject_id, accepted_at DESC);
+
+    WITH distinct_identities AS (
+        SELECT
+            base.facility_id,
+            base.external_identity_hash,
+            gen_random_uuid() AS subject_id
+        FROM (
+            SELECT DISTINCT
+                facility_id,
+                external_identity_hash
+            FROM athena.edge_observations
+        ) AS base
+    ),
+    inserted_subjects AS (
+        INSERT INTO athena.edge_identity_subjects (
+            subject_id,
+            facility_id
+        )
+        SELECT
+            subject_id,
+            facility_id
+        FROM distinct_identities
+    )
+    INSERT INTO athena.edge_identity_links (
+        subject_id,
+        facility_id,
+        link_kind,
+        link_key,
+        link_source
+    )
+    SELECT
+        subject_id,
+        facility_id,
+        'external_identity_hash',
+        external_identity_hash,
+        'automatic_observation'
+    FROM distinct_identities;
+
+    INSERT INTO athena.edge_presence_acceptances (
+        facility_id,
+        zone_id,
+        subject_id,
+        source_event_kind,
+        source_event_id,
+        observation_id,
+        event_id,
+        direction,
+        accepted_at,
+        acceptance_path,
+        accepted_reason_code,
+        policy_version_id
+    )
+    SELECT
+        o.facility_id,
+        o.zone_id,
+        l.subject_id,
+        'edge_observation',
+        o.observation_id,
+        o.observation_id,
+        o.event_id,
+        o.direction,
+        c.committed_at,
+        'touchnet_pass',
+        '',
+        NULL
+    FROM athena.edge_observation_commits c
+    JOIN athena.edge_observations o
+        ON o.observation_id = c.observation_id
+    JOIN athena.edge_identity_links l
+        ON l.facility_id = o.facility_id
+        AND l.link_kind = 'external_identity_hash'
+        AND l.link_key = o.external_identity_hash
+    WHERE o.result = 'pass'
+    ON CONFLICT (observation_id) DO NOTHING;

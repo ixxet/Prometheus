@@ -18,7 +18,7 @@ spec:
       serviceAccountName: athena
       containers:
         - name: athena
-          image: ghcr.io/ixxet/athena:v0.7.0@sha256:a0cd23779a5dd83bc2261cb33738adc8b25eed8031463c1e01528cc8426cada3
+          image: ghcr.io/ixxet/athena:v0.8.0@sha256:f17c75a9e7d188d19bc44decdfc08f7e08e3ec4ada0345402ec82619239dce13
           imagePullPolicy: IfNotPresent
           args:
             - serve
@@ -35,6 +35,8 @@ spec:
             - name: ATHENA_IDENTIFIED_PUBLISH_INTERVAL
               value: "24h"
             - name: ATHENA_EDGE_OCCUPANCY_PROJECTION
+              value: "true"
+            - name: ATHENA_EDGE_POLICY_ACCEPTANCE_ENABLED
               value: "true"
             - name: ATHENA_EDGE_POSTGRES_DSN
               valueFrom:
