@@ -18,7 +18,7 @@ spec:
       serviceAccountName: athena
       containers:
         - name: athena
-          image: ghcr.io/ixxet/athena:v0.8.0@sha256:f17c75a9e7d188d19bc44decdfc08f7e08e3ec4ada0345402ec82619239dce13
+          image: ghcr.io/ixxet/athena:v0.8.1@sha256:c0191e4f68975de5736d998c9b4a908a4d2d76144841ec22b65ee96022583751
           imagePullPolicy: IfNotPresent
           args:
             - serve
