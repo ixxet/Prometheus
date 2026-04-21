@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: athena-migrate-v0-8-2-r1
+  namespace: athena
+data:
+  migrate.sh: |
+    #!/bin/sh
+    set -eu
+
+    : "${ATHENA_EDGE_POSTGRES_DSN:?ATHENA_EDGE_POSTGRES_DSN is required}"
+
+    psql "$ATHENA_EDGE_POSTGRES_DSN" -v ON_ERROR_STOP=1 <<'SQL'
+    CREATE SCHEMA IF NOT EXISTS athena;
+    CREATE TABLE IF NOT EXISTS athena.schema_migrations (
+        version TEXT PRIMARY KEY,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    SQL
+
+    found=0
+    for file in /migrations/*.up.sql; do
+      if [ ! -e "$file" ]; then
+        continue
+      fi
+      found=1
+      version="$(basename "$file")"
+      applied="$(psql "$ATHENA_EDGE_POSTGRES_DSN" -Atqc "SELECT 1 FROM athena.schema_migrations WHERE version = '$version'")"
+      if [ "$applied" = "1" ]; then
+        echo "Skipping $version; already applied"
+        continue
+      fi
+
+      echo "Applying $version"
+      psql "$ATHENA_EDGE_POSTGRES_DSN" -v ON_ERROR_STOP=1 \
+        -c "BEGIN" \
+        -f "$file" \
+        -c "INSERT INTO athena.schema_migrations (version) VALUES ('$version')" \
+        -c "COMMIT"
+    done
+
+    if [ "$found" -ne 1 ]; then
+      echo "No migration files found under /migrations" >&2
+      exit 1
+    fi
+  005_edge_identity_subject_cleanup.up.sql: |
+    DELETE FROM athena.edge_identity_subjects s
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM athena.edge_identity_links l
+        WHERE l.subject_id = s.subject_id
+            AND l.facility_id = s.facility_id
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM athena.edge_access_policies p
+        WHERE p.subject_id = s.subject_id
+            AND p.facility_id = s.facility_id
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM athena.edge_presence_acceptances a
+        WHERE a.subject_id = s.subject_id
+            AND a.facility_id = s.facility_id
+    );
