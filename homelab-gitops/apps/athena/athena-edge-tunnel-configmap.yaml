@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: athena-edge-tunnel-config
+  namespace: athena
+data:
+  config.yaml: |
+    tunnel: c69461ee-6752-482d-a24c-a1229a0e9ab0
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    ingress:
+      - hostname: tap.lintellabs.net
+        service: http://athena-edge-proxy.athena.svc.cluster.local:8080
+      - service: http_status:404

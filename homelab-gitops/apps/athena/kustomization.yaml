@@ -16,4 +16,6 @@ resources:
   - athena-edge-proxy-configmap.yaml
   - athena-edge-proxy-deployment.yaml
   - athena-edge-proxy-service.yaml
+  - athena-edge-tunnel-configmap.yaml
+  - athena-edge-tunnel-credentials.yaml
   - athena-edge-tunnel-deployment.yaml
