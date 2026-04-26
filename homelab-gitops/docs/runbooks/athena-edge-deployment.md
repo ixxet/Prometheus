@@ -87,9 +87,11 @@ service. `presence/count` and `/metrics` remain internal verification surfaces.
 
 Current exposure mechanism:
 
-- Cloudflare quick tunnel from `athena-edge-tunnel`
+- Cloudflare named tunnel from `athena-edge-tunnel`
+- public tap ingress hostname: `tap.lintellabs.net`
 
-This is acceptable for bounded proof, not a final production exposure design.
+This gives the school tap path a stable hostname without touching the apex or
+`www` website surface. The browser-facing boundary remains intentionally narrow.
 
 ## Current Workstation Node Map
 
@@ -119,7 +121,8 @@ the TouchNet row text and must not be hardcoded into the node name.
 
 ### Live proof
 
-1. confirm tunnel logs show a reachable `trycloudflare.com` URL
+1. confirm `tap.lintellabs.net` resolves and tunnel logs show healthy
+   Cloudflare connections
 2. `GET /api/v1/health` through the tunnel returns `adapter=edge-projection`
 3. internal `GET /api/v1/health` returns `adapter=edge-projection`
 4. `POST /api/v1/edge/tap` accepted `pass in` and returned
@@ -165,7 +168,7 @@ Truth still deferred:
 
 - occupancy snapshot persistence
 - broader ingress rollout
-- named-tunnel or domain-managed exposure
+- broader public website exposure beyond `tap.lintellabs.net`
 - any public HERMES or gateway deployment slice
 - dashboards, prediction, or AI occupancy summary
 - booking or scheduling runtime
