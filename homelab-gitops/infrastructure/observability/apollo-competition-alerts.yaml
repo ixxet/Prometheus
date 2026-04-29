@@ -1,0 +1,64 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: apollo-competition-trust
+  namespace: observability
+spec:
+  groups:
+    - name: apollo.competition.trust
+      rules:
+        - alert: ApolloRatingUpdateDurationHigh
+          expr: |
+            (
+              rate(rating_update_duration_seconds_sum[5m])
+              /
+              clamp_min(rate(rating_update_duration_seconds_count[5m]), 0.001)
+            ) > 2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: APOLLO rating update duration exceeded the Milestone 3.0 ceiling.
+        - alert: ApolloCompetitionDisputeQueueAging
+          expr: |
+            increase(competition_dispute_open_total[24h]) > 0
+            and
+            (time() - max(timestamp(competition_dispute_open_total))) > 86400
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: APOLLO has open dispute activity older than the Milestone 3.0 review window.
+        - alert: ApolloTrustedSurfaceFailureSpike
+          expr: sum(rate(trusted_surface_failure_total[5m])) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: APOLLO trusted-surface failures spiked.
+        - alert: ApolloPublicReceiptNotFoundSpike
+          expr: sum(rate(booking_public_receipt_not_found_total[5m])) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: APOLLO public receipt not-found responses spiked.
+        - alert: ApolloResultDuplicateRejectSpike
+          expr: sum(rate(competition_result_write_reject_total{reason=~"duplicate|stale_version"}[5m])) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: APOLLO result duplicate or stale-version rejects spiked.
+        - alert: ApolloGameIdentityProjectionDurationHigh
+          expr: |
+            (
+              rate(game_identity_projection_duration_seconds_sum[5m])
+              /
+              clamp_min(rate(game_identity_projection_duration_seconds_count[5m]), 0.001)
+            ) > 2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: APOLLO game identity projection duration regressed beyond the Milestone 3.0 ceiling.

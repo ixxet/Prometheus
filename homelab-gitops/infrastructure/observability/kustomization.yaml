@@ -22,6 +22,8 @@ resources:
   - postgres-exporter-service.yaml
   - postgres-exporter-service-monitor.yaml
   - athena-service-monitor.yaml
+  - apollo-service-monitor.yaml
+  - apollo-competition-alerts.yaml
   - vllm-service-monitor.yaml
   - summarizer-service-monitor.yaml
 generatorOptions:
