@@ -7,3 +7,5 @@ resources:
   - hermes
   - langgraph
   - nats
+  - hestia
+  - themis

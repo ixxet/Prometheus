@@ -1,0 +1,97 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: themis
+  namespace: agents
+  labels:
+    app.kubernetes.io/name: themis
+    app.kubernetes.io/part-of: ashton
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: themis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: themis
+        app.kubernetes.io/part-of: ashton
+    spec:
+      serviceAccountName: agents-ghcr
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: themis
+        image: ghcr.io/ixxet/themis:sha-3da3375@sha256:0fe93b083518a3e18d2b18b311e4fa8c06775b1a8a08f49a59372a405aa86a02
+        ports:
+        - name: http
+          containerPort: 3000
+        env:
+        - name: HOST
+          value: 0.0.0.0
+        - name: PORT
+          value: '3000'
+        - name: ORIGIN
+          value: https://staff.lintellabs.net
+        - name: APOLLO_ORIGIN
+          value: http://apollo.agents.svc.cluster.local
+        - name: THEMIS_DEFAULT_FACILITY_KEY
+          value: ashtonbee
+        - name: THEMIS_APOLLO_TRUSTED_SURFACE
+          value: themis
+        - name: THEMIS_APOLLO_TRUSTED_SURFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ashton-booking-surface
+              key: themis-token
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        readinessProbe:
+          httpGet:
+            path: "/_app/version.json"
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: "/_app/version.json"
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: themis
+  namespace: agents
+  labels:
+    app.kubernetes.io/name: themis
+    app.kubernetes.io/part-of: ashton
+spec:
+  selector:
+    app.kubernetes.io/name: themis
+  ports:
+  - name: http
+    port: 80
+    targetPort: http

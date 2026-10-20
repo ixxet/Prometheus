@@ -4,3 +4,6 @@ resources:
   - apollo-runtime-secret.yaml
   - apollo-deployment.yaml
   - apollo-service.yaml
+  - ashton-booking-mail.yaml
+patches:
+  - path: apollo-booking-patch.yaml

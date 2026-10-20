@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apollo
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: apollo-migrate
+        image: ghcr.io/ixxet/apollo:sha-6a10c55@sha256:838ac17b26cc7e9d0bb3d62e31b82425fc7e573bbfb49a846ca6c98e0299aad8
+      containers:
+      - name: apollo
+        image: ghcr.io/ixxet/apollo:sha-6a10c55@sha256:838ac17b26cc7e9d0bb3d62e31b82425fc7e573bbfb49a846ca6c98e0299aad8
+        env:
+        - name: APOLLO_SESSION_COOKIE_NAME
+          value: apollo_session
+        - name: APOLLO_SESSION_COOKIE_SECURE
+          value: 'true'
+        - name: APOLLO_LOG_VERIFICATION_TOKENS
+          value: 'false'
+        - name: APOLLO_TRUSTED_SURFACES
+          valueFrom:
+            secretKeyRef:
+              name: ashton-booking-surface
+              key: apollo-trusted-surfaces
+        - name: APOLLO_SMTP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ashton-booking-mail
+              key: host
+        - name: APOLLO_SMTP_FROM
+          valueFrom:
+            configMapKeyRef:
+              name: ashton-booking-mail
+              key: from
+        - name: APOLLO_SMTP_TLS_MODE
+          value: starttls
+        - name: APOLLO_SMTP_PORT
+          value: '587'
+        - name: APOLLO_SMTP_TIMEOUT
+          value: 4s
+        - name: APOLLO_SMTP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: apollo-smtp
+              key: username
+        - name: APOLLO_SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: apollo-smtp
+              key: password
