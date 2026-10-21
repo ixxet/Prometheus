@@ -70,7 +70,9 @@ data:
 
       location = / { return 302 /intake; }
       location = /intake { proxy_pass http://hestia.agents.svc.cluster.local:80; }
+      location = /intake/__data.json { proxy_pass http://hestia.agents.svc.cluster.local:80; }
       location = /intake/status { proxy_pass http://hestia.agents.svc.cluster.local:80; }
+      location = /intake/status/__data.json { proxy_pass http://hestia.agents.svc.cluster.local:80; }
       location ^~ /_app/ { proxy_pass http://hestia.agents.svc.cluster.local:80; }
       location / { return 404; }
     }

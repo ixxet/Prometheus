@@ -8,10 +8,10 @@ spec:
     spec:
       initContainers:
       - name: apollo-migrate
-        image: ghcr.io/ixxet/apollo:sha-6a10c55@sha256:838ac17b26cc7e9d0bb3d62e31b82425fc7e573bbfb49a846ca6c98e0299aad8
+        image: ghcr.io/ixxet/apollo:sha-3bfbbe9@sha256:20cac036d6bdf31c7fc8b84b9a964ce2facdf1db8b2e174d9d8db37c72c94de6
       containers:
       - name: apollo
-        image: ghcr.io/ixxet/apollo:sha-6a10c55@sha256:838ac17b26cc7e9d0bb3d62e31b82425fc7e573bbfb49a846ca6c98e0299aad8
+        image: ghcr.io/ixxet/apollo:sha-3bfbbe9@sha256:20cac036d6bdf31c7fc8b84b9a964ce2facdf1db8b2e174d9d8db37c72c94de6
         env:
         - name: APOLLO_SESSION_COOKIE_NAME
           value: apollo_session
